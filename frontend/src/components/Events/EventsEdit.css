@@ -1,0 +1,21 @@
+.events-edit__form-item {
+  margin-bottom: 24px;
+}
+
+.events-edit__form-item-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.events-edit__form-buttons {
+  display: flex;
+  padding: 16px 48px;
+  margin: 40px -48px 0;
+  border-top: 1px solid var(--border-color);
+  background-color: #f8fafc;
+}
+
+.events-edit__form-item-tags {
+  width: 100%;
+}

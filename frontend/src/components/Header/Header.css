@@ -1,0 +1,23 @@
+.header {
+  display: flex;
+  align-items: center;
+  height: 80px;
+}
+
+.header__logo {
+  margin-right: 32px;
+  margin: 0 32px 0 8px;
+
+  img {
+    display: block;
+  }
+}
+
+.header__panel {
+  margin-left: auto;
+}
+
+.header__panel-icon {
+  color: #64748b;
+  border-color: #dcdfe6;
+}

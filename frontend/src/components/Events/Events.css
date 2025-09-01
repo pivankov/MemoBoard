@@ -1,0 +1,41 @@
+.events {
+  flex: 1;
+  position: relative;
+
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition-property: margin-right;
+}
+
+.events--narrow {
+  margin-right: 540px;
+}
+
+.events__wrapper {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  overflow: auto;
+  width: 100%;  
+}
+
+.events__body {
+  padding: 72px 64px 80px 64px; 
+}
+
+.events__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+
+  h1 {
+    margin: 0;
+  }
+  
+  p {
+    margin: 6px 0 0 0;
+    color: #64748B;
+    font-size: 16px;
+  }
+}
