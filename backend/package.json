@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "start": "node app.js",
-    "db:init": "node ./db/cli-init.js"
+    "db:init": "node ./db/cli-init.js",
+    "db:init:noseed": "node ./db/cli-init.js --no-seed",
+    "db:reset": "rm -f ./db/data.db && node ./db/cli-init.js",
+    "db:reset:noseed": "rm -f ./db/data.db && node ./db/cli-init.js --no-seed"
   },
   "dependencies": {
     "argon2": "^0.44.0",

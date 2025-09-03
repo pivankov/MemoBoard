@@ -73,7 +73,8 @@ function setUserVersion(version) {
   db.pragma(`user_version = ${version}`);
 }
 
-async function initDb() {
+async function initDb(options = {}) {
+  const { seed = true } = options;
   db.pragma('foreign_keys = ON');
 
   const createUsersSql = `
@@ -100,7 +101,7 @@ async function initDb() {
 
   const createUsersUpdatedAtTrigger = `
     CREATE TRIGGER IF NOT EXISTS users_set_updated_at
-    AFTER UPDATE ON users
+    AFTER UPDATE OF uid, email, name, password_hash, password_algo, password_updated_at, created_at ON users
     FOR EACH ROW BEGIN
       UPDATE users SET updated_at = datetime('now') WHERE id = OLD.id;
     END;
@@ -124,75 +125,89 @@ async function initDb() {
 
   const createEventsUpdatedAtTrigger = `
     CREATE TRIGGER IF NOT EXISTS events_set_updated_at
-    AFTER UPDATE ON events
+    AFTER UPDATE OF uid, user_id, title, type_id, start_at, description, is_recurring, created_at ON events
     FOR EACH ROW BEGIN
       UPDATE events SET updated_at = datetime('now') WHERE id = OLD.id;
     END;
+  `;
+
+  const dropObsoleteIndexesSql = `
+    DROP INDEX IF EXISTS idx_users_email;
   `;
 
   const createIndexesSql = `
     CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id);
     CREATE INDEX IF NOT EXISTS idx_events_user_start_at ON events(user_id, start_at);
     CREATE INDEX IF NOT EXISTS idx_events_user_type ON events(user_id, type_id);
-    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
   `;
 
   const createAll = db.transaction(() => {
     db.exec(createUsersSql);
     db.exec(createEventTypesSql);
     db.exec(createEventsSql);
+    db.exec(dropObsoleteIndexesSql);
     db.exec(createIndexesSql);
     db.exec(createUsersUpdatedAtTrigger);
     db.exec(createEventsUpdatedAtTrigger);
   });
 
-  const currentVersion = getUserVersion();
-  if (currentVersion === 0) {
+  const migrateFrom0To1 = async () => {
     createAll();
-    
-    const insertUser = db.prepare('INSERT INTO users (uid, email, name, password_hash, password_algo) VALUES (@uid, @email, @name, @password_hash, @password_algo)');
-    const insertEventType = db.prepare('INSERT OR IGNORE INTO event_types (title, slug) VALUES (@title, @slug)');
-    const adminPassword = 'admin';
-    const guestPassword = 'guest';
-    const [adminHash, guestHash] = await Promise.all([
-      argon2.hash(adminPassword, { type: argon2.argon2id, timeCost: ARGON2_TIME_COST, memoryCost: ARGON2_MEMORY_COST, parallelism: ARGON2_PARALLELISM }),
-      argon2.hash(guestPassword, { type: argon2.argon2id, timeCost: ARGON2_TIME_COST, memoryCost: ARGON2_MEMORY_COST, parallelism: ARGON2_PARALLELISM })
-    ]);
-    const seedUsers = db.transaction(() => {
-      insertUser.run({ uid: randomUUID(), email: ADMIN_EMAIL, name: 'admin', password_hash: adminHash, password_algo: 'argon2id' });
-      insertUser.run({ uid: randomUUID(), email: GUEST_EMAIL, name: 'guest', password_hash: guestHash, password_algo: 'argon2id' });
-    });
-    seedUsers();
-    const seedEventTypes = db.transaction(() => {
-      insertEventType.run({ title: 'Другое', slug: 'other' });
-      insertEventType.run({ title: 'Праздник', slug: 'holiday' });
-      insertEventType.run({ title: 'День рождения', slug: 'birthday' });
-    });
-    seedEventTypes();
-    const insertEvent = db.prepare(`
-      INSERT INTO events (uid, user_id, title, type_id, start_at, description, is_recurring)
-      VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @is_recurring)
-    `);
-    const typeRows = db.prepare('SELECT id, slug FROM event_types').all();
-    const slugToId = Object.fromEntries(typeRows.map(r => [r.slug, r.id]));
-    const adminRow = db.prepare('SELECT id FROM users WHERE email = ? LIMIT 1').get(ADMIN_EMAIL);
-    const adminId = adminRow?.id;
-    if (adminId) {
-      const eventsPrepared = DUMMY_EVENTS.map(e => ({
-        uid: e.uid,
-        user_id: adminId,
-        title: e.title,
-        type_id: slugToId[e.type],
-        start_at: e.start_at,
-        description: e.description,
-        is_recurring: e.is_recurring,
-      }));
-      const seedEvents = db.transaction(() => {
-        for (const ev of eventsPrepared) insertEvent.run(ev);
+    if (seed) {
+      const insertUser = db.prepare('INSERT INTO users (uid, email, name, password_hash, password_algo) VALUES (@uid, @email, @name, @password_hash, @password_algo)');
+      const insertEventType = db.prepare('INSERT OR IGNORE INTO event_types (title, slug) VALUES (@title, @slug)');
+      const adminPassword = 'admin';
+      const guestPassword = 'guest';
+      const [adminHash, guestHash] = await Promise.all([
+        argon2.hash(adminPassword, { type: argon2.argon2id, timeCost: ARGON2_TIME_COST, memoryCost: ARGON2_MEMORY_COST, parallelism: ARGON2_PARALLELISM }),
+        argon2.hash(guestPassword, { type: argon2.argon2id, timeCost: ARGON2_TIME_COST, memoryCost: ARGON2_MEMORY_COST, parallelism: ARGON2_PARALLELISM })
+      ]);
+      const seedUsers = db.transaction(() => {
+        insertUser.run({ uid: randomUUID(), email: ADMIN_EMAIL, name: 'admin', password_hash: adminHash, password_algo: 'argon2id' });
+        insertUser.run({ uid: randomUUID(), email: GUEST_EMAIL, name: 'guest', password_hash: guestHash, password_algo: 'argon2id' });
       });
-      seedEvents();
+      seedUsers();
+      const seedEventTypes = db.transaction(() => {
+        insertEventType.run({ title: 'Другое', slug: 'other' });
+        insertEventType.run({ title: 'Праздник', slug: 'holiday' });
+        insertEventType.run({ title: 'День рождения', slug: 'birthday' });
+      });
+      seedEventTypes();
+      const insertEvent = db.prepare(`
+        INSERT INTO events (uid, user_id, title, type_id, start_at, description, is_recurring)
+        VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @is_recurring)
+      `);
+      const typeRows = db.prepare('SELECT id, slug FROM event_types').all();
+      const slugToId = Object.fromEntries(typeRows.map(r => [r.slug, r.id]));
+      const adminRow = db.prepare('SELECT id FROM users WHERE email = ? LIMIT 1').get(ADMIN_EMAIL);
+      const adminId = adminRow?.id;
+      if (adminId) {
+        const eventsPrepared = DUMMY_EVENTS.map(e => ({
+          uid: e.uid,
+          user_id: adminId,
+          title: e.title,
+          type_id: slugToId[e.type],
+          start_at: e.start_at,
+          description: e.description,
+          is_recurring: e.is_recurring,
+        }));
+        const seedEvents = db.transaction(() => {
+          for (const ev of eventsPrepared) insertEvent.run(ev);
+        });
+        seedEvents();
+      }
     }
-    setUserVersion(SCHEMA_VERSION);
+  };
+
+  let currentVersion = getUserVersion();
+  while (currentVersion < SCHEMA_VERSION) {
+    if (currentVersion === 0) {
+      await migrateFrom0To1();
+      setUserVersion(1);
+      currentVersion = 1;
+      continue;
+    }
+    break;
   }
 }
 
