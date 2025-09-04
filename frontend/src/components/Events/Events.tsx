@@ -11,13 +11,13 @@ import "./Events.css";
 import EventsEdit, { EventsEditRef } from './EventsEdit';
 
 const buildEventFormInitialValues = (event: Event) => {
-  const { title, date, type, description, repetable } = event;
+  const { title, date, type, description, isYearly } = event;
 
   return {
     title,
     date,
     type,
-    repetable,
+    isYearly,
     tags: [],
     description,
   }

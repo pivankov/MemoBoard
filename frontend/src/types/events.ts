@@ -7,7 +7,7 @@ export type Event = {
   title: string;
   date: string;
   type: EventType;
-  repetable: boolean;
+  isYearly: boolean;
   description: string;
 };
 
@@ -15,7 +15,7 @@ export type EventFormValues = {
   title: string;
   date: string;
   type: EventType;
-  repetable: boolean;
+  isYearly: boolean;
   tags: string[];
   description: string;
 };
@@ -24,7 +24,7 @@ export type EventsEditFormValuesInternal = {
   title?: string;
   date?: import('dayjs').Dayjs;
   type?: EventType;
-  repetable?: boolean;
+  isYearly?: boolean;
   tags?: string[];
   description?: string;
 };

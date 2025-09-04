@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
       date: String(row.start_at ?? ''),
       type: String(row.type ?? ''),
       description: row.description ? String(row.description) : '',
-      repetable: Boolean(Number(row.is_yearly ?? 0)),
+      isYearly: Boolean(Number(row.is_yearly ?? 0)),
     }));
 
     res.status(200).json({ data });

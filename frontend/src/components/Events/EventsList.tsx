@@ -13,7 +13,7 @@ const EventsList: React.FC<{data: Event[], onEdit?: (event: Event) => void}> = (
           title={item.title}
           date={item.date}
           type={item.type}
-          repetable={item.repetable}
+          isYearly={item.isYearly}
           description={item.description}
           onEdit={onEdit ? () => onEdit(item) : undefined}
         />

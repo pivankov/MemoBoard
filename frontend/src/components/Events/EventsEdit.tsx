@@ -52,7 +52,7 @@ const toExternalValues = (values: EventsEditFormValuesInternal): EventFormValues
     title: values.title || "",
     date: date ? date.format('YYYY-MM-DD') : "",
     type: values.type || DEFAULT_EVENT_TYPE,
-    repetable: values.repetable ?? false,
+    isYearly: values.isYearly ?? false,
     tags: values.tags || [],
     description: values.description || "",
   };
@@ -72,7 +72,7 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
       title: iv.title,
       date: dateValue,
       type: iv.type || DEFAULT_EVENT_TYPE,
-      repetable: isEditing ? (iv.repetable ?? false) : true,
+      isYearly: isEditing ? (iv.isYearly ?? false) : true,
       tags: iv.tags,
       description: iv.description,
     };
@@ -138,7 +138,7 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
             </Form.Item>
           </div>
 
-          <Form.Item name="repetable" valuePropName="checked">
+          <Form.Item name="isYearly" valuePropName="checked">
             <Checkbox>Ежегодное событие</Checkbox>
           </Form.Item>
 
