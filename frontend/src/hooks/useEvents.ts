@@ -107,7 +107,13 @@ export const useEvents = (): UseEventsReturn => {
         throw new Error(`Ошибка обновления события: ${response.status} ${response.statusText}`);
       }
 
-      const updatedEvent = await response.json();
+      const payload = await response.json();
+      const updatedEvent: Event | null = payload?.data ?? null;
+
+      if (!updatedEvent) {
+        throw new Error('Некорректный ответ сервера при обновлении события');
+      }
+
       setEvents((prev) => prev.map(event => event.id === id ? updatedEvent : event));
       return true;
     } catch (err) {

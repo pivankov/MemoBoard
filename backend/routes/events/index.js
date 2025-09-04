@@ -34,12 +34,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
-
-  res.status(200).json({ message: `GET event by ID ${id}` });
-});
-
 router.post('/', async (req, res) => {
   try {
     const { title, date, type, isYearly, description } = req.body ?? {};
@@ -99,6 +93,78 @@ router.post('/', async (req, res) => {
   } catch (error) {
     console.error('Ошибка создания события:', error);
     return res.status(500).json({ error: 'Не удалось создать событие' });
+  }
+});
+
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор события' });
+    }
+
+    const { title, date, type, isYearly, description } = req.body ?? {};
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный заголовок события' });
+    }
+
+    if (!date || typeof date !== 'string' || date.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректная дата события' });
+    }
+
+    if (!type || typeof type !== 'string' || type.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный тип события' });
+    }
+
+    const existed = db.prepare('SELECT id FROM events WHERE uid = ? LIMIT 1').get(id);
+    if (!existed?.id) {
+      return res.status(404).json({ error: 'Событие не найдено' });
+    }
+
+    const typeRow = db.prepare('SELECT id FROM event_types WHERE slug = ? LIMIT 1').get(type);
+    if (!typeRow?.id) {
+      return res.status(400).json({ error: 'Указан неизвестный тип события' });
+    }
+
+    const updateQuery = db.prepare(`
+      UPDATE events
+      SET title = @title,
+          type_id = @type_id,
+          start_at = @start_at,
+          description = @description,
+          is_yearly = @is_yearly
+      WHERE uid = @uid
+    `);
+
+    const payload = {
+      uid: String(id),
+      title: String(title),
+      type_id: Number(typeRow.id),
+      start_at: String(date),
+      description: description ? String(description) : null,
+      is_yearly: isYearly ? 1 : 0,
+    };
+
+    const resultUpdate = updateQuery.run(payload);
+    if (resultUpdate.changes === 0) {
+      return res.status(500).json({ error: 'Не удалось обновить событие' });
+    }
+
+    const result = {
+      id: String(id),
+      title: String(title),
+      date: String(date),
+      type: String(type),
+      description: description ? String(description) : '',
+      isYearly: Boolean(isYearly),
+    };
+
+    return res.status(200).json({ data: result });
+  } catch (error) {
+    console.error(`Ошибка обновления события ${id}:`, error);
+    return res.status(500).json({ error: 'Не удалось обновить событие' });
   }
 });
 
