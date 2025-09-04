@@ -66,8 +66,15 @@ export const useEvents = (): UseEventsReturn => {
         throw new Error(`Ошибка создания события: ${response.status} ${response.statusText}`);
       }
 
-      const savedEvent = await response.json();
+      const payload = await response.json();
+      const savedEvent: Event | null = payload?.data ?? null;
+
+      if (!savedEvent) {
+        throw new Error('Некорректный ответ сервера при создании события');
+      }
+
       setEvents((prev) => [savedEvent, ...prev]);
+      
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при создании события';

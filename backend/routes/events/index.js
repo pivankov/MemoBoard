@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { randomUUID } from 'crypto';
 import tagsRouter from './tags.js';
 import { db } from '../../db/initdb.js';
 
@@ -40,7 +41,65 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  res.status(200).json({ message: 'POST event' });
+  try {
+    const { title, date, type, isYearly, description } = req.body ?? {};
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный заголовок события' });
+    }
+
+    if (!date || typeof date !== 'string' || date.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректная дата события' });
+    }
+
+    if (!type || typeof type !== 'string' || type.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный тип события' });
+    }
+
+    const typeRow = db.prepare('SELECT id FROM event_types WHERE slug = ? LIMIT 1').get(type);
+
+    if (!typeRow?.id) {
+      return res.status(400).json({ error: 'Указан неизвестный тип события' });
+    }
+
+    const insertQuery = db.prepare(`
+      INSERT INTO events (uid, user_id, title, type_id, start_at, description, is_yearly)
+      VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @is_yearly)
+    `);
+
+    const userRow = db.prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
+    if (!userRow?.id) {
+      return res.status(500).json({ error: 'Не найден пользователь по умолчанию для привязки события' });
+    }
+
+    const uid = randomUUID();
+
+    const payload = {
+      uid,
+      user_id: Number(userRow.id),
+      title: String(title),
+      type_id: Number(typeRow.id),
+      start_at: String(date),
+      description: description ? String(description) : null,
+      is_yearly: isYearly ? 1 : 0,
+    };
+
+    insertQuery.run(payload);
+
+    const result = {
+      id: String(uid),
+      title: String(title),
+      date: String(date),
+      type: String(type),
+      description: description ? String(description) : '',
+      isYearly: Boolean(isYearly),
+    };
+
+    return res.status(201).json({ data: result });
+  } catch (error) {
+    console.error('Ошибка создания события:', error);
+    return res.status(500).json({ error: 'Не удалось создать событие' });
+  }
 });
 
 router.delete('/:id', async (req, res) => {
