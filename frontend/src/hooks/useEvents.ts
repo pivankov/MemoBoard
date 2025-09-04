@@ -35,7 +35,7 @@ export const useEvents = (): UseEventsReturn => {
       setEvents(list);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке событий';
-      
+
       setError(errorMessage);
       console.error('Ошибка загрузки событий:', err);
     } finally {
@@ -78,7 +78,6 @@ export const useEvents = (): UseEventsReturn => {
   }, []);
 
   const updateEvent = useCallback(async (id: string, eventData: EventFormValues): Promise<boolean> => {
-    console.log(11, id, eventData);
     setError(null);
     
     try {
@@ -114,7 +113,7 @@ export const useEvents = (): UseEventsReturn => {
 
   const deleteEvent = useCallback(async (id: string): Promise<boolean> => {
     setError(null);
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
@@ -124,10 +123,11 @@ export const useEvents = (): UseEventsReturn => {
         throw new Error(`Ошибка удаления события: ${response.status} ${response.statusText}`);
       }
 
-      setEvents((prev) => prev.filter(event => event.id !== id));
+      setEvents((prev) => prev.filter((event) => event.id !== id));
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при удалении события';
+
       setError(errorMessage);
       console.error('Ошибка удаления события:', err);
       return false;

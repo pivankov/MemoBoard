@@ -45,8 +45,24 @@ router.post('/', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
-  
-  res.status(200).json({ message: `DELETE event by ID ${id}` });
+
+  try {
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор события' });
+    }
+
+    const deleteQuery = db.prepare('DELETE FROM events WHERE uid = ?');
+    const result = deleteQuery.run(id);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Событие не найдено' });
+    }
+
+    return res.status(204).send();
+  } catch (error) {
+    console.error(`Ошибка удаления события ${id}:`, error);
+    return res.status(500).json({ error: 'Не удалось удалить событие' });
+  }
 });
 
 export default router;
