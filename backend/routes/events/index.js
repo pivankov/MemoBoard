@@ -1,12 +1,22 @@
 import { Router } from 'express';
 import tagsRouter from './tags.js';
+import { db } from '../../db/initdb.js';
 
 const router = Router();
 
 router.use('/tags', tagsRouter);
 
 router.get('/', async (req, res) => {
-  res.status(200).json({ message: 'GET events' });
+  try {
+    const eventsQuery = db.prepare('SELECT * FROM events');
+    const events = eventsQuery.all();
+
+    res.status(200).json({ data: events });
+  } catch (error) {
+    console.error('Ошибка получения событий:', error);
+
+    res.status(500).json({ error: 'Не удалось получить список событий' });
+  }
 });
 
 router.get('/:id', async (req, res) => {

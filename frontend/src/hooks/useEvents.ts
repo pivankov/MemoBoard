@@ -11,7 +11,7 @@ interface UseEventsReturn {
   refreshEvents: () => Promise<void>;
 }
 
-const API_BASE_URL = 'http://localhost:4000/events';
+const API_BASE_URL = 'http://localhost:4000/api/events';
 
 export const useEvents = (): UseEventsReturn => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -29,19 +29,16 @@ export const useEvents = (): UseEventsReturn => {
         throw new Error(`Ошибка загрузки событий: ${response.status} ${response.statusText}`);
       }
       
-      const eventsData = await response.json();
-      const normalized: Event[] = Array.isArray(eventsData)
-        ? eventsData.map((raw: any) => ({
-            id: String(raw.id),
-            title: String(raw.title ?? ''),
-            date: String(raw.date ?? ''),
-            type: String(raw.type ?? 'other') as Event['type'],
-            repetable: typeof raw.repetable === 'string'
-              ? raw.repetable.toLowerCase() === 'true'
-              : Boolean(raw.repetable ?? false),
-            description: String(raw.description ?? ''),
-          }))
-        : [];
+      const payload = await response.json();
+      const list = Array.isArray(payload?.data) ? payload.data : [];
+      const normalized: Event[] = list.map((item: any) => ({
+        id: String(item.id),
+        title: String(item.title ?? ''),
+        date: String(item.start_at ?? ''),
+        type: String(item.type ?? 'other') as Event['type'],
+        description: String(item.description ?? ''),
+        repetable: Boolean(Number(item.is_recurring ?? 0)),        
+      }));
       setEvents(normalized);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке событий';

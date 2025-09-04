@@ -29,9 +29,9 @@ app.use('/api/', routes);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('*', (req, res) => {
+app.use((req, res) => {
   const indexPath = path.join(__dirname, 'public', 'index.html');
-  res.sendFile(indexPath, (err) => {
+  res.sendFile(indexPath, err => {
     if (err) {
       console.error('Error sending file:', err);
       res.status(500).send('Internal Server Error');
