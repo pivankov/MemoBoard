@@ -52,7 +52,7 @@
 - `type_id` INTEGER NOT NULL REFERENCES event_types(id) ON DELETE RESTRICT ON UPDATE RESTRICT
 - `start_at` TEXT NOT NULL
 - `description` TEXT
-- `is_recurring` INTEGER NOT NULL DEFAULT 0 CHECK (is_recurring IN (0,1))
+- `is_yearly` INTEGER NOT NULL DEFAULT 0 CHECK (is_yearly IN (0,1))
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - UNIQUE(user_id, uid)
