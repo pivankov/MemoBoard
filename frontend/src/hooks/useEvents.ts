@@ -30,18 +30,12 @@ export const useEvents = (): UseEventsReturn => {
       }
       
       const payload = await response.json();
-      const list = Array.isArray(payload?.data) ? payload.data : [];
-      const normalized: Event[] = list.map((item: any) => ({
-        id: String(item.id),
-        title: String(item.title ?? ''),
-        date: String(item.start_at ?? ''),
-        type: String(item.type ?? 'other') as Event['type'],
-        description: String(item.description ?? ''),
-        repetable: Boolean(Number(item.is_recurring ?? 0)),        
-      }));
-      setEvents(normalized);
+      const list: Event[] = Array.isArray(payload?.data) ? payload.data : [];
+
+      setEvents(list);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке событий';
+      
       setError(errorMessage);
       console.error('Ошибка загрузки событий:', err);
     } finally {

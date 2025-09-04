@@ -8,10 +8,24 @@ router.use('/tags', tagsRouter);
 
 router.get('/', async (req, res) => {
   try {
-    const eventsQuery = db.prepare('SELECT * FROM events');
-    const events = eventsQuery.all();
+    const eventsQuery = db.prepare(`
+      SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, t.slug as type
+      FROM events e
+      JOIN event_types t ON t.id = e.type_id
+      ORDER BY e.start_at ASC
+    `);
+    const rows = eventsQuery.all();
 
-    res.status(200).json({ data: events });
+    const data = rows.map((row) => ({
+      id: String(row.uid),
+      title: String(row.title ?? ''),
+      date: String(row.start_at ?? ''),
+      type: String(row.type ?? ''),
+      description: row.description ? String(row.description) : '',
+      repetable: Boolean(Number(row.is_yearly ?? 0)),
+    }));
+
+    res.status(200).json({ data });
   } catch (error) {
     console.error('Ошибка получения событий:', error);
 
