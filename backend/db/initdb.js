@@ -153,6 +153,7 @@ async function initDb(options = {}) {
 
   const migrateFrom0To1 = async () => {
     createAll();
+
     if (seed) {
       const insertUser = db.prepare('INSERT INTO users (uid, email, name, password_hash, password_algo) VALUES (@uid, @email, @name, @password_hash, @password_algo)');
       const insertEventType = db.prepare('INSERT OR IGNORE INTO event_types (title, slug) VALUES (@title, @slug)');
@@ -162,17 +163,22 @@ async function initDb(options = {}) {
         argon2.hash(adminPassword, { type: argon2.argon2id, timeCost: ARGON2_TIME_COST, memoryCost: ARGON2_MEMORY_COST, parallelism: ARGON2_PARALLELISM }),
         argon2.hash(guestPassword, { type: argon2.argon2id, timeCost: ARGON2_TIME_COST, memoryCost: ARGON2_MEMORY_COST, parallelism: ARGON2_PARALLELISM })
       ]);
+
       const seedUsers = db.transaction(() => {
         insertUser.run({ uid: randomUUID(), email: ADMIN_EMAIL, name: 'admin', password_hash: adminHash, password_algo: 'argon2id' });
         insertUser.run({ uid: randomUUID(), email: GUEST_EMAIL, name: 'guest', password_hash: guestHash, password_algo: 'argon2id' });
       });
+
       seedUsers();
+
       const seedEventTypes = db.transaction(() => {
         insertEventType.run({ title: 'Другое', slug: 'other' });
         insertEventType.run({ title: 'Праздник', slug: 'holiday' });
         insertEventType.run({ title: 'День рождения', slug: 'birthday' });
       });
+
       seedEventTypes();
+
       const insertEvent = db.prepare(`
         INSERT INTO events (uid, user_id, title, type_id, start_at, description, is_yearly)
         VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @is_yearly)
@@ -191,9 +197,11 @@ async function initDb(options = {}) {
           description: e.description,
           is_yearly: e.is_yearly,
         }));
+        
         const seedEvents = db.transaction(() => {
           for (const ev of eventsPrepared) insertEvent.run(ev);
         });
+
         seedEvents();
       }
     }

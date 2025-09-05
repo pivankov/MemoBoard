@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import tagsRouter from './tags.js';
 import { db } from '../../db/initdb.js';
+import { normalizeInputDate } from "../../utils/date.js"
 
 const router = Router();
 
@@ -46,6 +47,11 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Некорректная дата события' });
     }
 
+    const normalizedDate = normalizeInputDate(date);
+    if (!normalizedDate) {
+      return res.status(400).json({ error: 'Некорректный формат даты события' });
+    }
+
     if (!type || typeof type !== 'string' || type.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный тип события' });
     }
@@ -73,7 +79,7 @@ router.post('/', async (req, res) => {
       user_id: Number(userRow.id),
       title: String(title),
       type_id: Number(typeRow.id),
-      start_at: String(date),
+      start_at: String(normalizedDate),
       description: description ? String(description) : null,
       is_yearly: isYearly ? 1 : 0,
     };
@@ -83,7 +89,7 @@ router.post('/', async (req, res) => {
     const result = {
       id: String(uid),
       title: String(title),
-      date: String(date),
+      date: String(normalizedDate),
       type: String(type),
       description: description ? String(description) : '',
       isYearly: Boolean(isYearly),
@@ -114,6 +120,11 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректная дата события' });
     }
 
+    const normalizedDate = normalizeInputDate(date);
+    if (!normalizedDate) {
+      return res.status(400).json({ error: 'Некорректный формат даты события' });
+    }
+
     if (!type || typeof type !== 'string' || type.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный тип события' });
     }
@@ -142,7 +153,7 @@ router.put('/:id', async (req, res) => {
       uid: String(id),
       title: String(title),
       type_id: Number(typeRow.id),
-      start_at: String(date),
+      start_at: String(normalizedDate),
       description: description ? String(description) : null,
       is_yearly: isYearly ? 1 : 0,
     };
@@ -155,7 +166,7 @@ router.put('/:id', async (req, res) => {
     const result = {
       id: String(id),
       title: String(title),
-      date: String(date),
+      date: String(normalizedDate),
       type: String(type),
       description: description ? String(description) : '',
       isYearly: Boolean(isYearly),
