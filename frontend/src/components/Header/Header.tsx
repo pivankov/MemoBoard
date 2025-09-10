@@ -1,5 +1,5 @@
 import { Button } from 'antd';
-import { ExpandOutlined, SearchOutlined, BellOutlined } from '@ant-design/icons';
+import { BellOutlined,ExpandOutlined, SearchOutlined } from '@ant-design/icons';
 
 import HeaderNavigation from "./HeaderNavigation";
 

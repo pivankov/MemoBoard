@@ -1,13 +1,13 @@
-import "./EventsEdit.css";
+import { useEffect,useImperativeHandle, useMemo, useRef } from "react";
+import { Button, Checkbox,DatePicker, Form, Input, Popconfirm, Radio, Select } from 'antd';
 
+import { eventType } from "../../enums/events"
+import { EventFormValues, EventsEditFormValuesInternal } from '../../types/events';
 import type { SelectProps } from 'antd';
 import type { Dayjs } from 'dayjs';
-import { eventType } from "../../enums/events"
-
-import { Input, Button, DatePicker, Select, Radio, Form, Popconfirm, Checkbox } from 'antd';
 import dayjs from 'dayjs';
-import { useMemo, useRef, useImperativeHandle, useEffect } from "react";
-import { EventFormValues, EventsEditFormValuesInternal } from '../../types/events';
+
+import "./EventsEdit.css";
 
 const { TextArea } = Input;
 

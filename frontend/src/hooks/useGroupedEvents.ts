@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
+
 import type { Event } from "../types/events";
-import { getYear, getMonth, getDay, isOverdue, parseDateSafe, ruMonthFormatter } from "../utils/date";
+import { getDay, getMonth, getYear, isOverdue, parseDateSafe, ruMonthFormatter } from "../utils/date";
 
 type EventWithCalendar = Event & {
   year: number;

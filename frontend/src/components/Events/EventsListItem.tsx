@@ -1,11 +1,11 @@
-import { eventType } from "../../enums/events"
 import { type ElementType } from "react";
+import { CoffeeOutlined,CrownOutlined, EditOutlined, StarFilled } from "@ant-design/icons";
 
-import { StarFilled, EditOutlined, CrownOutlined, CoffeeOutlined } from "@ant-design/icons";
+import { eventType } from "../../enums/events"
 import { Event } from '../../types/events';
+import { formatDateString } from "../../utils/date";
 
 import "./EventsListItem.css";
-import { formatDateString } from "../../utils/date";
 
 const eventTypeIcon: Record<eventType, ElementType> = {
   [eventType.OTHER]: CoffeeOutlined,

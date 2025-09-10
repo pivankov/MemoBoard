@@ -1,16 +1,14 @@
-import { useState, useRef } from 'react';
+import { useRef,useState } from 'react';
+import { Alert, Button, Spin } from 'antd';
 
-import { Button, Alert, Spin } from 'antd';
-
-import { Event } from '../../types/events';
-
-import EventsList from "./EventsList";
-import Panel from "../UI/Panel/Panel"
 import { useEvents } from '../../hooks/useEvents';
 import { useGroupedEvents } from '../../hooks/useGroupedEvents';
+import { Event } from '../../types/events';
+import Panel from "../UI/Panel/Panel"
+import EventsEdit, { EventsEditRef } from './EventsEdit';
+import EventsList from "./EventsList";
 
 import "./Events.css";
-import EventsEdit, { EventsEditRef } from './EventsEdit';
 
 const buildEventFormInitialValues = (event: Event) => {
   const { title, date, type, description, isYearly } = event;
