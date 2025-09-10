@@ -13,18 +13,8 @@ const eventTypeIcon: Record<eventType, ElementType> = {
   [eventType.BIRTHDAY]: CrownOutlined,
 };
 
-const buildDateString = (date: string): string => {
-  const from = new Date(date);
-
-  if (isNaN(from.getTime())) {
-    return "";
-  };
-
-  return formatDateString(date);
-};
-
 const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ id, title, date, type, description, onEdit }) => {
-  const dateString = buildDateString(date);
+  const dateString = formatDateString(date);
   const Icon = eventTypeIcon[type];
 
   return (

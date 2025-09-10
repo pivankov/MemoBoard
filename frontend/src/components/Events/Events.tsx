@@ -2,10 +2,12 @@ import { useState, useRef } from 'react';
 
 import { Button, Alert, Spin } from 'antd';
 
+import { Event } from '../../types/events';
+
 import EventsList from "./EventsList";
 import Panel from "../UI/Panel/Panel"
 import { useEvents } from '../../hooks/useEvents';
-import { Event } from '../../types/events';
+import { useGroupedEvents } from '../../hooks/useGroupedEvents';
 
 import "./Events.css";
 import EventsEdit, { EventsEditRef } from './EventsEdit';
@@ -32,6 +34,7 @@ const Events: React.FC = () => {
 
   const initialEventEditValues  = editingEvent ? buildEventFormInitialValues(editingEvent) : undefined;
   const panelTitle = editingEvent ? "Редактировать событие" : "Добавить событие";
+  const groupedEvents = useGroupedEvents(events);
   
   const handleClickAddEvent = () => {
     setEditingEvent(null);
@@ -111,7 +114,7 @@ const Events: React.FC = () => {
                 <Spin size="large" />
               </div>
             ) : (
-              <EventsList data={events} onEdit={handleEditEvent} />
+              <EventsList data={groupedEvents} onEdit={handleEditEvent} />
             )}
           </div>      
         </div>
