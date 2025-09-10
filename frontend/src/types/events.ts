@@ -1,4 +1,4 @@
-import { eventType } from "../enums/events"
+import { eventType } from "enums/events"
 
 type EventType = eventType;
 

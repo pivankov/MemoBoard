@@ -2,8 +2,8 @@
 import { ConfigProvider } from 'antd';
 
 import '@ant-design/v5-patch-for-react-19';
-import App from './App';
 import ruRU from 'antd/locale/ru_RU';
+import App from 'App';
 import ReactDOM from 'react-dom/client';
 
 import './index.css';

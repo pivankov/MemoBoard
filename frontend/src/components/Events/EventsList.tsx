@@ -1,5 +1,6 @@
-import { type EventsMonthGroup } from "../../hooks/useGroupedEvents";
-import { Event } from '../../types/events';
+import { type EventsMonthGroup } from "hooks/useGroupedEvents";
+import { Event } from 'types/events';
+
 import EventsListGroup from "./EventsListGroup";
 import EventsListItem from "./EventsListItem";
 

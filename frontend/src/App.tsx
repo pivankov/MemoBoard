@@ -1,9 +1,9 @@
 import { createBrowserRouter,RouterProvider } from "react-router";
 
-import RootLayout from "./layouts/RootLayout"
-import BookmarksPage from "./pages/BookmarksPage";
-import EventsPage from "./pages/EventsPage";
-import HomePage from "./pages/HomePage";
+import RootLayout from "layouts/RootLayout"
+import BookmarksPage from "pages/BookmarksPage";
+import EventsPage from "pages/EventsPage";
+import HomePage from "pages/HomePage";
 
 const router = createBrowserRouter([
   {

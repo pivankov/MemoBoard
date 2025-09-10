@@ -1,12 +1,12 @@
 import { useRef,useState } from 'react';
 import { Alert, Button, Spin } from 'antd';
 
-import { useEvents } from '../../hooks/useEvents';
-import { useGroupedEvents } from '../../hooks/useGroupedEvents';
-import { Event } from '../../types/events';
-import Panel from "../UI/Panel/Panel"
-import EventsEdit, { EventsEditRef } from './EventsEdit';
-import EventsList from "./EventsList";
+import EventsEdit, { EventsEditRef } from 'components/Events/EventsEdit';
+import EventsList from "components/Events/EventsList";
+import Panel from "components/UI/Panel/Panel"
+import { useEvents } from 'hooks/useEvents';
+import { useGroupedEvents } from 'hooks/useGroupedEvents';
+import { Event } from 'types/events';
 
 import "./Events.css";
 

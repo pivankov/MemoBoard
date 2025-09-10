@@ -1,6 +1,6 @@
 import { useCallback,useEffect, useState } from 'react';
 
-import { Event, EventFormValues } from '../types/events';
+import { Event, EventFormValues } from 'types/events';
 
 interface UseEventsReturn {
   events: Event[];

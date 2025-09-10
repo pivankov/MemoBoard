@@ -1,10 +1,10 @@
 import { Button } from 'antd';
 import { BellOutlined,ExpandOutlined, SearchOutlined } from '@ant-design/icons';
 
-import HeaderNavigation from "./HeaderNavigation";
+import logoImg from "assets/img/logo-text.svg";
+import HeaderNavigation from "components/Header/HeaderNavigation";
 
 import "./Header.css";
-import logoImg from "../../assets/img/logo-text.svg";
 
 const Header: React.FC = () => {
   return (

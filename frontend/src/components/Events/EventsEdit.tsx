@@ -1,8 +1,9 @@
 import { useEffect,useImperativeHandle, useMemo, useRef } from "react";
 import { Button, Checkbox,DatePicker, Form, Input, Popconfirm, Radio, Select } from 'antd';
 
-import { eventType } from "../../enums/events"
-import { EventFormValues, EventsEditFormValuesInternal } from '../../types/events';
+import { eventType } from "enums/events"
+import { EventFormValues, EventsEditFormValuesInternal } from 'types/events';
+
 import type { SelectProps } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';

@@ -1,9 +1,9 @@
 import { type ElementType } from "react";
 import { CoffeeOutlined,CrownOutlined, EditOutlined, StarFilled } from "@ant-design/icons";
 
-import { eventType } from "../../enums/events"
-import { Event } from '../../types/events';
-import { formatDateString } from "../../utils/date";
+import { eventType } from "enums/events"
+import { Event } from 'types/events';
+import { formatDateString } from "utils/date";
 
 import "./EventsListItem.css";
 
