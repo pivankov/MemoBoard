@@ -44,7 +44,7 @@
 }
 
 .events-list-item__date {
-  color: #64748B;
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 

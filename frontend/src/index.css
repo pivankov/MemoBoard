@@ -2,6 +2,8 @@
   --spacer: 4px;
   --background-color: #E2E8F0;
   --border-color: #E2E8F0;
+  --color-text-secondary: #64748B;
+  --theme-text-color: #4F46E5;
 
   /* --rs-btn-subtle-hover-text: #FFF; */
 }
@@ -36,9 +38,19 @@ body {
 }
 
 h1 {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 800;
   line-height: 1;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .ml-auto {
@@ -172,7 +184,6 @@ h1 {
 .resize-none {
   resize: none;
 }
-
 
 /*  lib fix */
 .rs-picker-search-input>input {

@@ -23,6 +23,7 @@ router.get('/', async (req, res) => {
     //     CASE WHEN julianday(e.start_at) >= julianday(datetime('now','-3 days')) THEN 0 ELSE 1 END,
     //     e.start_at ASC
     // `);    
+    
     // const eventsQuery = db.prepare(`
     //   WITH pivot AS (
     //     SELECT date('now', '-3 days') AS p

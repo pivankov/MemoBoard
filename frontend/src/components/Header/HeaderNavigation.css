@@ -14,7 +14,7 @@
 
 .header-navigation__item-icon {
   font-size: 20px;
-  color: #64748b;
+  color: var(--color-text-secondary);
   margin-right: 12px;
 }
 

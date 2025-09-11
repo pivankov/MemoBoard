@@ -35,7 +35,7 @@
   align-items: center;
   min-height: 50px;
   padding: 0 24px;
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-weight: 500;
   border-top: 1px solid var(--border-color);
 }      

@@ -18,6 +18,6 @@
 }
 
 .header__panel-icon {
-  color: #64748b;
+  color: var(--color-text-secondary);
   border-color: #dcdfe6;
 }

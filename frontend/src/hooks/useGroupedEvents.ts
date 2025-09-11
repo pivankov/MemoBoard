@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import type { Event } from "types/events";
 import { getDay, getMonth, getYear, isOverdue, parseDateSafe, ruMonthFormatter } from "utils/date";
+import { capitalizeFirst } from "utils/string";
 
 /**
  * Расширение события вычисленными календарными полями, для последующих фильтраций и сортировок
@@ -138,7 +139,7 @@ const groupEventsByMonth = (
         year,
         month,
         key,
-        label: ruMonthFormatter.format(new Date(year, month - 1)),
+        label: capitalizeFirst(ruMonthFormatter.format(new Date(year, month - 1))),
         items: [event],
       });
     } else {
