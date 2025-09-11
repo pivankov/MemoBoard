@@ -33,6 +33,7 @@ const Events: React.FC = () => {
   const initialEventEditValues  = editingEvent ? buildEventFormInitialValues(editingEvent) : undefined;
   const panelTitle = editingEvent ? "Редактировать событие" : "Добавить событие";
   const groupedEvents = useGroupedEvents(events);
+  const totalOverdueEvents = groupedEvents.overdue.length;
   
   const handleClickAddEvent = () => {
     setEditingEvent(null);
@@ -82,7 +83,15 @@ const Events: React.FC = () => {
             <div className="events__header">
               <div>
                 <h1>События</h1>
-                <p>Список предстоящих праздников, дней рождения и памятных дат.</p>
+                <p>
+                  Список предстоящих праздников, дней рождения и памятных дат.
+                  {totalOverdueEvents > 0 && (
+                    <>
+                      <br />
+                      У вас есть просроченные события, в количестве <a href="#overdue-events">{totalOverdueEvents}</a>.
+                    </>
+                  )}
+                </p>
               </div>
               {!isPanelOpened && (
                 <Button 

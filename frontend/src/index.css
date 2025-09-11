@@ -53,6 +53,16 @@ h3 {
   font-weight: 600;
 }
 
+a {
+  color: #1677FF;
+
+  &:hover {
+    color: #69B1FF;
+  }
+
+  text-decoration: none;
+}
+
 .ml-auto {
   margin-left: auto!important;
 }

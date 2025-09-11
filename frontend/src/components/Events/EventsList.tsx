@@ -32,7 +32,7 @@ const EventsList: React.FC<{data: EventsGrouped, onEdit?: (event: Event) => void
 
       {data.overdue.length > 0 && (
         <div className="events-list pt-10 mt-10">
-          <h2>
+          <h2 id="overdue-events">
             Просроченные события
           </h2>
 
