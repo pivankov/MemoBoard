@@ -1,4 +1,15 @@
-.events-list {
+.events-list__title {
+  display: inline-block;
+  padding: 8px 32px;
+  color: #FFF;
+  background-color: #4F46E5;
+  border-radius: 9999px;
+  font-weight: normal;
+  font-size: 14px;
+  margin: 28px 0;
+}
+
+.events-list__items {
   margin: 0;
   padding: 0;
 }

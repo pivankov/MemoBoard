@@ -3,32 +3,50 @@ import { useMemo } from 'react';
 import type { Event } from "types/events";
 import { getDay, getMonth, getYear, isOverdue, parseDateSafe, ruMonthFormatter } from "utils/date";
 
-type EventWithCalendar = Event & {
+/**
+ * Расширение события вычисленными календарными полями, для последующих фильтраций и сортировок
+ */
+type CalendarizedEvent = Event & {
   year: number;
   month: number;
   day: number;
 };
 
 /**
- * Группа событий за конкретный месяц.
- * Используется для отображения заголовка месяца и списка событий внутри него.
- * key формата YYYY-MM, где месяц всегда в 2 знака (01-12).
+ * Результат группировки событий.
+ * - `actual`: массив групп по месяцам, предназначен для отображения актуальных и ежегодных событий.
+ * - `overdue`: плоский список просроченных НЕ ежегодных событий, которые исключены из месячных групп.
  */
-export type EventsMonthGroup = {
+export type EventsGrouped = {
+  actual: EventMonthGroup[],
+  overdue: Event[],
+}
+
+/**
+ * Группа событий за конкретный месяц.
+ */
+type EventMonthGroup = {
   year: number;
   month: number;
   key: string;
   label: string;
-  items: EventWithCalendar[];
+  items: CalendarizedEvent[];
 };
 
-export type GroupOptions = {
+/**
+ * Опции группировки событий.
+ * - `overdueDays` — количество дней, после которых событие считается просроченным.
+ *   Используется для определения попадания в `overdue` (для не ежегодных)
+ *   и для нормализации дат ежегодных событий на текущий/следующий год.
+ *   По умолчанию используется внутреннее значение, если не передано.
+ */
+type GroupingOptions = {
   overdueDays?: number;
 };
 
 const DEFAULT_OVERDUE_DAYS = 4;
 
-const sortingEventsByYearMonth = (events: EventsMonthGroup[]): EventsMonthGroup[] => {
+const sortingEventsByYearMonth = (events: EventMonthGroup[]): EventMonthGroup[] => {
   const sorted = [...events].sort((e1, e2) => {
     const y1 = e1.year;
     const y2 = e2.year;
@@ -50,22 +68,27 @@ const sortingEventsByYearMonth = (events: EventsMonthGroup[]): EventsMonthGroup[
 };
 
 /**
- * Строит массив групп событий по месяцам с учётом логики просрочки и ежегодных событий.
- * - Ежегодные события, просроченные на N дней, «переносятся» на текущий или следующий год.
- * - Обычные события, не просроченные, попадают в свою фактическую дату (год/месяц/день).
+ * Строит структуру сгруппированных событий и отдельный список просроченных.
+ * Логика:
+ * - Просроченные НЕ ежегодные события не попадают в месячные группы и возвращаются в `overdue`.
+ * - Ежегодные события, просроченные на N дней, «переносятся» на текущий год;
+ *   если и в текущем году они остаются просроченными — переносятся на следующий год.
+ * - Непросроченные события попадают в свои фактические год/месяц/день.
  * - Невалидные даты пропускаются.
  * @param events Список событий
- * @param options Опции группировки (напр., количество дней просрочки)
- * @returns Отсортированный список групп по (year, month), внутри группы события отсортированы по дню
+ * @param options Опции группировки (например, количество дней просрочки)
+ * @returns Объект `{ actual, overdue }`, где `actual` — массив групп по (year, month)
+ *          с сортировкой по месяцам и дням внутри; `overdue` — плоский список просроченных не ежегодных событий
  */
-export const groupEventsByMonth = (
+const groupEventsByMonth = (
   events: Event[],
-  options?: GroupOptions
-): EventsMonthGroup[] => {
+  options?: GroupingOptions
+): EventsGrouped => {
   const overdueDays = options?.overdueDays ?? DEFAULT_OVERDUE_DAYS;
   const currentYear = new Date().getFullYear();
 
-  const eventsWithCalendar: EventWithCalendar[] = [];
+  const actualEvents: CalendarizedEvent[] = [];
+  const overdueEvents: Event[] = [];
 
   for (const event of events) {
     const parsed = parseDateSafe(event.date);
@@ -74,33 +97,37 @@ export const groupEventsByMonth = (
       continue;
     }
 
-    const originallyOverdue = isOverdue(parsed, overdueDays);
+    const isYearly = event.isYearly === true;
+    const isOriginallyOverdue = isOverdue(parsed, overdueDays);
 
-    let targetYear: number | null = null;
+    if (isOriginallyOverdue && !isYearly) {
+      overdueEvents.push(event);
 
-    if (originallyOverdue && event.isYearly) {
+      continue;
+    }
+
+    let targetYear: number;
+
+    if (isOriginallyOverdue && isYearly) {
       const eventDate = new Date(parsed);
       eventDate.setFullYear(currentYear);
-      
       targetYear = isOverdue(eventDate, overdueDays) ? currentYear + 1 : currentYear;
-    } else if (!originallyOverdue) {
+    } else {
       targetYear = getYear(parsed);
     }
 
-    if (targetYear !== null) {
-      eventsWithCalendar.push({
-        ...event,
-        year: targetYear,
-        month: getMonth(parsed),
-        day: getDay(parsed),
-      });
-    }
+    actualEvents.push({
+      ...event,
+      year: targetYear,
+      month: getMonth(parsed),
+      day: getDay(parsed),
+    });
   }
 
   const monthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
-  const groupsMap = new Map<string, EventsMonthGroup>();
+  const groupsMap = new Map<string, EventMonthGroup>();
 
-  for (const event of eventsWithCalendar) {
+  for (const event of actualEvents) {
     const { year, month } = event;
 
     const key = monthKey(year, month);
@@ -125,24 +152,29 @@ export const groupEventsByMonth = (
     g.items.sort((a, b) => a.day - b.day);
   }
 
-  const sortedEvents = sortingEventsByYearMonth(resultArr);  
+  const sortedActualEvents = sortingEventsByYearMonth(resultArr);  
 
-  return sortedEvents;
+  return {
+    actual: sortedActualEvents,
+    overdue: overdueEvents,
+  };
 };
 
 /**
- * React-хук, возвращающий мемоизированные группы событий по месяцам.
+ * Возвращает мемоизированные группы событий по месяцам.
  * Пересчитывает результат при изменении списка событий или значений опций.
  * @param events Список событий
  * @param options Опции группировки (напр., overdueDays)
- * @returns Мемоизированный массив групп событий
+ * @returns Объект `{ actual, overdue }`:
+ *          - `actual`: массив месячных групп (сортировка по году/месяцу и по дням внутри)
+ *          - `overdue`: плоский список просроченных не ежегодных событий
  */
-export const useGroupedEvents = (events: Event[], options?: GroupOptions) => {
+export const useGroupedEvents = (events: Event[], options?: GroupingOptions): EventsGrouped => {
   const { overdueDays = DEFAULT_OVERDUE_DAYS } = options ?? {};
 
   return useMemo(() => {
     if (!events || events.length === 0) {
-      return [] as EventsMonthGroup[];
+      return { actual: [], overdue: [] };
     };
 
     return groupEventsByMonth(events, { overdueDays });
