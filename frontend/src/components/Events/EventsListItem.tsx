@@ -13,7 +13,7 @@ const eventTypeIcon: Record<eventType, ElementType> = {
   [eventType.BIRTHDAY]: CrownOutlined,
 };
 
-const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ id, title, date, type, description, onEdit }) => {
+const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, date, type, description, onEdit }) => {
   const dateString = formatDateString(date);
   const Icon = eventTypeIcon[type];
 

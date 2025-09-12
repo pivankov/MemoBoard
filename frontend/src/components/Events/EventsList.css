@@ -1,3 +1,7 @@
+.events-list {
+  max-width: 768px;
+}
+
 .events-list__title {
   font-size: 18px;
   font-weight: 600;

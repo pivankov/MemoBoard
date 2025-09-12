@@ -3,6 +3,7 @@ import { Alert, Button, Spin } from 'antd';
 
 import EventsEdit, { EventsEditRef } from 'components/Events/EventsEdit';
 import EventsList from "components/Events/EventsList";
+import EventsMiniList from "components/Events/EventsMiniList";
 import Panel from "components/UI/Panel/Panel"
 import { useEvents } from 'hooks/useEvents';
 import { useGroupedEvents } from 'hooks/useGroupedEvents';
@@ -33,7 +34,9 @@ const Events: React.FC = () => {
   const initialEventEditValues  = editingEvent ? buildEventFormInitialValues(editingEvent) : undefined;
   const panelTitle = editingEvent ? "Редактировать событие" : "Добавить событие";
   const groupedEvents = useGroupedEvents(events);
-  const totalOverdueEvents = groupedEvents.overdue.length;
+  const hasPastEvents = groupedEvents.past.length > 0;
+  const hasOverdueEvents = groupedEvents.overdue.length > 0;
+  const isCardShown = hasPastEvents || hasOverdueEvents;
   
   const handleClickAddEvent = () => {
     setEditingEvent(null);
@@ -85,12 +88,6 @@ const Events: React.FC = () => {
                 <h1>События</h1>
                 <p>
                   Список предстоящих праздников, дней рождения и памятных дат.
-                  {totalOverdueEvents > 0 && (
-                    <>
-                      <br />
-                      У вас есть просроченные события, в количестве <a href="#overdue-events">{totalOverdueEvents}</a>.
-                    </>
-                  )}
                 </p>
               </div>
               {!isPanelOpened && (
@@ -121,9 +118,36 @@ const Events: React.FC = () => {
                 <Spin size="large" />
               </div>
             ) : (
-              <EventsList data={groupedEvents} onEdit={handleEditEvent} />
+              <div className="events__container">
+                <div className="events__main">
+                  <EventsList data={groupedEvents.actual} onEdit={handleEditEvent} />
+                </div>
+                {!isPanelOpened && (
+                  <div className="events__side">
+                    {isCardShown && (
+                      <div className="events__card">
+                        {hasPastEvents && (
+                          <div className="events__card-item">
+                            <div className="events__card-item-title">Недавние события</div>
+
+                            <EventsMiniList data={groupedEvents.past} onEdit={handleEditEvent} />
+                          </div>
+                        )}
+
+                        {hasOverdueEvents && (
+                          <div className="events__card-item">
+                            <div className="events__card-item-title">Просроченные события</div>
+
+                            <EventsMiniList data={groupedEvents.overdue} onEdit={handleEditEvent} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
-          </div>      
+          </div>
         </div>
       </div>
 

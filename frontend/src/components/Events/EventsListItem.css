@@ -2,7 +2,6 @@
   position: relative;
   display: flex;
   padding: 28px 0;
-  max-width: 768px;
 }
 
 .events-list-item::before {

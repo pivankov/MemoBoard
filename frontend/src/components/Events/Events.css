@@ -40,3 +40,45 @@
     color: var(--color-text-secondary);
   }
 }
+
+.events__container {
+  display: flex;
+}
+
+.events__main {
+  flex: 1;
+}
+
+.events__side {
+  width: 300px;
+  margin-top: 28px;
+}
+
+.events__card {
+  padding: 12px;
+  border-radius: 12px;
+  background-color: rgba(148, 163, 184, 0.12);
+  border-color: #E2E8F0;
+  border-radius: 12px;
+}
+
+.events__card-item {
+  margin-bottom: 12px;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #FFF;
+  --tw-shadow: 0 1px 3px 0 rgb(0 0 0 / .1), 0 1px 2px -1px rgb(0 0 0 / .1);
+  --tw-ring-offset-shadow: 0 0 #0000;
+  --tw-ring-shadow: 0 0 #0000;
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000),var(--tw-ring-shadow, 0 0 #0000),var(--tw-shadow)!important  
+}
+
+.events__card-item:last-child {
+  margin-bottom: 0;
+}
+
+.events__card-item-title {
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 500;
+}

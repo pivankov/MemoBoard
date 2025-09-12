@@ -1,11 +1,13 @@
 :root {
   --spacer: 4px;
+  --text-color: #1e293b;
   --background-color: #E2E8F0;
   --border-color: #E2E8F0;
   --color-text-secondary: #64748B;
   --theme-text-color: #4F46E5;
 
-  /* --rs-btn-subtle-hover-text: #FFF; */
+  --link-color: #1677FF;
+  --link-color-hovered: #69B1FF;
 }
 
 html,
@@ -26,7 +28,7 @@ body {
   margin: 0;
   font-size: 14px;
   font-family: 'Inter';
-  color: #1e293b;
+  color: var(--text-color);
   background-color: var(--background-color);
 }
 
@@ -54,10 +56,10 @@ h3 {
 }
 
 a {
-  color: #1677FF;
+  color: var(--link-color);
 
   &:hover {
-    color: #69B1FF;
+    color: var(--link-color-hovered);
   }
 
   text-decoration: none;
