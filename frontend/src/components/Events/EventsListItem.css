@@ -53,3 +53,8 @@
   background-color: #E2E8F0;
   border-radius: 8px;
 }
+
+.events-list-item--birthday .events-list-item__icon {
+  color: #d48806;
+  background: #ffe58f;
+}

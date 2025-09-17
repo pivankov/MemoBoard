@@ -54,7 +54,6 @@ const toExternalValues = (values: EventsEditFormValuesInternal): EventFormValues
     date: date ? date.format('YYYY-MM-DD') : "",
     type: values.type || DEFAULT_EVENT_TYPE,
     isYearly: values.isYearly ?? false,
-    tags: values.tags || [],
     description: values.description || "",
   };
 };
@@ -74,7 +73,6 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
       date: dateValue,
       type: iv.type || DEFAULT_EVENT_TYPE,
       isYearly: isEditing ? (iv.isYearly ?? false) : true,
-      tags: iv.tags,
       description: iv.description,
     };
   }, [initialValues]);
@@ -142,21 +140,6 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
           <Form.Item name="isYearly" valuePropName="checked">
             <Checkbox>Ежегодное событие</Checkbox>
           </Form.Item>
-
-          <div className="events-edit__form-item">
-            <label className="events-edit__form-item-label" htmlFor="tags">Теги</label>
-            <Form.Item name="tags"> 
-              <Select
-                id="tags"
-                mode="tags"
-                style={{ width: '100%' }}
-                placeholder="Tags Mode"
-                options={options}
-                maxTagCount='responsive'
-                allowClear
-              />
-            </Form.Item>
-          </div>
 
           <div className="events-edit__form-item">
             <label className="events-edit__form-item-label" htmlFor="description">Описание</label>

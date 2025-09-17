@@ -1,5 +1,4 @@
-import { type ElementType } from "react";
-import { CoffeeOutlined,CrownOutlined, EditOutlined, StarFilled } from "@ant-design/icons";
+import {CrownFilled, EditOutlined, StarFilled, SunFilled} from "@ant-design/icons";
 
 import { eventType } from "enums/events"
 import { Event } from 'types/events';
@@ -7,20 +6,31 @@ import { formatDateString } from "utils/date";
 
 import "./EventsListItem.css";
 
-const eventTypeIcon: Record<eventType, ElementType> = {
-  [eventType.OTHER]: CoffeeOutlined,
-  [eventType.HOLIDAY]: StarFilled,
-  [eventType.BIRTHDAY]: CrownOutlined,
-};
+const eventTypesObj = {
+  [eventType.BIRTHDAY]: {
+    icon: CrownFilled,
+    title: "День рождения",
+  },
+  [eventType.HOLIDAY]: {
+    icon: StarFilled,
+    title: "Праздник",
+  },
+  [eventType.OTHER]: {
+    icon: SunFilled,
+    title: "Другое событие"
+  },
+}
 
 const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, date, type, description, onEdit }) => {
   const dateString = formatDateString(date);
-  const Icon = eventTypeIcon[type];
+  const Icon = eventTypesObj[type].icon;
+  const evetnTypeTitle = eventTypesObj[type].title;
+  const cls = `events-list-item events-list-item--${type}`
 
   return (
-    <li className="events-list-item">
-      <div className="events-list-item__icon">
-      <Icon />
+    <li className={cls}>
+      <div className="events-list-item__icon" title={evetnTypeTitle}>
+        <Icon />
       </div>
       <div className="events-list-item__wrapper">
         <div className="events-list-item__title">

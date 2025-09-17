@@ -15,7 +15,3 @@
   border-top: 1px solid var(--border-color);
   background-color: #f8fafc;
 }
-
-.events-edit__form-item-tags {
-  width: 100%;
-}

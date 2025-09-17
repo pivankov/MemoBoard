@@ -19,7 +19,6 @@ const buildEventFormInitialValues = (event: Event) => {
     date,
     type,
     isYearly,
-    tags: [],
     description,
   }
 }; 
