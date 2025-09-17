@@ -1,5 +1,5 @@
-import { useRef,useState } from 'react';
-import { Alert, Button, Spin } from 'antd';
+import { useEffect,useRef,useState } from 'react';
+import { Button, Spin } from 'antd';
 
 import EventsEdit, { EventsEditRef } from 'components/Events/EventsEdit';
 import EventsList from "components/Events/EventsList";
@@ -8,6 +8,8 @@ import Panel from "components/UI/Panel/Panel"
 import { useEvents } from 'hooks/useEvents';
 import { useGroupedEvents } from 'hooks/useGroupedEvents';
 import { Event } from 'types/events';
+
+import { useNotifications } from 'providers/NotificationsProvider';
 
 import "./Events.css";
 
@@ -24,11 +26,18 @@ const buildEventFormInitialValues = (event: Event) => {
 }; 
 
 const Events: React.FC = () => {
+  const { notifyError } = useNotifications();
   const [isPanelOpened, setIsPanelOpened] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const eventsEditRef = useRef<EventsEditRef>(null);
   
   const { events, loading, error, addEvent, updateEvent, deleteEvent } = useEvents();  
+
+  useEffect(() => {
+    if (error) {
+      notifyError({ description: error });
+    }
+  }, [error, notifyError]);
 
   const initialEventEditValues  = editingEvent ? buildEventFormInitialValues(editingEvent) : undefined;
   const panelTitle = editingEvent ? "Редактировать событие" : "Добавить событие";
@@ -100,17 +109,6 @@ const Events: React.FC = () => {
                 </Button>
               ) }
             </div>
-
-            {error && (
-              <Alert
-                message="Ошибка"
-                description={error}
-                type="error"
-                showIcon
-                closable
-                style={{ marginBottom: 16 }}
-              />
-            )}
 
             {loading ? (
               <div style={{ textAlign: 'center', padding: '50px 0' }}>

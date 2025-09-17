@@ -5,6 +5,8 @@ import BookmarksPage from "pages/BookmarksPage";
 import EventsPage from "pages/EventsPage";
 import HomePage from "pages/HomePage";
 
+import { NotificationsProvider } from 'providers/NotificationsProvider';
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -33,7 +35,11 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <NotificationsProvider>
+      <RouterProvider router={router} />
+    </NotificationsProvider>
+  );
 }
 
 export default App;
