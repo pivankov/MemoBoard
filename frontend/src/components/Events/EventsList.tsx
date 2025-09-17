@@ -1,11 +1,10 @@
 import { type EventMonthGroup } from "hooks/useGroupedEvents";
-import { Event } from 'types/events';
 
 import EventsListItem from "./EventsListItem";
 
 import "./EventsList.css";
 
-const EventsList: React.FC<{data: EventMonthGroup[], onEdit?: (event: Event) => void}> = ({ data, onEdit }) => {
+const EventsList: React.FC<{data: EventMonthGroup[], onEdit?: (id: string) => void}> = ({ data, onEdit }) => {
   return (
     <>
       {data.map((group) => (
@@ -23,7 +22,7 @@ const EventsList: React.FC<{data: EventMonthGroup[], onEdit?: (event: Event) => 
                 type={item.type}
                 isYearly={item.isYearly}
                 description={item.description}
-                onEdit={onEdit ? () => onEdit(item) : undefined}
+                onEdit={onEdit ? () => onEdit(item.id) : undefined}
               />
             ))}
           </ul>             

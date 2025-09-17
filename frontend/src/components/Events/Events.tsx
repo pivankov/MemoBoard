@@ -31,7 +31,7 @@ const Events: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const eventsEditRef = useRef<EventsEditRef>(null);
   
-  const { events, loading, error, addEvent, updateEvent, deleteEvent } = useEvents();  
+  const { events, loading, error, addEvent, updateEvent, deleteEvent, getEventById } = useEvents();  
 
   useEffect(() => {
     if (error) {
@@ -51,9 +51,13 @@ const Events: React.FC = () => {
     setIsPanelOpened(true);
   }
 
-  const handleEditEvent = (event: Event) => {
-    setEditingEvent(event);
-    setIsPanelOpened(true);
+  const handleEditEvent = async (id: string) => {
+    const resp = await getEventById(id);
+
+    if (resp) {
+      setEditingEvent(resp);
+      setIsPanelOpened(true);
+    }
   }
   
   const handleClosePanel = () => {

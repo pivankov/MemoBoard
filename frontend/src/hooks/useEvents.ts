@@ -10,6 +10,7 @@ interface UseEventsReturn {
   updateEvent: (id: string, event: EventFormValues) => Promise<boolean>;
   deleteEvent: (id: string) => Promise<boolean>;
   refreshEvents: () => Promise<void>;
+  getEventById: (id: string) => Promise<Event | null>;
 }
 
 const API_BASE_URL = 'http://localhost:4000/api/events';
@@ -150,6 +151,31 @@ export const useEvents = (): UseEventsReturn => {
     await fetchEvents();
   }, [fetchEvents]);
 
+  const getEventById = useCallback(async (id: string): Promise<Event | null> => {
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/${id}`);
+
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки события: ${response.status} ${response.statusText}`);
+      }
+
+      const payload = await response.json();
+      const event: Event | null = payload?.data ?? null;
+      if (!event) {
+        throw new Error('Некорректный ответ сервера при загрузке события');
+      }
+
+      return event;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке события';
+      setError(errorMessage);
+      console.error('Ошибка загрузки события:', err);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
@@ -162,5 +188,6 @@ export const useEvents = (): UseEventsReturn => {
     updateEvent,
     deleteEvent,
     refreshEvents,
+    getEventById,
   };
 };

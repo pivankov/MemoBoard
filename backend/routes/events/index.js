@@ -14,59 +14,16 @@ router.get('/', async (req, res) => {
       SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, t.slug as type
       FROM events e
       JOIN event_types t ON t.id = e.type_id
-    `);        
-    // const eventsQuery = db.prepare(`
-    //   SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, t.slug as type
-    //   FROM events e
-    //   JOIN event_types t ON t.id = e.type_id
-    //   ORDER BY
-    //     CASE WHEN julianday(e.start_at) >= julianday(datetime('now','-3 days')) THEN 0 ELSE 1 END,
-    //     e.start_at ASC
-    // `);    
-    
-    // const eventsQuery = db.prepare(`
-    //   WITH pivot AS (
-    //     SELECT date('now', '-3 days') AS p
-    //   ),
-    //   events_with AS (
-    //     SELECT
-    //       e.uid,
-    //       e.title,
-    //       e.start_at,
-    //       e.description,
-    //       e.is_yearly,
-    //       t.slug AS type,
-    //       CASE
-    //         WHEN e.is_yearly = 1 THEN
-    //           CASE
-    //             WHEN date(strftime('%Y', p.p) || '-' || strftime('%m', e.start_at) || '-' || strftime('%d', e.start_at)) < p.p
-    //               THEN date(strftime('%Y', p.p) || '-' || strftime('%m', e.start_at) || '-' || strftime('%d', e.start_at), '+1 year')
-    //             ELSE
-    //               date(strftime('%Y', p.p) || '-' || strftime('%m', e.start_at) || '-' || strftime('%d', e.start_at))
-    //           END
-    //         ELSE
-    //           date(e.start_at)
-    //       END AS next_at
-    //     FROM events e
-    //     JOIN event_types t ON t.id = e.type_id
-    //     CROSS JOIN pivot p
-    //   )
-    //   SELECT
-    //     uid, title, start_at, description, is_yearly, type
-    //   FROM events_with
-    //   WHERE is_yearly = 1
-    //      OR next_at >= (SELECT p FROM pivot)
-    //   ORDER BY next_at ASC
-    // `);
+    `);
     const rows = eventsQuery.all();
 
     const data = rows.map((row) => ({
-      date: String(row.start_at ?? ''),
-      isYearly: Boolean(Number(row.is_yearly ?? 0)),
-      title: String(row.title ?? ''),
       id: String(row.uid),
+      title: String(row.title ?? ''),
+      date: String(row.start_at ?? ''),
       type: String(row.type ?? ''),
-      description: row.description ? String(row.description) : '',
+      description: row.description ? String(row.description) : '',      
+      isYearly: Boolean(Number(row.is_yearly ?? 0)),
     }));
 
     res.status(200).json({ data });
@@ -74,6 +31,45 @@ router.get('/', async (req, res) => {
     console.error('Ошибка получения событий:', error);
 
     res.status(500).json({ error: 'Не удалось получить список событий' });
+  }
+});
+
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор события' });
+    }
+
+    const eventQuery = db.prepare(`
+      SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, t.slug as type
+      FROM events e
+      JOIN event_types t ON t.id = e.type_id
+      WHERE e.uid = ?
+      LIMIT 1
+    `);
+
+    const row = eventQuery.get(id);
+
+    if (!row) {
+      return res.status(404).json({ error: 'Событие не найдено' });
+    }
+
+    const data = {
+      id: String(row.uid),
+      title: String(row.title ?? ''),
+      date: String(row.start_at ?? ''),
+      type: String(row.type ?? ''),
+      description: row.description ? String(row.description) : '',
+      isYearly: Boolean(Number(row.is_yearly ?? 0)),
+    };
+
+    return res.status(200).json({ data });
+  } catch (error) {
+    console.error(`Ошибка получения события ${id}:`, error);
+
+    return res.status(500).json({ error: 'Не удалось получить событие' });
   }
 });
 
@@ -140,6 +136,7 @@ router.post('/', async (req, res) => {
     return res.status(201).json({ data: result });
   } catch (error) {
     console.error('Ошибка создания события:', error);
+
     return res.status(500).json({ error: 'Не удалось создать событие' });
   }
 });
@@ -217,6 +214,7 @@ router.put('/:id', async (req, res) => {
     return res.status(200).json({ data: result });
   } catch (error) {
     console.error(`Ошибка обновления события ${id}:`, error);
+
     return res.status(500).json({ error: 'Не удалось обновить событие' });
   }
 });
@@ -239,6 +237,7 @@ router.delete('/:id', async (req, res) => {
     return res.status(204).send();
   } catch (error) {
     console.error(`Ошибка удаления события ${id}:`, error);
+
     return res.status(500).json({ error: 'Не удалось удалить событие' });
   }
 });
