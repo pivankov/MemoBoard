@@ -29,8 +29,8 @@
   text-decoration: none;
   color: #1e293b;
   
-
   &:hover {
+    color: #1e293b;
     background-color: rgba(148, 163, 184, 0.12);
   }
 }   

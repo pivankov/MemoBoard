@@ -174,6 +174,7 @@ const groupEventsByMonth = (
       const eventDate = new Date(parsed);
       eventDate.setFullYear(currentYear);
       const isYearlyOverdue = diffInCalendarDays(eventDate, today) >= overdueDays;
+
       targetYear = isYearlyOverdue ? currentYear + 1 : currentYear;
     } else {
       targetYear = getYear(parsed);
