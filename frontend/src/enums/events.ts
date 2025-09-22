@@ -14,4 +14,8 @@ export enum eventType {
    * День рождения
    */    
   BIRTHDAY = "birthday",
+  /**
+   * Церковный праздник
+   */    
+  CHURCH = "church",
 }

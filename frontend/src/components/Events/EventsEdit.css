@@ -8,6 +8,10 @@
   font-weight: 500;
 }
 
+.events-edit__form-item-group {
+  display: flex;
+}
+
 .events-edit__form-buttons {
   display: flex;
   padding: 16px 48px;

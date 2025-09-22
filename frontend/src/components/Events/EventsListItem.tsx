@@ -1,5 +1,5 @@
 import { Badge, Space } from 'antd';
-import {CrownFilled, EditOutlined, StarFilled, SunFilled } from "@ant-design/icons";
+import { CoffeeOutlined, CrownFilled, EditOutlined, StarFilled, SunFilled } from "@ant-design/icons";
 
 import { eventType } from "enums/events"
 import { Event } from 'types/events';
@@ -16,8 +16,12 @@ const eventTypesObj = {
     icon: StarFilled,
     title: "Праздник",
   },
-  [eventType.OTHER]: {
+  [eventType.CHURCH]: {
     icon: SunFilled,
+    title: "Церковный праздник",
+  },
+  [eventType.OTHER]: {
+    icon: CoffeeOutlined,
     title: "Другое событие"
   },
 }

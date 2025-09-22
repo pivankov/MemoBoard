@@ -34,28 +34,6 @@ const DUMMY_EVENTS_OLD = [
   { start_at: '2025-12-21T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 't6q8i', type: 'other', user_id: 1, title: 'День зимнего солнцестояния', description: 'Астрономическое явление, когда Солнце находится на самом большом угловом расстоянии от небесного экватора. Самый короткий день в году.' },
 ];
 
-// const DUMMY_EVENTS_TMP = [
-//   { start_at: '2024-05-02', is_yearly: 1, is_monthly: 0, uid: 'h3j6q', type: 'holiday', user_id: 1, title: '1-1+', description: '' },
-//   { start_at: '2024-05-13', is_yearly: 1, is_monthly: 0, uid: 'f1v7y', type: 'holiday', user_id: 1, title: '1-2+', description: '' },
-//   { start_at: '2024-06-02', is_yearly: 1, is_monthly: 0, uid: 'b8n2z', type: 'holiday', user_id: 1, title: '2-1+', description: '' },
-//   { start_at: '2024-06-13', is_yearly: 1, is_monthly: 0, uid: 'e4c9m', type: 'holiday', user_id: 1, title: '2-2+', description: '' },
-//   { start_at: '2025-07-13', is_yearly: 0, is_monthly: 0, uid: 'a6d3k', type: 'holiday', user_id: 1, title: '3-1', description: '' },
-//   { start_at: '2025-07-14', is_yearly: 0, is_monthly: 0, uid: 't6q8i', type: 'holiday', user_id: 1, title: '3-2', description: '' },
-//   { start_at: '2025-07-15', is_yearly: 0, is_monthly: 0, uid: 'n4w1e', type: 'holiday', user_id: 1, title: '3-3', description: '' },
-//   { start_at: '2025-09-08', is_yearly: 1, is_monthly: 0, uid: 'h3j6q31312312', type: 'holiday', user_id: 1, title: '4-1+', description: '' },
-//   { start_at: '2025-09-09', is_yearly: 0, is_monthly: 0, uid: 'h3j6q313123', type: 'holiday', user_id: 1, title: '4-2', description: '' },
-//   { start_at: '2025-09-10', is_yearly: 0, is_monthly: 0, uid: 'h3j6q31', type: 'holiday', user_id: 1, title: '4-3', description: '' },
-//   { start_at: '2024-09-11', is_yearly: 1, is_monthly: 0, uid: 'h3j6q310', type: 'holiday', user_id: 1, title: '4-4+', description: '' },
-//   { start_at: '2024-09-11', is_yearly: 0, is_monthly: 0, uid: 'h3j6q3101', type: 'holiday', user_id: 1, title: '4-5', description: '' },
-//   { start_at: '2025-09-12', is_yearly: 1, is_monthly: 0, uid: 'h3j6q3', type: 'holiday', user_id: 1, title: '4-6+', description: '' },
-//   { start_at: '2025-09-12', is_yearly: 0, is_monthly: 0, uid: 'h3j6q313', type: 'holiday', user_id: 1, title: '4-7', description: '' },
-//   { start_at: '2024-09-13', is_yearly: 1, is_monthly: 0, uid: 'h3j6q312', type: 'holiday', user_id: 1, title: '4-8+', description: '' },
-//   { start_at: '2025-10-02', is_yearly: 0, is_monthly: 0, uid: 'h3j6q4', type: 'holiday', user_id: 1, title: '5-1', description: '' },
-//   { start_at: '2025-10-13', is_yearly: 0, is_monthly: 0, uid: 'h3j6q5', type: 'holiday', user_id: 1, title: '5-2', description: '' },
-//   { start_at: '2026-02-02', is_yearly: 0, is_monthly: 0, uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '6-1', description: '' },
-//   { start_at: '2026-05-03', is_yearly: 0, is_monthly: 0, uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '7-1', description: '' },
-//   { start_at: '2026-09-07', is_yearly: 1, is_monthly: 0, uid: 'h3j6q38', type: 'holiday', user_id: 1, title: '8-1+', description: '' },
-// ];
 const DUMMY_EVENTS = [
   { start_at: '2024-05-02', is_yearly: 1, is_monthly: 0, uid: 'h3j6q', type: 'holiday', user_id: 1, title: '1-1+', description: '' },
   { start_at: '2024-05-13', is_yearly: 1, is_monthly: 0, uid: 'f1v7y', type: 'holiday', user_id: 1, title: '1-2+', description: '' },
@@ -239,6 +217,7 @@ async function initDb(options = {}) {
         insertEventType.run({ title: 'Другое', slug: 'other' });
         insertEventType.run({ title: 'Праздник', slug: 'holiday' });
         insertEventType.run({ title: 'День рождения', slug: 'birthday' });
+        insertEventType.run({ title: 'Церковный праздник', slug: 'church' });
       });
 
       seedEventTypes();

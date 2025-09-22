@@ -1,23 +1,15 @@
 import { useEffect,useImperativeHandle, useMemo, useRef } from "react";
-import { Button, Checkbox,DatePicker, Form, Input, Popconfirm, Radio, Select } from 'antd';
+import { Button, Checkbox, DatePicker, Form, Input, Popconfirm, Radio,Select } from 'antd';
 
 import { eventType } from "enums/events"
 import { EventFormValues, EventsEditFormValuesInternal } from 'types/events';
 
-import type { SelectProps } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 
 import "./EventsEdit.css";
 
 const { TextArea } = Input;
-
-const options: SelectProps['options'] = ['Eugenia', 'Bryan', 'Linda', 'Nancy', 'Lloyd', 'Alice', 'Julia', 'Albert'].map(
-  item => ({
-    label: item,
-    value: item.toLowerCase(),
-  })
-);
 
 interface EventsEditProps {
   initialValues?: Partial<EventFormValues>;
@@ -36,10 +28,11 @@ const DEFAULT_EVENT_TYPE = eventType.HOLIDAY;
 const eventTypeLabel: Record<eventType, string> = {
   [eventType.HOLIDAY]: "Праздник",
   [eventType.BIRTHDAY]: "День рождения",
+  [eventType.CHURCH]: "Церковный праздник",
   [eventType.OTHER]: "Другое",
 };
 
-const eventTypeOrder: eventType[] = [eventType.HOLIDAY, eventType.BIRTHDAY, eventType.OTHER];
+const eventTypeOrder: eventType[] = [eventType.HOLIDAY, eventType.BIRTHDAY, eventType.CHURCH, eventType.OTHER];
 
 const eventTypesOptions = eventTypeOrder.map((value) => ({
   value,
@@ -73,8 +66,8 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
       title: iv.title,
       date: dateValue,
       type: iv.type || DEFAULT_EVENT_TYPE,
-      isYearly: isEditing ? (iv.isYearly ?? false) : true,
-      isMonthly: isEditing ? (iv.isMonthly ?? false) : true,
+      isYearly: isEditing ? (iv.isYearly ?? false) : false,
+      isMonthly: isEditing ? (iv.isMonthly ?? false) : false,
       description: iv.description,
     };
   }, [initialValues]);
@@ -116,7 +109,7 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
         >
           <div className="events-edit__form-item">
             <label className="events-edit__form-item-label" htmlFor="title">Название события</label>
-            <Form.Item name="title"> 
+            <Form.Item name="title">
               <Input id="title" placeholder="Пожалуйста введите название события" />
             </Form.Item>
           </div>
@@ -130,22 +123,23 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
 
           <div className="events-edit__form-item">
             <label className="events-edit__form-item-label" htmlFor="type">Тип события</label>
-            <Form.Item name="type"> 
-              <Radio.Group
-                id="type"
-                name="radiogroup"
-                options={eventTypesOptions}
-              />
+            <Form.Item name="type">
+              <Select options={eventTypesOptions}/>
             </Form.Item>
+          </div>    
+
+          <div className="events-edit__form-item">
+            <label className="events-edit__form-item-label">Повторяемость события</label>
+            <div className="events-edit__form-item-group">
+              <Form.Item name="isYearly" valuePropName="checked" className="mb-0 mr-2">
+                <Checkbox>Ежегодное</Checkbox>
+              </Form.Item>
+
+              <Form.Item name="isMonthly" valuePropName="checked" className="mb-0">
+                <Checkbox>Ежемесячное</Checkbox>
+              </Form.Item>
+            </div>
           </div>
-
-          <Form.Item name="isYearly" valuePropName="checked">
-            <Checkbox>Ежегодное событие</Checkbox>
-          </Form.Item>
-
-          <Form.Item name="isMonthly" valuePropName="checked">
-            <Checkbox>Ежемесячное событие</Checkbox>
-          </Form.Item>          
 
           <div className="events-edit__form-item">
             <label className="events-edit__form-item-label" htmlFor="description">Описание</label>
