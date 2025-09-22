@@ -54,6 +54,7 @@ const toExternalValues = (values: EventsEditFormValuesInternal): EventFormValues
     date: date ? date.format('YYYY-MM-DD') : "",
     type: values.type || DEFAULT_EVENT_TYPE,
     isYearly: values.isYearly ?? false,
+    isMonthly: values.isMonthly ?? false,
     description: values.description || "",
   };
 };
@@ -73,6 +74,7 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
       date: dateValue,
       type: iv.type || DEFAULT_EVENT_TYPE,
       isYearly: isEditing ? (iv.isYearly ?? false) : true,
+      isMonthly: isEditing ? (iv.isMonthly ?? false) : true,
       description: iv.description,
     };
   }, [initialValues]);

@@ -21,6 +21,7 @@ const EventsList: React.FC<{data: EventMonthGroup[], onEdit?: (id: string) => vo
                 date={item.date}
                 type={item.type}
                 isYearly={item.isYearly}
+                isMonthly={item.isMonthly}
                 description={item.description}
                 onEdit={onEdit ? () => onEdit(item.id) : undefined}
               />

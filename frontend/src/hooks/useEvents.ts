@@ -59,6 +59,7 @@ export const useEvents = (): UseEventsReturn => {
           date: eventData.date,
           type: eventData.type,
           isYearly: eventData.isYearly,
+          isMonthly: eventData.isMonthly,
           description: eventData.description,
         }),
       });
@@ -99,6 +100,7 @@ export const useEvents = (): UseEventsReturn => {
           date: eventData.date,
           type: eventData.type,
           isYearly: eventData.isYearly,
+          isMonthly: eventData.isMonthly,
           description: eventData.description,
         }),
       });

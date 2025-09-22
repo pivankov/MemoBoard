@@ -11,7 +11,7 @@ router.use('/tags', tagsRouter);
 router.get('/', async (req, res) => {
   try {
     const eventsQuery = db.prepare(`
-      SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, t.slug as type
+      SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, is_monthly, t.slug as type
       FROM events e
       JOIN event_types t ON t.id = e.type_id
     `);
@@ -24,6 +24,7 @@ router.get('/', async (req, res) => {
       type: String(row.type ?? ''),
       description: row.description ? String(row.description) : '',      
       isYearly: Boolean(Number(row.is_yearly ?? 0)),
+      isMonthly: Boolean(Number(row.is_monthly ?? 0)),
     }));
 
     res.status(200).json({ data });
@@ -43,7 +44,7 @@ router.get('/:id', async (req, res) => {
     }
 
     const eventQuery = db.prepare(`
-      SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, t.slug as type
+      SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, is_monthly, t.slug as type
       FROM events e
       JOIN event_types t ON t.id = e.type_id
       WHERE e.uid = ?
@@ -63,6 +64,7 @@ router.get('/:id', async (req, res) => {
       type: String(row.type ?? ''),
       description: row.description ? String(row.description) : '',
       isYearly: Boolean(Number(row.is_yearly ?? 0)),
+      isMonthly: Boolean(Number(row.is_monthly ?? 0)),
     };
 
     return res.status(200).json({ data });
@@ -75,7 +77,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { title, date, type, isYearly, description } = req.body ?? {};
+    const { title, date, type, isYearly, isMonthly, description } = req.body ?? {};
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный заголовок события' });
@@ -101,8 +103,8 @@ router.post('/', async (req, res) => {
     }
 
     const insertQuery = db.prepare(`
-      INSERT INTO events (uid, user_id, title, type_id, start_at, description, is_yearly)
-      VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @is_yearly)
+      INSERT INTO events (uid, user_id, title, type_id, start_at, description, is_yearly, is_monthly)
+      VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @is_yearly, @is_monthly)
     `);
 
     const userRow = db.prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
@@ -120,6 +122,7 @@ router.post('/', async (req, res) => {
       start_at: String(normalizedDate),
       description: description ? String(description) : null,
       is_yearly: isYearly ? 1 : 0,
+      is_monthly: isMonthly ? 1 : 0,
     };
 
     insertQuery.run(payload);
@@ -131,6 +134,7 @@ router.post('/', async (req, res) => {
       type: String(type),
       description: description ? String(description) : '',
       isYearly: Boolean(isYearly),
+      isMonthly: Boolean(isMonthly),
     };
 
     return res.status(201).json({ data: result });
@@ -149,7 +153,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный идентификатор события' });
     }
 
-    const { title, date, type, isYearly, description } = req.body ?? {};
+    const { title, date, type, isYearly, isMonthly, description } = req.body ?? {};
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный заголовок события' });
@@ -184,7 +188,8 @@ router.put('/:id', async (req, res) => {
           type_id = @type_id,
           start_at = @start_at,
           description = @description,
-          is_yearly = @is_yearly
+          is_yearly = @is_yearly,
+          is_monthly = @is_monthly,
       WHERE uid = @uid
     `);
 
@@ -195,6 +200,7 @@ router.put('/:id', async (req, res) => {
       start_at: String(normalizedDate),
       description: description ? String(description) : null,
       is_yearly: isYearly ? 1 : 0,
+      is_monthly: isMonthly ? 1 : 0,
     };
 
     const resultUpdate = updateQuery.run(payload);
@@ -209,6 +215,7 @@ router.put('/:id', async (req, res) => {
       type: String(type),
       description: description ? String(description) : '',
       isYearly: Boolean(isYearly),
+      isMonthly: Boolean(isMonthly),
     };
 
     return res.status(200).json({ data: result });

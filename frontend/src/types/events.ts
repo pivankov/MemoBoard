@@ -8,6 +8,7 @@ export type Event = {
   date: string;
   type: EventType;
   isYearly: boolean;
+  isMonthly: boolean;
   description: string;
 };
 
@@ -16,6 +17,7 @@ export type EventFormValues = {
   date: string;
   type: EventType;
   isYearly: boolean;
+  isMonthly: boolean;
   description: string;
 };
 
@@ -24,5 +26,6 @@ export type EventsEditFormValuesInternal = {
   date?: import('dayjs').Dayjs;
   type?: EventType;
   isYearly?: boolean;
+  isMonthly?: boolean;
   description?: string;
 };
