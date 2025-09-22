@@ -189,7 +189,7 @@ router.put('/:id', async (req, res) => {
           start_at = @start_at,
           description = @description,
           is_yearly = @is_yearly,
-          is_monthly = @is_monthly,
+          is_monthly = @is_monthly
       WHERE uid = @uid
     `);
 

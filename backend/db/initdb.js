@@ -63,7 +63,7 @@ const DUMMY_EVENTS = [
   { start_at: '2024-06-13', is_yearly: 1, is_monthly: 0, uid: 'e4c9m', type: 'holiday', user_id: 1, title: '2-2+', description: '' },
   { start_at: '2025-07-13', is_yearly: 0, is_monthly: 0, uid: 'a6d3k', type: 'holiday', user_id: 1, title: '3-1', description: '' },
   { start_at: '2025-07-14', is_yearly: 0, is_monthly: 0, uid: 't6q8i', type: 'holiday', user_id: 1, title: '3-2', description: '' },
-  { start_at: '2025-07-15', is_yearly: 0, is_monthly: 0, uid: 'n4w1e', type: 'holiday', user_id: 1, title: '3-3', description: '' },
+  { start_at: '2025-07-13', is_yearly: 0, is_monthly: 1, uid: 'n4w1e', type: 'holiday', user_id: 1, title: '3-3+++++', description: '' },
 
   { start_at: '2024-09-20', is_yearly: 1, is_monthly: 0, uid: 'h3j6q313123121', type: 'holiday', user_id: 1, title: '4-0+', description: '' },
   { start_at: '2025-09-21', is_yearly: 1, is_monthly: 0, uid: 'h3j6q31312312', type: 'holiday', user_id: 1, title: '4-1+', description: '' },
@@ -80,6 +80,12 @@ const DUMMY_EVENTS = [
   { start_at: '2026-02-02', is_yearly: 0, is_monthly: 0, uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '6-1', description: '' },
   { start_at: '2026-05-03', is_yearly: 0, is_monthly: 0, uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '7-1', description: '' },
   { start_at: '2026-09-07', is_yearly: 1, is_monthly: 0, uid: 'h3j6q38', type: 'holiday', user_id: 1, title: '8-1+', description: '' },
+
+
+  { start_at: '2025-12-22', is_yearly: 0, is_monthly: 0, uid: 'h3j6q383231', type: 'holiday', user_id: 1, title: '9-1', description: '' },
+  { start_at: '2025-12-23', is_yearly: 1, is_monthly: 0, uid: 'h3j6q383232', type: 'holiday', user_id: 1, title: '9-2', description: '' },
+  { start_at: '2024-12-20', is_yearly: 1, is_monthly: 1, uid: 'h3j6q38323', type: 'holiday', user_id: 1, title: '9-3+++++', description: '' },
+  { start_at: '2025-12-21', is_yearly: 0, is_monthly: 1, uid: 'h3j6q383235', type: 'holiday', user_id: 1, title: '9-4+++++', description: '' },
 ];
 
 // for (let i = 0; i < Math.min(DUMMY_EVENTS.length, DUMMY_EVENTS_OLD.length); i++) {

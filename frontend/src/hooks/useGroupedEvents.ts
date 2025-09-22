@@ -49,16 +49,25 @@ type GroupingOptions = {
 const DEFAULT_OVERDUE_DAYS = 1;
 const PAST_WINDOW_FROM_DAYS = 1;
 const PAST_WINDOW_TO_DAYS = 7;
+const MONTHLY_FORWARD_MONTHS = 12;
 
-function normalizeDateForPast(sourceDate: Date, isYearly: boolean, currentYear: number): Date {
-  if (!isYearly) {
-    return sourceDate;
+function normalizeDateForPast(sourceDate: Date, isYearly: boolean, isMonthly: boolean, currentYear: number, currentMonthIndex: number): Date {
+  const normalized = new Date(sourceDate);
+
+  if (isMonthly) {
+    normalized.setFullYear(currentYear);
+    normalized.setMonth(currentMonthIndex);
+
+    return normalized;
   }
 
-  const normalized = new Date(sourceDate);
-  normalized.setFullYear(currentYear);
+  if (isYearly) {
+    normalized.setFullYear(currentYear);
 
-  return normalized;
+    return normalized;
+  }
+
+  return sourceDate;
 }
 
 const sortingEventsByYearMonth = (events: EventMonthGroup[]): EventMonthGroup[] => {
@@ -138,7 +147,9 @@ const groupEventsByMonth = (
 ): EventsGrouped => {
   const overdueDays = options?.overdueDays ?? DEFAULT_OVERDUE_DAYS;
   const today = new Date();
+  // const today = new Date('2025-09-22');
   const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
 
   const actualEvents: CalendarizedEvent[] = [];
   const pastEvents: Event[] = [];
@@ -152,8 +163,9 @@ const groupEventsByMonth = (
     }
 
     const isYearly = event.isYearly === true;
+    const isMonthly = event.isMonthly === true;
   
-    const pastCheckDate = normalizeDateForPast(parsed, isYearly, currentYear);
+    const pastCheckDate = normalizeDateForPast(parsed, isYearly, isMonthly, currentYear, currentMonth);
     const isPastEvent = isInPastWindow(pastCheckDate, today, PAST_WINDOW_FROM_DAYS, PAST_WINDOW_TO_DAYS);
 
     if (isPastEvent) {
@@ -162,29 +174,66 @@ const groupEventsByMonth = (
 
     const isOriginallyOverdue = diffInCalendarDays(parsed, today) >= overdueDays;
 
-    if (isOriginallyOverdue && !isYearly) {
+    if (isOriginallyOverdue && !isYearly && !isMonthly) {
       overdueEvents.push(event);
 
       continue;
     }
 
-    let targetYear: number;
+    if (isMonthly) {
+      const baseDate = new Date(parsed);
+      const baseDay = baseDate.getDate();
+
+      const startYear = currentYear;
+      const startMonthIndex = today.getMonth();
+
+      const currentMonthDate = new Date(startYear, startMonthIndex, 1);
+      const daysInCurrentMonth = new Date(startYear, startMonthIndex + 1, 0).getDate();
+      const currentMonthDay = Math.min(baseDay, daysInCurrentMonth);
+      currentMonthDate.setDate(currentMonthDay);
+
+      const isCurrentOccurrenceOverdue = diffInCalendarDays(currentMonthDate, today) >= overdueDays;
+      const occurrenceStartIndex = startMonthIndex + (isCurrentOccurrenceOverdue ? 1 : 0);
+
+      for (let k = 0; k < MONTHLY_FORWARD_MONTHS; k++) {
+        const monthIndex = (occurrenceStartIndex + k) % 12;
+        const year = startYear + Math.floor((occurrenceStartIndex + k) / 12);
+
+        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+        const day = Math.min(baseDay, daysInMonth);
+        const occurrenceDate = new Date(year, monthIndex, day);
+
+        actualEvents.push({
+          ...event,
+          year: getYear(occurrenceDate),
+          month: getMonth(occurrenceDate),
+          day: getDay(occurrenceDate),
+        });
+      }
+
+      continue;
+    }
+
+    let targetDate: Date;
 
     if (isOriginallyOverdue && isYearly) {
       const eventDate = new Date(parsed);
       eventDate.setFullYear(currentYear);
       const isYearlyOverdue = diffInCalendarDays(eventDate, today) >= overdueDays;
 
-      targetYear = isYearlyOverdue ? currentYear + 1 : currentYear;
+      if (isYearlyOverdue) {
+        eventDate.setFullYear(currentYear + 1);
+      }
+      targetDate = eventDate;
     } else {
-      targetYear = getYear(parsed);
+      targetDate = parsed;
     }
 
     actualEvents.push({
       ...event,
-      year: targetYear,
-      month: getMonth(parsed),
-      day: getDay(parsed),
+      year: getYear(targetDate),
+      month: getMonth(targetDate),
+      day: getDay(targetDate),
     });
   }
 

@@ -143,6 +143,10 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
             <Checkbox>Ежегодное событие</Checkbox>
           </Form.Item>
 
+          <Form.Item name="isMonthly" valuePropName="checked">
+            <Checkbox>Ежемесячное событие</Checkbox>
+          </Form.Item>          
+
           <div className="events-edit__form-item">
             <label className="events-edit__form-item-label" htmlFor="description">Описание</label>
             <Form.Item name="description"> 

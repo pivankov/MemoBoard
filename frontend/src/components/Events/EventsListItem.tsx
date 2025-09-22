@@ -1,4 +1,5 @@
-import {CrownFilled, EditOutlined, StarFilled, SunFilled} from "@ant-design/icons";
+import { Badge, Space } from 'antd';
+import {CrownFilled, EditOutlined, StarFilled, SunFilled } from "@ant-design/icons";
 
 import { eventType } from "enums/events"
 import { Event } from 'types/events';
@@ -21,7 +22,7 @@ const eventTypesObj = {
   },
 }
 
-const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, date, type, description, onEdit }) => {
+const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, date, type, isYearly, isMonthly, description, onEdit }) => {
   const dateString = formatDateString(date);
   const Icon = eventTypesObj[type].icon;
   const evetnTypeTitle = eventTypesObj[type].title;
@@ -38,9 +39,16 @@ const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, date
 
           <EditOutlined className="ml-1" onClick={onEdit} />
         </div>
-        <div className="date">
+        <div className="events-list-item__date">
           {dateString}
         </div>
+        {(isYearly || isMonthly) && (
+          <Space className="events-list-item__flags">
+            {isYearly && <Badge color="blue" text="Ежегодное" />}
+            {isMonthly && <Badge color="orange" text="Ежемесячное" />}
+          </Space>
+          )}     
+
         {description && (
           <div className="events-list-item__description">
             {description}

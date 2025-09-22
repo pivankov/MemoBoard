@@ -43,8 +43,16 @@
 }
 
 .events-list-item__date {
+  margin-bottom: 4px;
   color: var(--color-text-secondary);
   font-size: 13px;
+}
+
+.events-list-item__flags {
+  .ant-badge-status-text {
+    color: var(--color-text-secondary)!important;
+    font-size: 13px!important;
+  }
 }
 
 .events-list-item__description {
