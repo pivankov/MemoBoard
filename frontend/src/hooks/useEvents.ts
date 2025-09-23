@@ -58,8 +58,7 @@ export const useEvents = (): UseEventsReturn => {
           title: eventData.title,
           date: eventData.date,
           type: eventData.type,
-          isYearly: eventData.isYearly,
-          isMonthly: eventData.isMonthly,
+          recurrence: eventData.recurrence,
           description: eventData.description,
         }),
       });
@@ -99,8 +98,7 @@ export const useEvents = (): UseEventsReturn => {
           title: eventData.title,
           date: eventData.date,
           type: eventData.type,
-          isYearly: eventData.isYearly,
-          isMonthly: eventData.isMonthly,
+          recurrence: eventData.recurrence,
           description: eventData.description,
         }),
       });

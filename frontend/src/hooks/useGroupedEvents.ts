@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 
 import type { Event } from "types/events";
-import { diffInCalendarDays,getDay, getMonth, getYear, isInPastWindow, parseDateSafe, ruMonthFormatter } from "utils/date";
+import { diffInCalendarDays, getDay, getMonth, getYear, isInPastWindow, parseDateSafe, ruMonthFormatter } from "utils/date";
+import { isMonthly, isNone, isYearly } from "utils/events";
 import { capitalizeFirst } from "utils/string";
 
 /**
@@ -162,10 +163,11 @@ const groupEventsByMonth = (
       continue;
     }
 
-    const isYearly = event.isYearly === true;
-    const isMonthly = event.isMonthly === true;
+    const isYearlyRecurrence = isYearly(event);
+    const isMonthlyRecurrence = isMonthly(event);
+    const isNoneRecurrence = isNone(event);
   
-    const pastCheckDate = normalizeDateForPast(parsed, isYearly, isMonthly, currentYear, currentMonth);
+    const pastCheckDate = normalizeDateForPast(parsed, isYearlyRecurrence, isMonthlyRecurrence, currentYear, currentMonth);
     const isPastEvent = isInPastWindow(pastCheckDate, today, PAST_WINDOW_FROM_DAYS, PAST_WINDOW_TO_DAYS);
 
     if (isPastEvent) {
@@ -174,13 +176,13 @@ const groupEventsByMonth = (
 
     const isOriginallyOverdue = diffInCalendarDays(parsed, today) >= overdueDays;
 
-    if (isOriginallyOverdue && !isYearly && !isMonthly) {
+    if (isOriginallyOverdue && isNoneRecurrence) {
       overdueEvents.push(event);
 
       continue;
     }
 
-    if (isMonthly) {
+    if (isMonthlyRecurrence) {
       const baseDate = new Date(parsed);
       const baseDay = baseDate.getDate();
 
@@ -216,7 +218,7 @@ const groupEventsByMonth = (
 
     let targetDate: Date;
 
-    if (isOriginallyOverdue && isYearly) {
+    if (isOriginallyOverdue && isYearlyRecurrence) {
       const eventDate = new Date(parsed);
       eventDate.setFullYear(currentYear);
       const isYearlyOverdue = diffInCalendarDays(eventDate, today) >= overdueDays;

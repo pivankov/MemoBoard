@@ -4,6 +4,7 @@ import { CoffeeOutlined, CrownFilled, EditOutlined, StarFilled, SunFilled } from
 import { eventType } from "enums/events"
 import { Event } from 'types/events';
 import { formatDateString } from "utils/date";
+import { isMonthly, isRecurring, isYearly } from "utils/events";
 
 import "./EventsListItem.css";
 
@@ -26,11 +27,14 @@ const eventTypesObj = {
   },
 }
 
-const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, date, type, isYearly, isMonthly, description, onEdit }) => {
+const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, date, type, recurrence, description, onEdit }) => {
   const dateString = formatDateString(date);
   const Icon = eventTypesObj[type].icon;
   const evetnTypeTitle = eventTypesObj[type].title;
-  const cls = `events-list-item events-list-item--${type}`
+  const isRecurringEvent = isRecurring(recurrence);
+  const isYearlyEvent = isYearly(recurrence);
+  const isMonthlyEvent = isMonthly(recurrence);
+    const cls = `events-list-item events-list-item--${type}`
 
   return (
     <li className={cls}>
@@ -46,10 +50,10 @@ const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, date
         <div className="events-list-item__date">
           {dateString}
         </div>
-        {(isYearly || isMonthly) && (
+        {isRecurringEvent && (
           <Space className="events-list-item__flags">
-            {isYearly && <Badge color="blue" text="Ежегодное" />}
-            {isMonthly && <Badge color="orange" text="Ежемесячное" />}
+            {isYearlyEvent && <Badge color="blue" text="Ежегодное" />}
+            {isMonthlyEvent && <Badge color="orange" text="Ежемесячное" />}
           </Space>
           )}     
 

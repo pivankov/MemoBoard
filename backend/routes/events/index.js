@@ -11,7 +11,7 @@ router.use('/tags', tagsRouter);
 router.get('/', async (req, res) => {
   try {
     const eventsQuery = db.prepare(`
-      SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, is_monthly, t.slug as type
+      SELECT e.uid, e.title, e.start_at, e.description, e.recurrence, t.slug as type
       FROM events e
       JOIN event_types t ON t.id = e.type_id
     `);
@@ -22,9 +22,8 @@ router.get('/', async (req, res) => {
       title: String(row.title ?? ''),
       date: String(row.start_at ?? ''),
       type: String(row.type ?? ''),
-      description: row.description ? String(row.description) : '',      
-      isYearly: Boolean(Number(row.is_yearly ?? 0)),
-      isMonthly: Boolean(Number(row.is_monthly ?? 0)),
+      description: row.description ? String(row.description) : '',
+      recurrence: String(row.recurrence ?? 'none'),
     }));
 
     res.status(200).json({ data });
@@ -44,7 +43,7 @@ router.get('/:id', async (req, res) => {
     }
 
     const eventQuery = db.prepare(`
-      SELECT e.uid, e.title, e.start_at, e.description, e.is_yearly, is_monthly, t.slug as type
+      SELECT e.uid, e.title, e.start_at, e.description, e.recurrence, t.slug as type
       FROM events e
       JOIN event_types t ON t.id = e.type_id
       WHERE e.uid = ?
@@ -63,8 +62,7 @@ router.get('/:id', async (req, res) => {
       date: String(row.start_at ?? ''),
       type: String(row.type ?? ''),
       description: row.description ? String(row.description) : '',
-      isYearly: Boolean(Number(row.is_yearly ?? 0)),
-      isMonthly: Boolean(Number(row.is_monthly ?? 0)),
+      recurrence: String(row.recurrence ?? 'none'),
     };
 
     return res.status(200).json({ data });
@@ -77,7 +75,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { title, date, type, isYearly, isMonthly, description } = req.body ?? {};
+    const { title, date, type, recurrence, description } = req.body ?? {};
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный заголовок события' });
@@ -96,6 +94,13 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный тип события' });
     }
 
+    const allowedRecurrences = new Set(['none', 'monthly', 'yearly']);
+    const recurrenceValue = typeof recurrence === 'string' ? recurrence : 'none';
+    
+    if (!allowedRecurrences.has(recurrenceValue)) {
+      return res.status(400).json({ error: 'Некорректное значение recurrence' });
+    }
+
     const typeRow = db.prepare('SELECT id FROM event_types WHERE slug = ? LIMIT 1').get(type);
 
     if (!typeRow?.id) {
@@ -103,8 +108,8 @@ router.post('/', async (req, res) => {
     }
 
     const insertQuery = db.prepare(`
-      INSERT INTO events (uid, user_id, title, type_id, start_at, description, is_yearly, is_monthly)
-      VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @is_yearly, @is_monthly)
+      INSERT INTO events (uid, user_id, title, type_id, start_at, description, recurrence)
+      VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @recurrence)
     `);
 
     const userRow = db.prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
@@ -121,8 +126,7 @@ router.post('/', async (req, res) => {
       type_id: Number(typeRow.id),
       start_at: String(normalizedDate),
       description: description ? String(description) : null,
-      is_yearly: isYearly ? 1 : 0,
-      is_monthly: isMonthly ? 1 : 0,
+      recurrence: recurrenceValue,
     };
 
     insertQuery.run(payload);
@@ -133,8 +137,7 @@ router.post('/', async (req, res) => {
       date: String(normalizedDate),
       type: String(type),
       description: description ? String(description) : '',
-      isYearly: Boolean(isYearly),
-      isMonthly: Boolean(isMonthly),
+      recurrence: recurrenceValue,
     };
 
     return res.status(201).json({ data: result });
@@ -153,7 +156,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный идентификатор события' });
     }
 
-    const { title, date, type, isYearly, isMonthly, description } = req.body ?? {};
+    const { title, date, type, recurrence, description } = req.body ?? {};
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный заголовок события' });
@@ -177,6 +180,12 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Событие не найдено' });
     }
 
+    const allowedRecurrences = new Set(['none', 'monthly', 'yearly']);
+    const recurrenceValue = typeof recurrence === 'string' ? recurrence : 'none';
+    if (!allowedRecurrences.has(recurrenceValue)) {
+      return res.status(400).json({ error: 'Некорректное значение recurrence' });
+    }
+
     const typeRow = db.prepare('SELECT id FROM event_types WHERE slug = ? LIMIT 1').get(type);
     if (!typeRow?.id) {
       return res.status(400).json({ error: 'Указан неизвестный тип события' });
@@ -188,8 +197,7 @@ router.put('/:id', async (req, res) => {
           type_id = @type_id,
           start_at = @start_at,
           description = @description,
-          is_yearly = @is_yearly,
-          is_monthly = @is_monthly
+          recurrence = @recurrence
       WHERE uid = @uid
     `);
 
@@ -199,8 +207,7 @@ router.put('/:id', async (req, res) => {
       type_id: Number(typeRow.id),
       start_at: String(normalizedDate),
       description: description ? String(description) : null,
-      is_yearly: isYearly ? 1 : 0,
-      is_monthly: isMonthly ? 1 : 0,
+      recurrence: recurrenceValue,
     };
 
     const resultUpdate = updateQuery.run(payload);
@@ -214,8 +221,7 @@ router.put('/:id', async (req, res) => {
       date: String(normalizedDate),
       type: String(type),
       description: description ? String(description) : '',
-      isYearly: Boolean(isYearly),
-      isMonthly: Boolean(isMonthly),
+      recurrence: recurrenceValue,
     };
 
     return res.status(200).json({ data: result });

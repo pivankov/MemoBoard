@@ -1,8 +1,9 @@
 import { useEffect,useImperativeHandle, useMemo, useRef } from "react";
-import { Button, Checkbox, DatePicker, Form, Input, Popconfirm, Radio,Select } from 'antd';
+import { Button, DatePicker, Form, Input, Popconfirm, Radio,Select } from 'antd';
 
 import { eventType } from "enums/events"
-import { EventFormValues, EventsEditFormValuesInternal } from 'types/events';
+import type { EventFormValues, EventsEditFormValuesInternal } from 'types/events';
+import { RECURRENCE_VALUES }  from 'types/events';
 
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -39,6 +40,11 @@ const eventTypesOptions = eventTypeOrder.map((value) => ({
   label: eventTypeLabel[value],
 }));
 
+const recurrenceOptions = RECURRENCE_VALUES.map(v => ({
+  value: v,
+  label: v === 'none' ? 'Без повторения' : v === 'monthly' ? 'Ежемесячное' : 'Ежегодное',
+}));
+
 const toExternalValues = (values: EventsEditFormValuesInternal): EventFormValues => {
   const date = values.date;
 
@@ -46,8 +52,7 @@ const toExternalValues = (values: EventsEditFormValuesInternal): EventFormValues
     title: values.title || "",
     date: date ? date.format('YYYY-MM-DD') : "",
     type: values.type || DEFAULT_EVENT_TYPE,
-    isYearly: values.isYearly ?? false,
-    isMonthly: values.isMonthly ?? false,
+    recurrence: values.recurrence || 'none',
     description: values.description || "",
   };
 };
@@ -66,8 +71,7 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
       title: iv.title,
       date: dateValue,
       type: iv.type || DEFAULT_EVENT_TYPE,
-      isYearly: isEditing ? (iv.isYearly ?? false) : false,
-      isMonthly: isEditing ? (iv.isMonthly ?? false) : false,
+      recurrence: isEditing ? (iv.recurrence ?? 'none') : 'none',
       description: iv.description,
     };
   }, [initialValues]);
@@ -130,15 +134,13 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
 
           <div className="events-edit__form-item">
             <label className="events-edit__form-item-label">Повторяемость события</label>
-            <div className="events-edit__form-item-group">
-              <Form.Item name="isYearly" valuePropName="checked" className="mb-0 mr-2">
-                <Checkbox>Ежегодное</Checkbox>
-              </Form.Item>
-
-              <Form.Item name="isMonthly" valuePropName="checked" className="mb-0">
-                <Checkbox>Ежемесячное</Checkbox>
-              </Form.Item>
-            </div>
+            <Form.Item name="recurrence" className="mb-0">
+              <Radio.Group>
+                {recurrenceOptions.map((o) => (
+                  <Radio key={o.value} value={o.value}>{o.label}</Radio>
+                ))}
+              </Radio.Group>
+            </Form.Item>
           </div>
 
           <div className="events-edit__form-item">

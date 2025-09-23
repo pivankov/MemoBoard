@@ -35,35 +35,35 @@ const DUMMY_EVENTS_OLD = [
 ];
 
 const DUMMY_EVENTS = [
-  { start_at: '2024-05-02', is_yearly: 1, is_monthly: 0, uid: 'h3j6q', type: 'holiday', user_id: 1, title: '1-1+', description: '' },
-  { start_at: '2024-05-13', is_yearly: 1, is_monthly: 0, uid: 'f1v7y', type: 'holiday', user_id: 1, title: '1-2+', description: '' },
-  { start_at: '2024-06-02', is_yearly: 1, is_monthly: 0, uid: 'b8n2z', type: 'holiday', user_id: 1, title: '2-1+', description: '' },
-  { start_at: '2024-06-13', is_yearly: 1, is_monthly: 0, uid: 'e4c9m', type: 'holiday', user_id: 1, title: '2-2+', description: '' },
-  { start_at: '2025-07-13', is_yearly: 0, is_monthly: 0, uid: 'a6d3k', type: 'holiday', user_id: 1, title: '3-1', description: '' },
-  { start_at: '2025-07-14', is_yearly: 0, is_monthly: 0, uid: 't6q8i', type: 'holiday', user_id: 1, title: '3-2', description: '' },
-  { start_at: '2025-07-13', is_yearly: 0, is_monthly: 1, uid: 'n4w1e', type: 'holiday', user_id: 1, title: '3-3+++++', description: '' },
+  { start_at: '2024-05-02', recurrence: 'yearly', uid: 'h3j6q', type: 'holiday', user_id: 1, title: '1-1+', description: '' },
+  { start_at: '2024-05-13', recurrence: 'yearly', uid: 'f1v7y', type: 'holiday', user_id: 1, title: '1-2+', description: '' },
+  { start_at: '2024-06-02', recurrence: 'yearly', uid: 'b8n2z', type: 'holiday', user_id: 1, title: '2-1+', description: '' },
+  { start_at: '2024-06-13', recurrence: 'yearly', uid: 'e4c9m', type: 'holiday', user_id: 1, title: '2-2+', description: '' },
+  { start_at: '2025-07-13', recurrence: 'none', uid: 'a6d3k', type: 'holiday', user_id: 1, title: '3-1', description: '' },
+  { start_at: '2025-07-14', recurrence: 'none', uid: 't6q8i', type: 'holiday', user_id: 1, title: '3-2', description: '' },
+  { start_at: '2025-07-13', recurrence: 'monthly', uid: 'n4w1e', type: 'holiday', user_id: 1, title: '3-3+++++', description: '' },
 
-  { start_at: '2024-09-20', is_yearly: 1, is_monthly: 0, uid: 'h3j6q313123121', type: 'holiday', user_id: 1, title: '4-0+', description: '' },
-  { start_at: '2025-09-21', is_yearly: 1, is_monthly: 0, uid: 'h3j6q31312312', type: 'holiday', user_id: 1, title: '4-1+', description: '' },
-  { start_at: '2025-09-21', is_yearly: 0, is_monthly: 1, uid: 'h3j6q313123', type: 'holiday', user_id: 1, title: '4-2+++++', description: '' },
-  { start_at: '2025-09-22', is_yearly: 0, is_monthly: 0, uid: 'h3j6q31', type: 'holiday', user_id: 1, title: '4-3', description: '' },
-  { start_at: '2024-09-22', is_yearly: 1, is_monthly: 0, uid: 'h3j6q310', type: 'holiday', user_id: 1, title: '4-4+', description: '' },
-  { start_at: '2024-09-23', is_yearly: 0, is_monthly: 0, uid: 'h3j6q3101', type: 'holiday', user_id: 1, title: '4-5', description: '' },
-  { start_at: '2025-09-24', is_yearly: 1, is_monthly: 0, uid: 'h3j6q3', type: 'holiday', user_id: 1, title: '4-6+', description: '' },
-  { start_at: '2025-09-25', is_yearly: 0, is_monthly: 0, uid: 'h3j6q313', type: 'holiday', user_id: 1, title: '4-7', description: '' },
-  { start_at: '2024-09-26', is_yearly: 1, is_monthly: 0, uid: 'h3j6q312', type: 'holiday', user_id: 1, title: '4-8+', description: '' },
+  { start_at: '2024-09-20', recurrence: 'yearly', uid: 'h3j6q313123121', type: 'holiday', user_id: 1, title: '4-0+', description: '' },
+  { start_at: '2025-09-21', recurrence: 'yearly', uid: 'h3j6q31312312', type: 'holiday', user_id: 1, title: '4-1+', description: '' },
+  { start_at: '2025-09-21', recurrence: 'monthly', uid: 'h3j6q313123', type: 'holiday', user_id: 1, title: '4-2+++++', description: '' },
+  { start_at: '2025-09-22', recurrence: 'none', uid: 'h3j6q31', type: 'holiday', user_id: 1, title: '4-3', description: '' },
+  { start_at: '2024-09-22', recurrence: 'yearly', uid: 'h3j6q310', type: 'holiday', user_id: 1, title: '4-4+', description: '' },
+  { start_at: '2024-09-23', recurrence: 'none', uid: 'h3j6q3101', type: 'holiday', user_id: 1, title: '4-5', description: '' },
+  { start_at: '2025-09-24', recurrence: 'yearly', uid: 'h3j6q3', type: 'holiday', user_id: 1, title: '4-6+', description: '' },
+  { start_at: '2025-09-25', recurrence: 'none', uid: 'h3j6q313', type: 'holiday', user_id: 1, title: '4-7', description: '' },
+  { start_at: '2024-09-26', recurrence: 'yearly', uid: 'h3j6q312', type: 'holiday', user_id: 1, title: '4-8+', description: '' },
 
-  { start_at: '2025-10-02', is_yearly: 0, is_monthly: 0, uid: 'h3j6q4', type: 'holiday', user_id: 1, title: '5-1', description: '' },
-  { start_at: '2025-10-13', is_yearly: 0, is_monthly: 0, uid: 'h3j6q5', type: 'holiday', user_id: 1, title: '5-2', description: '' },
-  { start_at: '2026-02-02', is_yearly: 0, is_monthly: 0, uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '6-1', description: '' },
-  { start_at: '2026-05-03', is_yearly: 0, is_monthly: 0, uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '7-1', description: '' },
-  { start_at: '2026-09-07', is_yearly: 1, is_monthly: 0, uid: 'h3j6q38', type: 'holiday', user_id: 1, title: '8-1+', description: '' },
+  { start_at: '2025-10-02', recurrence: 'none', uid: 'h3j6q4', type: 'holiday', user_id: 1, title: '5-1', description: '' },
+  { start_at: '2025-10-13', recurrence: 'none', uid: 'h3j6q5', type: 'holiday', user_id: 1, title: '5-2', description: '' },
+  { start_at: '2026-02-02', recurrence: 'none', uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '6-1', description: '' },
+  { start_at: '2026-05-03', recurrence: 'none', uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '7-1', description: '' },
+  { start_at: '2026-09-07', recurrence: 'yearly', uid: 'h3j6q38', type: 'holiday', user_id: 1, title: '8-1+', description: '' },
 
 
-  { start_at: '2025-12-22', is_yearly: 0, is_monthly: 0, uid: 'h3j6q383231', type: 'holiday', user_id: 1, title: '9-1', description: '' },
-  { start_at: '2025-12-23', is_yearly: 1, is_monthly: 0, uid: 'h3j6q383232', type: 'holiday', user_id: 1, title: '9-2', description: '' },
-  { start_at: '2024-12-20', is_yearly: 1, is_monthly: 1, uid: 'h3j6q38323', type: 'holiday', user_id: 1, title: '9-3+++++', description: '' },
-  { start_at: '2025-12-21', is_yearly: 0, is_monthly: 1, uid: 'h3j6q383235', type: 'holiday', user_id: 1, title: '9-4+++++', description: '' },
+  { start_at: '2025-12-22', recurrence: 'none', uid: 'h3j6q383231', type: 'holiday', user_id: 1, title: '9-1', description: '' },
+  { start_at: '2025-12-23', recurrence: 'yearly', uid: 'h3j6q383232', type: 'holiday', user_id: 1, title: '9-2', description: '' },
+  { start_at: '2024-12-20', recurrence: 'monthly', uid: 'h3j6q38323', type: 'holiday', user_id: 1, title: '9-3+++++', description: '' },
+  { start_at: '2025-12-21', recurrence: 'monthly', uid: 'h3j6q383235', type: 'holiday', user_id: 1, title: '9-4+++++', description: '' },
 ];
 
 // for (let i = 0; i < Math.min(DUMMY_EVENTS.length, DUMMY_EVENTS_OLD.length); i++) {
@@ -94,8 +94,7 @@ const EVENTS_FIELDS = {
    type_id: 'INTEGER NOT NULL',
    start_at: 'TEXT NOT NULL',
    description: 'TEXT',
-   is_yearly: 'INTEGER NOT NULL DEFAULT 0 CHECK (is_yearly IN (0,1))',
-   is_monthly: 'INTEGER NOT NULL DEFAULT 0 CHECK (is_monthly IN (0,1))',
+   recurrence: "TEXT NOT NULL DEFAULT 'none' CHECK (recurrence IN ('none','monthly','yearly'))",
    created_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
    updated_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
 };
@@ -157,8 +156,7 @@ async function initDb(options = {}) {
       type_id ${EVENTS_FIELDS.type_id} REFERENCES event_types(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
       start_at ${EVENTS_FIELDS.start_at},
       description ${EVENTS_FIELDS.description},
-      is_yearly ${EVENTS_FIELDS.is_yearly},
-      is_monthly ${EVENTS_FIELDS.is_monthly},
+      recurrence ${EVENTS_FIELDS.recurrence},
       created_at ${EVENTS_FIELDS.created_at},
       updated_at ${EVENTS_FIELDS.updated_at},
       UNIQUE (user_id, uid)
@@ -167,7 +165,7 @@ async function initDb(options = {}) {
 
   const createEventsUpdatedAtTrigger = `
     CREATE TRIGGER IF NOT EXISTS events_set_updated_at
-    AFTER UPDATE OF uid, user_id, title, type_id, start_at, description, is_yearly, is_monthly, created_at ON events
+    AFTER UPDATE OF uid, user_id, title, type_id, start_at, description, recurrence, created_at ON events
     FOR EACH ROW BEGIN
       UPDATE events SET updated_at = datetime('now') WHERE id = OLD.id;
     END;
@@ -223,8 +221,8 @@ async function initDb(options = {}) {
       seedEventTypes();
 
       const insertEvent = db.prepare(`
-        INSERT INTO events (uid, user_id, title, type_id, start_at, description, is_yearly, is_monthly)
-        VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @is_yearly, @is_monthly)
+        INSERT INTO events (uid, user_id, title, type_id, start_at, description, recurrence)
+        VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @recurrence)
       `);
       const typeRows = db.prepare('SELECT id, slug FROM event_types').all();
       const slugToId = Object.fromEntries(typeRows.map(r => [r.slug, r.id]));
@@ -238,8 +236,7 @@ async function initDb(options = {}) {
           type_id: slugToId[e.type],
           start_at: e.start_at,
           description: e.description,
-          is_yearly: e.is_yearly,
-          is_monthly: e.is_monthly,
+          recurrence: e.recurrence ?? 'none',
         }));
         
         const seedEvents = db.transaction(() => {

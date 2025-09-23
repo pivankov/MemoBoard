@@ -15,13 +15,12 @@ const EventsList: React.FC<{data: EventMonthGroup[], onEdit?: (id: string) => vo
           <ul className="events-list__items">
             {group.items.map((item) => (
               <EventsListItem
-                key={item.id}
+                key={`${item.id}:${group.key}`}
                 id={item.id}
                 title={item.title}
                 date={item.date}
                 type={item.type}
-                isYearly={item.isYearly}
-                isMonthly={item.isMonthly}
+                recurrence={item.recurrence}
                 description={item.description}
                 onEdit={onEdit ? () => onEdit(item.id) : undefined}
               />
