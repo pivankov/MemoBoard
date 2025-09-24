@@ -13,7 +13,7 @@ const EventsMiniList: React.FC<{data: Event[], onEdit?: (id: string) => void}> =
               {item.title}
             </span>
             <div className="events-mini-list__item-date">
-              {formatDateString(item.date)}
+              {formatDateString(item.startDate)}
             </div>
           </li>
         ))}

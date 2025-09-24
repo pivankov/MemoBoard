@@ -8,7 +8,7 @@ export const RECURRENCE_VALUES: readonly Recurrence[] = ['none','monthly','yearl
 export type Event = {
   id: string;
   title: string;
-  date: string;
+  startDate: string;
   type: EventType;
   recurrence: Recurrence;
   description: string;
@@ -16,7 +16,7 @@ export type Event = {
 
 export type EventFormValues = {
   title: string;
-  date: string;
+  startDate: string;
   type: EventType;
   recurrence: Recurrence;
   description: string;
@@ -24,7 +24,7 @@ export type EventFormValues = {
 
 export type EventsEditFormValuesInternal = {
   title?: string;
-  date?: import('dayjs').Dayjs;
+  startDate?: import('dayjs').Dayjs;
   type?: EventType;
   recurrence?: Recurrence;
   description?: string;

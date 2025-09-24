@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
     const data = rows.map((row) => ({
       id: String(row.uid),
       title: String(row.title ?? ''),
-      date: String(row.start_at ?? ''),
+      startDate: String(row.start_at ?? ''),
       type: String(row.type ?? ''),
       description: row.description ? String(row.description) : '',
       recurrence: String(row.recurrence ?? 'none'),
@@ -59,7 +59,7 @@ router.get('/:id', async (req, res) => {
     const data = {
       id: String(row.uid),
       title: String(row.title ?? ''),
-      date: String(row.start_at ?? ''),
+      startDate: String(row.start_at ?? ''),
       type: String(row.type ?? ''),
       description: row.description ? String(row.description) : '',
       recurrence: String(row.recurrence ?? 'none'),
@@ -75,17 +75,17 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { title, date, type, recurrence, description } = req.body ?? {};
+    const { title, startDate, type, recurrence, description } = req.body ?? {};
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный заголовок события' });
     }
 
-    if (!date || typeof date !== 'string' || date.trim().length === 0) {
+    if (!startDate || typeof startDate !== 'string' || startDate.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректная дата события' });
     }
 
-    const normalizedDate = normalizeInputDate(date);
+    const normalizedDate = normalizeInputDate(startDate);
     if (!normalizedDate) {
       return res.status(400).json({ error: 'Некорректный формат даты события' });
     }
@@ -134,7 +134,7 @@ router.post('/', async (req, res) => {
     const result = {
       id: String(uid),
       title: String(title),
-      date: String(normalizedDate),
+      startDate: String(normalizedDate),
       type: String(type),
       description: description ? String(description) : '',
       recurrence: recurrenceValue,
@@ -156,17 +156,17 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный идентификатор события' });
     }
 
-    const { title, date, type, recurrence, description } = req.body ?? {};
+    const { title, startDate, type, recurrence, description } = req.body ?? {};
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный заголовок события' });
     }
 
-    if (!date || typeof date !== 'string' || date.trim().length === 0) {
+    if (!startDate || typeof startDate !== 'string' || startDate.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректная дата события' });
     }
 
-    const normalizedDate = normalizeInputDate(date);
+    const normalizedDate = normalizeInputDate(startDate);
     if (!normalizedDate) {
       return res.status(400).json({ error: 'Некорректный формат даты события' });
     }
@@ -218,7 +218,7 @@ router.put('/:id', async (req, res) => {
     const result = {
       id: String(id),
       title: String(title),
-      date: String(normalizedDate),
+      startDate: String(normalizedDate),
       type: String(type),
       description: description ? String(description) : '',
       recurrence: recurrenceValue,

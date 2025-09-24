@@ -46,11 +46,11 @@ const recurrenceOptions = RECURRENCE_VALUES.map(v => ({
 }));
 
 const toExternalValues = (values: EventsEditFormValuesInternal): EventFormValues => {
-  const date = values.date;
+  const date = values.startDate;
 
   return {
     title: values.title || "",
-    date: date ? date.format('YYYY-MM-DD') : "",
+    startDate: date ? date.format('YYYY-MM-DD') : "",
     type: values.type || DEFAULT_EVENT_TYPE,
     recurrence: values.recurrence || 'none',
     description: values.description || "",
@@ -63,8 +63,8 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
   const formInitialValues: EventsEditFormValuesInternal = useMemo(() => {
     const iv = initialValues || {};
     const isEditing = Boolean(initialValues);
-    const dateValue: Dayjs | undefined = iv.date
-      ? dayjs(iv.date as string)
+    const dateValue: Dayjs | undefined = iv.startDate
+      ? dayjs(iv.startDate as string)
       : undefined;
 
     return {
@@ -119,7 +119,7 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
           </div>
 
           <div className="events-edit__form-item">
-            <label className="events-edit__form-item-label" htmlFor="date">Дата</label>
+            <label className="events-edit__form-item-label" htmlFor="date">Дата начала события</label>
             <Form.Item name="date"> 
               <DatePicker id="date" placeholder="дата" />
             </Form.Item>
