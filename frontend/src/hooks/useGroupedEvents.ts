@@ -157,7 +157,7 @@ const groupEventsByMonth = (
   const overdueEvents: Event[] = [];
 
   for (const event of events) {
-    const parsed = parseDateSafe(event.startDate);
+    const parsed = parseDateSafe(event.originalDate);
     
     if (!parsed) {
       continue;

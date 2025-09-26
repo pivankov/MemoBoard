@@ -1,0 +1,56 @@
+# Cursor Rules для MemoBoard
+
+## Контекст проекта
+
+  ### Стек технологий
+  - Frontend: React + TypeScript + Ant Design
+  - Backend: Node.js + Express + SQLite
+  - Database: SQLite
+
+  ### Приложения
+  - Cобытия (Календарь событий с повторениями)
+
+## Технические требования
+- TypeScript strict mode
+- React 18+ с hooks
+- Ant Design 5.x
+- Node.js 18+
+- SQLite 3.x
+
+## Принципы
+- Приоритет читаемости кода
+- Использование TypeScript
+- Обработка ошибок линтера
+- Мемоизация для производительности
+- Именование компонентов PascalCase (EventsListItem.tsx)
+- Именования хуков camelCase с префиксом use (useGroupedEvents.ts)
+- Именования утилит camelCase (date.ts, events.ts)
+
+## Стиль кода
+- Использовать функциональные компоненты
+- Prefer const over let
+- Использовать arrow functions
+- Избегать any, использовать строгие типы
+- Один компонент = один файл
+
+## Система событий
+- Типы повторения: none, monthly, yearly
+- Использовать useGroupedEvents для группировки
+- Валидация дат обязательна
+
+## Хуки
+- Использовать useMemo для дорогих вычислений
+- Использовать useCallback для функций в зависимостях
+- Избегать useEffect без зависимостей
+
+## Структура
+
+  ### Бэкенд
+  - `/backend/app.js` - файл запуска бэкенд приложения
+  - `backend/db/initdb.js` - Инициализация базы данных
+
+  ### События
+  - `backend/routes/events/index.js` - API endpoints
+  - `types/events.ts` - типы данных
+  - `useEvents.ts` - API взаимодействие
+  - `useGroupedEvents.ts` - основная логика группировки событий

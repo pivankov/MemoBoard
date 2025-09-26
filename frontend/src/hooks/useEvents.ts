@@ -56,7 +56,7 @@ export const useEvents = (): UseEventsReturn => {
         },
         body: JSON.stringify({
           title: eventData.title,
-          startDate: eventData.startDate,
+          originalDate: eventData.originalDate,
           type: eventData.type,
           recurrence: eventData.recurrence,
           description: eventData.description,
@@ -96,7 +96,7 @@ export const useEvents = (): UseEventsReturn => {
         },
         body: JSON.stringify({
           title: eventData.title,
-          startDate: eventData.startDate,
+          originalDate: eventData.originalDate,
           type: eventData.type,
           recurrence: eventData.recurrence,
           description: eventData.description,

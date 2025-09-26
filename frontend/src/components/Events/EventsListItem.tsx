@@ -27,8 +27,8 @@ const eventTypesObj = {
   },
 }
 
-const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, startDate, type, recurrence, description, onEdit }) => {
-  const dateString = formatDateString(startDate);
+const EventsListItem: React.FC<Event & { onEdit?: () => void }> = ({ title, originalDate, type, recurrence, description, onEdit }) => {
+  const dateString = formatDateString(originalDate);
   const Icon = eventTypesObj[type].icon;
   const evetnTypeTitle = eventTypesObj[type].title;
   const isRecurringEvent = isRecurring(recurrence);

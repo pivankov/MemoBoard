@@ -26,6 +26,19 @@ export const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
 
 
 /**
+ * Форматирует объект Date в строку в формате YYYY-MM-DD.
+ * @param date Объект даты
+ * @returns Строка даты в формате YYYY-MM-DD
+ */
+export const formatDateToString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+};
+
+/**
  * Форматирует строку даты в человеко-читаемый вид, используя dateFormatter.
  * Если дата невалидна — возвращает пустую строку.
  * @param dateInput Строковое представление даты

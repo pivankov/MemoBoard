@@ -14,11 +14,11 @@ import { useNotifications } from 'providers/NotificationsProvider';
 import "./Events.css";
 
 const buildEventFormInitialValues = (event: Event) => {
-  const { title, startDate, type, description, recurrence } = event;
+  const { title, originalDate, type, description, recurrence } = event;
 
   return {
     title,
-    startDate,
+    originalDate,
     type,
     recurrence,
     description,
