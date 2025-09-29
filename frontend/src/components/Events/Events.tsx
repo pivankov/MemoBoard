@@ -14,11 +14,12 @@ import { useNotifications } from 'providers/NotificationsProvider';
 import "./Events.css";
 
 const buildEventFormInitialValues = (event: Event) => {
-  const { title, originalDate, type, description, recurrence } = event;
+  const { title, originalDate, nextDate, type, description, recurrence } = event;
 
   return {
     title,
     originalDate,
+    nextDate,
     type,
     recurrence,
     description,
@@ -131,7 +132,7 @@ const Events: React.FC = () => {
                           <div className="events__card-item">
                             <div className="events__card-item-title">Недавние события</div>
 
-                            <EventsMiniList data={groupedEvents.past} onEdit={handleEditEvent} />
+                            <EventsMiniList data={groupedEvents.past} isPastEvents onEdit={handleEditEvent} />
                           </div>
                         )}
 

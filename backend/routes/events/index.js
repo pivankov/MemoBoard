@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import tagsRouter from './tags.js';
 import { db } from '../../db/initdb.js';
-import { normalizeInputDate } from "../../utils/date.js"
+import { normalizeInputDate, calculateNextDate } from "../../utils/date.js"
 
 const router = Router();
 
@@ -17,14 +17,20 @@ router.get('/', async (req, res) => {
     `);
     const rows = eventsQuery.all();
 
-    const data = rows.map((row) => ({
-      id: String(row.uid),
-      title: String(row.title ?? ''),
-      originalDate: String(row.start_at ?? ''),
-      type: String(row.type ?? ''),
-      description: row.description ? String(row.description) : '',
-      recurrence: String(row.recurrence ?? 'none'),
-    }));
+    const data = rows.map((row) => {
+      const originalDate = String(row.start_at ?? '');
+      const recurrence = String(row.recurrence ?? 'none');
+      
+      return {
+        id: String(row.uid),
+        title: String(row.title ?? ''),
+        originalDate,
+        nextDate: calculateNextDate(originalDate, recurrence),
+        type: String(row.type ?? ''),
+        description: row.description ? String(row.description) : '',
+        recurrence,
+      };
+    });
 
     res.status(200).json({ data });
   } catch (error) {
@@ -56,13 +62,17 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Событие не найдено' });
     }
 
+    const originalDate = String(row.start_at ?? '');
+    const recurrence = String(row.recurrence ?? 'none');
+    
     const data = {
       id: String(row.uid),
       title: String(row.title ?? ''),
-      originalDate: String(row.start_at ?? ''),
+      originalDate,
+      nextDate: calculateNextDate(originalDate, recurrence),
       type: String(row.type ?? ''),
       description: row.description ? String(row.description) : '',
-      recurrence: String(row.recurrence ?? 'none'),
+      recurrence,
     };
 
     return res.status(200).json({ data });

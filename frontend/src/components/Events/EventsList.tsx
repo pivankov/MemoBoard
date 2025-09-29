@@ -19,6 +19,7 @@ const EventsList: React.FC<{data: EventMonthGroup[], onEdit?: (id: string) => vo
                 id={item.id}
                 title={item.title}
                 originalDate={item.originalDate}
+                nextDate={item.nextDate}
                 type={item.type}
                 recurrence={item.recurrence}
                 description={item.description}

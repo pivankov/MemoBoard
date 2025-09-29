@@ -9,6 +9,7 @@ export type Event = {
   id: string;
   title: string;
   originalDate: string;
+  nextDate: string;
   type: EventType;
   recurrence: Recurrence;
   description: string;

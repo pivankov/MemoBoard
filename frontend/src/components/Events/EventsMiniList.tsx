@@ -3,7 +3,9 @@ import { formatDateString } from "utils/date";
 
 import "./EventsMiniList.css";
 
-const EventsMiniList: React.FC<{data: Event[], onEdit?: (id: string) => void}> = ({ data, onEdit }) => {
+const formatter = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' });
+
+const EventsMiniList: React.FC<{data: Event[], isPastEvents?: boolean, onEdit?: (id: string) => void}> = ({ data, isPastEvents, onEdit }) => {
   return (
     <>
       <ul className="events-mini-list">
@@ -13,7 +15,7 @@ const EventsMiniList: React.FC<{data: Event[], onEdit?: (id: string) => void}> =
               {item.title}
             </span>
             <div className="events-mini-list__item-date">
-              {formatDateString(item.originalDate)}
+              {isPastEvents ? formatter.format(new Date(item.originalDate)): formatDateString(item.originalDate)}
             </div>
           </li>
         ))}

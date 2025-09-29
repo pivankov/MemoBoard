@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import type { Event } from "types/events";
-import { diffInCalendarDays, getDay, getMonth, getYear, isInPastWindow, parseDateSafe, ruMonthFormatter } from "utils/date";
+import { diffInCalendarDays, formatDateToString,getDay, getMonth, getYear, isInPastWindow, parseDateSafe, ruMonthFormatter } from "utils/date";
 import { isMonthly, isNone, isYearly } from "utils/events";
 import { capitalizeFirst } from "utils/string";
 
@@ -52,12 +52,28 @@ const PAST_WINDOW_FROM_DAYS = 1;
 const PAST_WINDOW_TO_DAYS = 7;
 const MONTHLY_FORWARD_MONTHS = 12;
 
-function normalizeDateForPast(sourceDate: Date, isYearly: boolean, isMonthly: boolean, currentYear: number, currentMonthIndex: number): Date {
+function normalizeDateForPast(sourceDate: Date, today: Date, isYearly: boolean, isMonthly: boolean, currentYear: number, currentMonthIndex: number): Date {
   const normalized = new Date(sourceDate);
 
   if (isMonthly) {
     normalized.setFullYear(currentYear);
     normalized.setMonth(currentMonthIndex);
+
+    // Проверяем, прошла ли уже дата события в текущем месяце
+    const currentDayOfMonth = today.getDate();
+    const eventDayOfMonth = sourceDate.getDate();
+
+    // Если дата события еще не наступила в текущем месяце,
+    // то нормализуем к предыдущему месяцу
+    if (eventDayOfMonth > currentDayOfMonth) {
+      normalized.setMonth(currentMonthIndex - 1);
+      
+      // Обработка перехода на предыдущий год
+      if (normalized.getMonth() < 0) {
+        normalized.setMonth(11); // декабрь
+        normalized.setFullYear(currentYear - 1);
+      }
+    }
 
     return normalized;
   }
@@ -104,13 +120,17 @@ const buildGroupingEvents = (events: CalendarizedEvent[]) => {
 
     const key = buildMonthKey(year, month);
     const group = groupsMap.get(key);
+
+    const isCurrentYear = getYear(new Date()) === year;
+    const monthLabel = capitalizeFirst(ruMonthFormatter.format(new Date(year, month - 1)));
+    const label = isCurrentYear ? monthLabel : `${monthLabel} ${year}`;
     
     if (!group) {
       groupsMap.set(key, {
         year,
         month,
         key,
-        label: capitalizeFirst(ruMonthFormatter.format(new Date(year, month - 1))),
+        label,
         items: [event],
       });
     } else {
@@ -148,7 +168,7 @@ const groupEventsByMonth = (
 ): EventsGrouped => {
   const overdueDays = options?.overdueDays ?? DEFAULT_OVERDUE_DAYS;
   const today = new Date();
-  // const today = new Date('2025-09-22');
+  // const today = new Date('2026-01-03');
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
 
@@ -167,7 +187,7 @@ const groupEventsByMonth = (
     const isMonthlyRecurrence = isMonthly(event);
     const isNoneRecurrence = isNone(event);
   
-    const pastCheckDate = normalizeDateForPast(parsed, isYearlyRecurrence, isMonthlyRecurrence, currentYear, currentMonth);
+    const pastCheckDate = normalizeDateForPast(parsed, today, isYearlyRecurrence, isMonthlyRecurrence, currentYear, currentMonth);
     const isPastEvent = isInPastWindow(pastCheckDate, today, PAST_WINDOW_FROM_DAYS, PAST_WINDOW_TO_DAYS);
 
     if (isPastEvent) {
@@ -207,6 +227,7 @@ const groupEventsByMonth = (
 
         actualEvents.push({
           ...event,
+          nextDate: formatDateToString(occurrenceDate),
           year: getYear(occurrenceDate),
           month: getMonth(occurrenceDate),
           day: getDay(occurrenceDate),
@@ -233,6 +254,7 @@ const groupEventsByMonth = (
 
     actualEvents.push({
       ...event,
+      nextDate: formatDateToString(targetDate),
       year: getYear(targetDate),
       month: getMonth(targetDate),
       day: getDay(targetDate),
@@ -240,6 +262,11 @@ const groupEventsByMonth = (
   }
 
   const groupedActualEvents = buildGroupingEvents(actualEvents);
+
+  console.log('actual', groupedActualEvents);
+  console.log('past', pastEvents);
+  console.log('overdue', overdueEvents);
+  console.log('today', formatDateToString(today));
 
   return {
     actual: groupedActualEvents,
