@@ -35,35 +35,60 @@ const DUMMY_EVENTS_OLD = [
 ];
 
 const DUMMY_EVENTS = [
-  { start_at: '2024-05-02', recurrence: 'yearly', uid: 'h3j6q', type: 'holiday', user_id: 1, title: '1-1+', description: '' },
-  { start_at: '2024-05-13', recurrence: 'yearly', uid: 'f1v7y', type: 'holiday', user_id: 1, title: '1-2+', description: '' },
-  { start_at: '2024-06-02', recurrence: 'yearly', uid: 'b8n2z', type: 'holiday', user_id: 1, title: '2-1+', description: '' },
-  { start_at: '2024-06-13', recurrence: 'yearly', uid: 'e4c9m', type: 'holiday', user_id: 1, title: '2-2+', description: '' },
-  { start_at: '2025-07-13', recurrence: 'none', uid: 'a6d3k', type: 'holiday', user_id: 1, title: '3-1', description: '' },
-  { start_at: '2025-07-14', recurrence: 'none', uid: 't6q8i', type: 'holiday', user_id: 1, title: '3-2', description: '' },
-  { start_at: '2025-07-13', recurrence: 'monthly', uid: 'n4w1e', type: 'holiday', user_id: 1, title: '3-3+++++', description: '' },
+  { start_at: '2024-09-10', recurrence: 'none', uid: 'h3j6q1', type: 'holiday', user_id: 1, title: '2024-past-none', description: '' },
+  { start_at: '2024-09-25', recurrence: 'monthly', uid: 'h3j6q2', type: 'holiday', user_id: 1, title: '2024-past-monthly', description: '' },
+  { start_at: '2024-09-30', recurrence: 'monthly', uid: 'h3j6q22', type: 'holiday', user_id: 1, title: '2024-past-monthly', description: '' },
+  { start_at: '2024-09-26', recurrence: 'yearly', uid: 'h3j6q33', type: 'holiday', user_id: 1, title: '2024-past-yearly', description: '' },
 
-  { start_at: '2024-09-20', recurrence: 'yearly', uid: 'h3j6q313123121', type: 'holiday', user_id: 1, title: '4-0+', description: '' },
-  { start_at: '2025-09-21', recurrence: 'yearly', uid: 'h3j6q31312312', type: 'holiday', user_id: 1, title: '4-1+', description: '' },
-  { start_at: '2025-09-21', recurrence: 'monthly', uid: 'h3j6q313123', type: 'holiday', user_id: 1, title: '4-2+++++', description: '' },
-  { start_at: '2025-09-22', recurrence: 'none', uid: 'h3j6q31', type: 'holiday', user_id: 1, title: '4-3', description: '' },
-  { start_at: '2024-09-22', recurrence: 'yearly', uid: 'h3j6q310', type: 'holiday', user_id: 1, title: '4-4+', description: '' },
-  { start_at: '2024-09-23', recurrence: 'none', uid: 'h3j6q3101', type: 'holiday', user_id: 1, title: '4-5', description: '' },
-  { start_at: '2025-09-24', recurrence: 'yearly', uid: 'h3j6q3', type: 'holiday', user_id: 1, title: '4-6+', description: '' },
-  { start_at: '2025-09-25', recurrence: 'none', uid: 'h3j6q313', type: 'holiday', user_id: 1, title: '4-7', description: '' },
-  { start_at: '2024-09-26', recurrence: 'yearly', uid: 'h3j6q312', type: 'holiday', user_id: 1, title: '4-8+', description: '' },
+  { start_at: '2025-09-28', recurrence: 'none', uid: 'h3j6q4', type: 'holiday', user_id: 1, title: '2025-past-none', description: '' },
+  { start_at: '2025-09-28', recurrence: 'monthly', uid: 'h3j6q5', type: 'holiday', user_id: 1, title: '2025-past-monthly', description: '' },
+  { start_at: '2025-09-28', recurrence: 'yearly', uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '2025-past-yearly', description: '' },
 
-  { start_at: '2025-10-02', recurrence: 'none', uid: 'h3j6q4', type: 'holiday', user_id: 1, title: '5-1', description: '' },
-  { start_at: '2025-10-13', recurrence: 'none', uid: 'h3j6q5', type: 'holiday', user_id: 1, title: '5-2', description: '' },
-  { start_at: '2026-02-02', recurrence: 'none', uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '6-1', description: '' },
-  { start_at: '2026-05-03', recurrence: 'none', uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '7-1', description: '' },
-  { start_at: '2026-09-07', recurrence: 'yearly', uid: 'h3j6q38', type: 'holiday', user_id: 1, title: '8-1+', description: '' },
+  { start_at: '2025-09-29', recurrence: 'none', uid: 'h3j6q7111', type: 'holiday', user_id: 1, title: '2025-past-none', description: '' },
+  { start_at: '2025-09-29', recurrence: 'monthly', uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '2025-past-monthly', description: '' },
+  { start_at: '2025-09-30', recurrence: 'monthly', uid: 'h3j6q7222', type: 'holiday', user_id: 1, title: '2025-today-monthly', description: '' },
+  { start_at: '2025-09-30', recurrence: 'yearly', uid: 'h3j6q8', type: 'holiday', user_id: 1, title: '2025-today-yearly', description: '' },
+
+  { start_at: '2025-10-01', recurrence: 'none', uid: 'h3j6q9333', type: 'holiday', user_id: 1, title: '2025-past-none', description: '' },
+  { start_at: '2025-10-02', recurrence: 'monthly', uid: 'h3j6q9', type: 'holiday', user_id: 1, title: '2025-past-monthly', description: '' },
+  { start_at: '2025-10-03', recurrence: 'yearly', uid: 'h3j6q10', type: 'holiday', user_id: 1, title: '2025-current-yearly', description: '' },
+
+  { start_at: '2026-01-02', recurrence: 'monthly', uid: 'h3j6q11', type: 'holiday', user_id: 1, title: '2026-future-monthly', description: '' },
+  { start_at: '2026-01-10', recurrence: 'yearly', uid: 'h3j6q112', type: 'holiday', user_id: 1, title: '2026-future-yearly', description: '' },
 
 
-  { start_at: '2025-12-22', recurrence: 'none', uid: 'h3j6q383231', type: 'holiday', user_id: 1, title: '9-1', description: '' },
-  { start_at: '2025-12-23', recurrence: 'yearly', uid: 'h3j6q383232', type: 'holiday', user_id: 1, title: '9-2', description: '' },
-  { start_at: '2024-12-20', recurrence: 'monthly', uid: 'h3j6q38323', type: 'holiday', user_id: 1, title: '9-3+++++', description: '' },
-  { start_at: '2025-12-21', recurrence: 'monthly', uid: 'h3j6q383235', type: 'holiday', user_id: 1, title: '9-4+++++', description: '' },
+
+
+
+  // { start_at: '2024-05-02', recurrence: 'yearly', uid: 'h3j6q', type: 'holiday', user_id: 1, title: '1-1+', description: '' },
+  // { start_at: '2024-05-13', recurrence: 'yearly', uid: 'f1v7y', type: 'holiday', user_id: 1, title: '1-2+', description: '' },
+  // { start_at: '2024-06-02', recurrence: 'yearly', uid: 'b8n2z', type: 'holiday', user_id: 1, title: '2-1+', description: '' },
+  // { start_at: '2024-06-13', recurrence: 'yearly', uid: 'e4c9m', type: 'holiday', user_id: 1, title: '2-2+', description: '' },
+  // { start_at: '2025-07-13', recurrence: 'none', uid: 'a6d3k', type: 'holiday', user_id: 1, title: '3-1', description: '' },
+  // { start_at: '2025-07-14', recurrence: 'none', uid: 't6q8i', type: 'holiday', user_id: 1, title: '3-2', description: '' },
+  // { start_at: '2025-07-13', recurrence: 'monthly', uid: 'n4w1e', type: 'holiday', user_id: 1, title: '3-3+++++', description: '' },
+
+  // { start_at: '2024-09-25', recurrence: 'yearly', uid: 'h3j6q313123121', type: 'holiday', user_id: 1, title: '4-0+', description: '' },
+  // { start_at: '2025-09-26', recurrence: 'yearly', uid: 'h3j6q31312312', type: 'holiday', user_id: 1, title: '4-1+', description: '' },
+  // { start_at: '2025-09-26', recurrence: 'monthly', uid: 'h3j6q313123', type: 'holiday', user_id: 1, title: '4-2+++++', description: '' },
+  // { start_at: '2025-09-27', recurrence: 'none', uid: 'h3j6q31', type: 'holiday', user_id: 1, title: '4-3', description: '' },
+  // { start_at: '2024-09-27', recurrence: 'yearly', uid: 'h3j6q310', type: 'holiday', user_id: 1, title: '4-4+', description: '' },
+  // { start_at: '2024-09-27', recurrence: 'none', uid: 'h3j6q3101', type: 'holiday', user_id: 1, title: '4-5', description: '' },
+  // { start_at: '2025-09-28', recurrence: 'yearly', uid: 'h3j6q3', type: 'holiday', user_id: 1, title: '4-6+', description: '' },
+  // { start_at: '2025-09-29', recurrence: 'none', uid: 'h3j6q313', type: 'holiday', user_id: 1, title: '4-7', description: '' },
+  // { start_at: '2024-09-30', recurrence: 'yearly', uid: 'h3j6q312', type: 'holiday', user_id: 1, title: '4-8+', description: '' },
+
+  // { start_at: '2025-10-02', recurrence: 'none', uid: 'h3j6q4', type: 'holiday', user_id: 1, title: '5-1', description: '' },
+  // { start_at: '2025-10-13', recurrence: 'none', uid: 'h3j6q5', type: 'holiday', user_id: 1, title: '5-2', description: '' },
+  // { start_at: '2026-02-02', recurrence: 'none', uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '6-1', description: '' },
+  // { start_at: '2026-05-03', recurrence: 'none', uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '7-1', description: '' },
+  // { start_at: '2026-09-07', recurrence: 'yearly', uid: 'h3j6q38', type: 'holiday', user_id: 1, title: '8-1+', description: '' },
+
+
+  // { start_at: '2025-12-22', recurrence: 'none', uid: 'h3j6q383231', type: 'holiday', user_id: 1, title: '9-1', description: '' },
+  // { start_at: '2025-12-23', recurrence: 'yearly', uid: 'h3j6q383232', type: 'holiday', user_id: 1, title: '9-2', description: '' },
+  // { start_at: '2024-12-20', recurrence: 'monthly', uid: 'h3j6q38323', type: 'holiday', user_id: 1, title: '9-3+++++', description: '' },
+  // { start_at: '2025-12-21', recurrence: 'monthly', uid: 'h3j6q383235', type: 'holiday', user_id: 1, title: '9-4+++++', description: '' },
 ];
 
 // for (let i = 0; i < Math.min(DUMMY_EVENTS.length, DUMMY_EVENTS_OLD.length); i++) {

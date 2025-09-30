@@ -20,12 +20,13 @@ router.get('/', async (req, res) => {
     const data = rows.map((row) => {
       const originalDate = String(row.start_at ?? '');
       const recurrence = String(row.recurrence ?? 'none');
+      const nextDate = calculateNextDate(originalDate, recurrence);
       
       return {
         id: String(row.uid),
         title: String(row.title ?? ''),
         originalDate,
-        nextDate: calculateNextDate(originalDate, recurrence),
+        nextDate,
         type: String(row.type ?? ''),
         description: row.description ? String(row.description) : '',
         recurrence,
@@ -64,12 +65,13 @@ router.get('/:id', async (req, res) => {
 
     const originalDate = String(row.start_at ?? '');
     const recurrence = String(row.recurrence ?? 'none');
+    const nextDate = calculateNextDate(originalDate, recurrence);
     
     const data = {
       id: String(row.uid),
       title: String(row.title ?? ''),
       originalDate,
-      nextDate: calculateNextDate(originalDate, recurrence),
+      nextDate,
       type: String(row.type ?? ''),
       description: row.description ? String(row.description) : '',
       recurrence,
