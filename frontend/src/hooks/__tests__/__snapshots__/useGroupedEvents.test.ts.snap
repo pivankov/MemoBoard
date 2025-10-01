@@ -1,0 +1,126 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`useGroupedEvents actualGroups Структура и сортировка групп snapshot структуры групп для monthly события 1`] = `
+Array [
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2025-10",
+    "label": "Октябрь",
+    "month": 10,
+    "year": 2025,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2025-11",
+    "label": "Ноябрь",
+    "month": 11,
+    "year": 2025,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2025-12",
+    "label": "Декабрь",
+    "month": 12,
+    "year": 2025,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-01",
+    "label": "Январь 2026",
+    "month": 1,
+    "year": 2026,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-02",
+    "label": "Февраль 2026",
+    "month": 2,
+    "year": 2026,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-03",
+    "label": "Март 2026",
+    "month": 3,
+    "year": 2026,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-04",
+    "label": "Апрель 2026",
+    "month": 4,
+    "year": 2026,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-05",
+    "label": "Май 2026",
+    "month": 5,
+    "year": 2026,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-06",
+    "label": "Июнь 2026",
+    "month": 6,
+    "year": 2026,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-07",
+    "label": "Июль 2026",
+    "month": 7,
+    "year": 2026,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-08",
+    "label": "Август 2026",
+    "month": 8,
+    "year": 2026,
+  },
+  Object {
+    "itemIds": Array [
+      "m1",
+    ],
+    "itemsCount": 1,
+    "key": "2026-09",
+    "label": "Сентябрь 2026",
+    "month": 9,
+    "year": 2026,
+  },
+]
+`;
