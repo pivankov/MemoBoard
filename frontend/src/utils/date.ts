@@ -93,6 +93,26 @@ export const diffInCalendarDays = (from: Date, to: Date): number => {
 
 
 /**
+ * Проверяет, попадает ли дата в окно прошедших дней относительно указанной «сегодняшней» даты.
+ * @param dateToCheck Дата, которую проверяем
+ * @param today Опорная дата (обычно текущий день)
+ * @param fromDays Нижняя граница окна (в днях)
+ * @param toDays Верхняя граница окна (в днях)
+ * @returns true, если дата находится в интервале [fromDays, toDays] дней назад
+ */
+export const isInPastWindow = (
+  dateToCheck: Date,
+  today: Date,
+  fromDays: number = 1,
+  toDays: number = 7
+): boolean => {
+  const daysAgo = diffInCalendarDays(dateToCheck, today);
+
+  return daysAgo > 0 && daysAgo >= fromDays && daysAgo <= toDays;
+};
+
+
+/**
  * Возвращает календарный год из объекта Date.
  * @param date Объект даты
  * @returns Числовой год, например 2025
@@ -124,21 +144,11 @@ export const getDay = (date: Date): number => {
 
 
 /**
- * Проверяет, находится ли дата в окне прошедших дней [fromDays, toDays] относительно today.
- * Использует разницу в полных календарных днях, игнорируя время суток.
- * @param dateToCheck Дата события (может быть предварительно нормализована)
- * @param today Точка отсчёта «сегодня»
- * @param fromDays Нижняя граница окна в днях (включительно). По умолчанию 1
- * @param toDays Верхняя граница окна в днях (включительно). По умолчанию 7
- * @returns true, если разница в днях попадает в включительный интервал
+ * Возвращает количество дней в указанном месяце с учетом високосных годов
+ * @param year Год (например, 2025)
+ * @param monthIndex Индекс месяца (0-11): 0 = январь, 11 = декабрь
+ * @returns Количество дней в месяце (28-31)
  */
-export const isInPastWindow = (
-  dateToCheck: Date,
-  today: Date,
-  fromDays: number = 1,
-  toDays: number = 7,
-): boolean => {
-  const days = diffInCalendarDays(dateToCheck, today);
-
-  return days >= fromDays && days <= toDays;
+export const getDaysInMonth = (year: number, monthIndex: number): number => {
+  return new Date(year, monthIndex + 1, 0).getDate();
 };
