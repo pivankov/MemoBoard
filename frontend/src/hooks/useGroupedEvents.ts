@@ -1,229 +1,291 @@
 import { useMemo } from 'react';
 
 import type { Event } from "types/events";
-import { diffInCalendarDays, formatDateToString,getDay, getMonth, getYear, isInPastWindow, parseDateSafe, ruMonthFormatter } from "utils/date";
+import {
+  diffInCalendarDays,
+  formatDateToString,
+  getDay,
+  getDaysInMonth,
+  getMonth,
+  getYear,
+  isInPastWindow,
+  parseDateSafe,
+  ruMonthFormatter,
+} from "utils/date";
 import { isMonthly, isNone, isYearly } from "utils/events";
 import { capitalizeFirst } from "utils/string";
 
 /**
- * Расширение события вычисленными календарными полями, для последующих фильтраций и сортировок
+ * Событие с вычисленными компонентами календарной даты
+ * Расширяет базовое событие полями для группировки по месяцам
  */
-type CalendarizedEvent = Event & {
-  year: number;
-  month: number;
-  day: number;
+export type CalendarizedEvent = Event & {
+  year: number;   // Год следующего вхождения
+  month: number;  // Месяц (1-12)
+  day: number;    // День месяца (1-31)
 };
 
 /**
- * Результат группировки событий.
- * - `actual`: массив групп по месяцам, предназначен для отображения актуальных и ежегодных событий.
- * - `overdue`: плоский список просроченных НЕ ежегодных событий, которые исключены из месячных групп.
+ * Результат построения актуальных событий
+ * Разделяет события на предстоящие и просроченные
+ */
+type BuildActualEventsResult = {
+  actualEvents: CalendarizedEvent[];  // Предстоящие события
+  overdueEvents: Event[];             // Просроченные события (только recurrence: "none")
+};
+
+/**
+ * Результат группировки событий по категориям
+ * Главный тип возврата хука useGroupedEvents
  */
 export type EventsGrouped = {
-  actual: EventMonthGroup[];
-  past: Event[];
-  overdue: Event[];
+  actual: EventMonthGroup[];  // Актуальные события, сгруппированные по месяцам
+  past: Event[];              // Недавно прошедшие события (окно 1-7 дней)
+  overdue: Event[];           // Просроченные события
 }
 
 /**
- * Группа событий за конкретный месяц.
+ * Группа событий за один календарный месяц
+ * Используется для отображения событий в календаре
  */
 export type EventMonthGroup = {
-  year: number;
-  month: number;
-  key: string;
-  label: string;
-  items: CalendarizedEvent[];
+  year: number;                  // 2025
+  month: number;                 // 10 (октябрь)
+  key: string;                   // "2025-10"
+  label: string;                 // "Октябрь" или "Октябрь 2025"
+  items: CalendarizedEvent[];    // События в этом месяце, отсортированные по дням
 };
 
 /**
- * Опции группировки событий.
- * - `overdueDays` — количество дней, после которых событие считается просроченным.
- *   Используется для определения попадания в `overdue` (для не ежегодных)
- *   и для нормализации дат ежегодных событий на текущий/следующий год.
- *   По умолчанию используется внутреннее значение, если не передано.
+ * Сортирует прошедшие события для отображения
+ * Сначала по месяцу (DESC), затем по дню (DESC) - свежие события выше
+ * @param events - Массив прошедших событий
+ * @returns Отсортированный массив событий
  */
-type GroupingOptions = {
-  overdueDays?: number;
-};
+const sortPastEvents = (events: Event[]): Event[] => {
+  return [...events].sort((first, second) => {
+    const firstDate = parseDateSafe(first.originalDate);
+    const secondDate = parseDateSafe(second.originalDate);
 
-const DEFAULT_OVERDUE_DAYS = 1;
-const PAST_WINDOW_FROM_DAYS = 1;
-const PAST_WINDOW_TO_DAYS = 7;
-const MONTHLY_FORWARD_MONTHS = 12;
-
-function normalizeDateForPast(sourceDate: Date, today: Date, isYearly: boolean, isMonthly: boolean, currentYear: number, currentMonthIndex: number): Date {
-  const normalized = new Date(sourceDate);
-
-  if (isMonthly) {
-    normalized.setFullYear(currentYear);
-    normalized.setMonth(currentMonthIndex);
-
-    // Проверяем, прошла ли уже дата события в текущем месяце
-    const currentDayOfMonth = today.getDate();
-    const eventDayOfMonth = sourceDate.getDate();
-
-    // Если дата события еще не наступила в текущем месяце,
-    // то нормализуем к предыдущему месяцу
-    if (eventDayOfMonth > currentDayOfMonth) {
-      normalized.setMonth(currentMonthIndex - 1);
-      
-      // Обработка перехода на предыдущий год
-      if (normalized.getMonth() < 0) {
-        normalized.setMonth(11); // декабрь
-        normalized.setFullYear(currentYear - 1);
-      }
+    if (!firstDate && !secondDate) {
+      return 0;
     }
 
-    return normalized;
+    if (!firstDate) {
+      return 1;
+    }
+
+    if (!secondDate) {
+      return -1;
+    }
+
+    const monthDifference = getMonth(secondDate) - getMonth(firstDate);
+
+    if (monthDifference !== 0) {
+      return monthDifference;
+    }
+
+    return getDay(secondDate) - getDay(firstDate);
+  });
+};
+
+/**
+ * Вычисляет опорную дату для проверки попадания события в окно прошедших
+ * Для monthly/yearly использует только день/месяц из originalDate, год берет из today
+ * @param event - Событие для обработки
+ * @param parsedDate - Распарсенная originalDate события
+ * @param today - Текущая дата
+ * @returns Опорная дата для проверки или null, если событие не подходит
+ * 
+ * Применяет нормализацию дня (например, 31 января → 28/29 февраля)
+ */
+const getPastReferenceDate = (
+  event: Event,
+  parsedDate: Date,
+  today: Date
+): Date | null => {
+  if (isNone(event)) {
+    return parsedDate;
   }
 
-  if (isYearly) {
-    normalized.setFullYear(currentYear);
+  const currentYear = getYear(today);
 
-    return normalized;
+  if (isYearly(event)) {
+    const monthIndex = getMonth(parsedDate) - 1;
+    const daysInMonth = getDaysInMonth(currentYear, monthIndex);
+    const normalizedDay = Math.min(getDay(parsedDate), daysInMonth);
+
+    return new Date(currentYear, monthIndex, normalizedDay);
   }
 
-  return sourceDate;
-}
+  if (isMonthly(event)) {
+    const currentMonthIndex = getMonth(today) - 1;
+    const daysInCurrentMonth = getDaysInMonth(currentYear, currentMonthIndex);
+    const normalizedDay = Math.min(getDay(parsedDate), daysInCurrentMonth);
 
-const sortingEventsByYearMonth = (events: EventMonthGroup[]): EventMonthGroup[] => {
-  const sorted = [...events].sort((e1, e2) => {
-    const y1 = e1.year;
-    const y2 = e2.year;
+    return new Date(currentYear, currentMonthIndex, normalizedDay);
+  }
 
-    if (y1 !== y2) {
-      return y1 - y2;
-    }
-
-    const m1 = e1.month;
-    const m2 = e2.month;
-    if (m1 !== m2) {
-      return m1 - m2;
-    }
-
-    return 0;
-  })
-
-  return sorted;
+  return null;
 };
 
-const buildMonthKey = (year: number, month: number) => {
-  return `${year}-${String(month).padStart(2, '0')}`;
-};
-
-const buildGroupingEvents = (events: CalendarizedEvent[]) => {
-  const groupsMap = new Map<string, EventMonthGroup>();
+/**
+ * Находит события, которые уже произошли в заданном окне (по умолчанию 1-7 дней назад)
+ * КРИТИЧНО: Проверяет originalDate(diffInCalendarDays) перед нормализацией, чтобы будущие события не попали в past 
+ * @param events - Массив всех событий
+ * @param today - Текущая дата
+ * @param pastWindowFromDays - Нижняя граница окна (≥N дней назад)
+ * @param pastWindowToDays - Верхняя граница окна (≤N дней назад)
+ * @returns Отсортированный массив прошедших событий
+ * 
+ * Защита: события с originalDate в будущем пропускаются до нормализации,
+ * чтобы monthly/yearly события не попали в past раньше своей первой даты
+ */
+const buildPastEvents = (
+  events: Event[],
+  today: Date,
+  pastWindowFromDays: number,
+  pastWindowToDays: number
+): Event[] => {
+  const past: Event[] = [];
 
   for (const event of events) {
-    const { year, month } = event;
+    const parsedDate = parseDateSafe(event.originalDate);
 
-    const key = buildMonthKey(year, month);
-    const group = groupsMap.get(key);
+    if (!parsedDate) {
+      continue;
+    }
 
-    const isCurrentYear = getYear(new Date()) === year;
-    const monthLabel = capitalizeFirst(ruMonthFormatter.format(new Date(year, month - 1)));
-    const label = isCurrentYear ? monthLabel : `${monthLabel} ${year}`;
-    
-    if (!group) {
-      groupsMap.set(key, {
-        year,
-        month,
-        key,
-        label,
-        items: [event],
-      });
-    } else {
-      group.items.push(event);
+    if (diffInCalendarDays(parsedDate, today) < 0) {
+      continue;
+    }
+
+    const referenceDate = getPastReferenceDate(event, parsedDate, today);
+
+    if (!referenceDate) {
+      continue;
+    }
+
+    if (isInPastWindow(referenceDate, today, pastWindowFromDays, pastWindowToDays)) {
+      past.push(event);
     }
   }
 
-  const groupedEvents = Array.from(groupsMap.values());
-
-
-  for (const g of groupedEvents) {
-    g.items.sort((a, b) => a.day - b.day);
-  }
-
-  return sortingEventsByYearMonth(groupedEvents);
-}
+  return sortPastEvents(past);
+};
 
 /**
- * Строит сгруппированную структуру событий по месяцам и два плоских списка:
- * `past` (за последние N дней) и `overdue` (просроченные не ежегодные).
- * Логика:
- * - Невалидные даты пропускаются.
- * - «Недавно прошедшие» (`past`) — события с датой в интервале [PAST_WINDOW_FROM_DAYS, PAST_WINDOW_TO_DAYS]
- *   относительно сегодняшнего дня. Для ежегодных дат дата нормализуется к текущему году.
- * - Просроченные НЕ ежегодные (`overdue`) — не включаются в месячные группы.
- * - Ежегодные просроченные события переносятся на текущий год; если остаются просроченными — на следующий.
- * - Остальные попадают в месячные группы `actual` с сортировкой по году/месяцу/дню.
- * @param events Список событий
- * @param options Опции (например, overdueDays для определения просрочки)
- * @returns Объект `{ actual, past, overdue }`
+ * Строит актуальные (предстоящие) события и отделяет просроченные
+ * Обрабатывает три типа повторений: none (одно), yearly (одно), monthly (12 вхождений)
+ * @param events - Массив всех событий
+ * @param today - Текущая дата
+ * @param overdueDays - Порог просрочки (≥N дней назад = overdue)
+ * @param monthlyForwardMonths - Количество месяцев для генерации monthly событий
+ * @returns Объект с актуальными и просроченными событиями
+ * 
+ * Логика по типам:
+ * - none: одно вхождение, может быть просрочено (≥1 день назад)
+ * - yearly: одно вхождение на текущий/следующий год, не может быть просрочено
+ * - monthly: 12 вхождений (годовой цикл), начиная с текущего/следующего месяца
+ * 
+ * Применяет нормализацию дня для учета разного количества дней в месяцах
  */
-const groupEventsByMonth = (
+const buildActualCalendarizedEvents = (
   events: Event[],
-  options?: GroupingOptions
-): EventsGrouped => {
-  const overdueDays = options?.overdueDays ?? DEFAULT_OVERDUE_DAYS;
-  const today = new Date();
-  // const today = new Date('2026-01-03');
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth();
-
+  today: Date,
+  overdueDays: number,
+  monthlyForwardMonths: number
+): BuildActualEventsResult => {
   const actualEvents: CalendarizedEvent[] = [];
-  const pastEvents: Event[] = [];
   const overdueEvents: Event[] = [];
 
   for (const event of events) {
-    const parsed = parseDateSafe(event.originalDate);
-    
-    if (!parsed) {
+    const parsedDate = parseDateSafe(event.originalDate);
+
+    if (!parsedDate) {
       continue;
     }
 
-    const isYearlyRecurrence = isYearly(event);
-    const isMonthlyRecurrence = isMonthly(event);
-    const isNoneRecurrence = isNone(event);
-  
-    const pastCheckDate = normalizeDateForPast(parsed, today, isYearlyRecurrence, isMonthlyRecurrence, currentYear, currentMonth);
-    const isPastEvent = isInPastWindow(pastCheckDate, today, PAST_WINDOW_FROM_DAYS, PAST_WINDOW_TO_DAYS);
+    if (isNone(event)) {
+      const daysDifference = diffInCalendarDays(parsedDate, today);
 
-    if (isPastEvent) {
-      pastEvents.push(event);
-    }
+      if (daysDifference >= overdueDays) {
+        overdueEvents.push(event);
+        continue;
+      }
 
-    const isOriginallyOverdue = diffInCalendarDays(parsed, today) >= overdueDays;
-
-    if (isOriginallyOverdue && isNoneRecurrence) {
-      overdueEvents.push(event);
+      actualEvents.push({
+        ...event,
+        nextDate: formatDateToString(parsedDate),
+        year: getYear(parsedDate),
+        month: getMonth(parsedDate),
+        day: getDay(parsedDate),
+      });
 
       continue;
     }
 
-    if (isMonthlyRecurrence) {
-      const baseDate = new Date(parsed);
-      const baseDay = baseDate.getDate();
+    if (isYearly(event)) {
+      const currentYear = getYear(today);
+      const monthIndex = getMonth(parsedDate) - 1;
+      const originalDay = getDay(parsedDate);
+      const daysInCurrentYearMonth = getDaysInMonth(currentYear, monthIndex);
+      const normalizedDayCurrentYear = Math.min(originalDay, daysInCurrentYearMonth);
+      const thisYearDate = new Date(currentYear, monthIndex, normalizedDayCurrentYear);
 
-      const startYear = currentYear;
-      const startMonthIndex = today.getMonth();
+      let nextDateCandidate = thisYearDate;
+      const differenceToToday = diffInCalendarDays(thisYearDate, today);
 
-      const currentMonthDate = new Date(startYear, startMonthIndex, 1);
-      const daysInCurrentMonth = new Date(startYear, startMonthIndex + 1, 0).getDate();
-      const currentMonthDay = Math.min(baseDay, daysInCurrentMonth);
-      currentMonthDate.setDate(currentMonthDay);
+      if (differenceToToday >= overdueDays) {
+        const nextYear = currentYear + 1;
+        const daysInNextYearMonth = getDaysInMonth(nextYear, monthIndex);
+        const normalizedDayNextYear = Math.min(originalDay, daysInNextYearMonth);
+        nextDateCandidate = new Date(nextYear, monthIndex, normalizedDayNextYear);
+      }
 
-      const isCurrentOccurrenceOverdue = diffInCalendarDays(currentMonthDate, today) >= overdueDays;
-      const occurrenceStartIndex = startMonthIndex + (isCurrentOccurrenceOverdue ? 1 : 0);
+      actualEvents.push({
+        ...event,
+        nextDate: formatDateToString(nextDateCandidate),
+        year: getYear(nextDateCandidate),
+        month: getMonth(nextDateCandidate),
+        day: getDay(nextDateCandidate),
+      });
 
-      for (let k = 0; k < MONTHLY_FORWARD_MONTHS; k++) {
-        const monthIndex = (occurrenceStartIndex + k) % 12;
-        const year = startYear + Math.floor((occurrenceStartIndex + k) / 12);
+      continue;
+    }
 
-        const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-        const day = Math.min(baseDay, daysInMonth);
-        const occurrenceDate = new Date(year, monthIndex, day);
+    if (isMonthly(event)) {
+      const eventDay = getDay(parsedDate);
+      let startYear = getYear(today);
+      let startMonth = getMonth(today);
+      const currentMonthIndex = startMonth - 1;
+      const daysInCurrentMonth = getDaysInMonth(startYear, currentMonthIndex);
+      const normalizedCurrentDay = Math.min(eventDay, daysInCurrentMonth);
+      const currentMonthDate = new Date(startYear, currentMonthIndex, normalizedCurrentDay);
+      const differenceToToday = diffInCalendarDays(currentMonthDate, today);
+
+      if (differenceToToday >= overdueDays) {
+        startMonth += 1;
+
+        if (startMonth > 12) {
+          startMonth = 1;
+          startYear += 1;
+        }
+      }
+
+      for (let offset = 0; offset < monthlyForwardMonths; offset += 1) {
+        let month = startMonth + offset;
+        let year = startYear;
+
+        while (month > 12) {
+          month -= 12;
+          year += 1;
+        }
+
+        const monthIndex = month - 1;
+        const daysInMonth = getDaysInMonth(year, monthIndex);
+        const normalizedDay = Math.min(eventDay, daysInMonth);
+        const occurrenceDate = new Date(year, monthIndex, normalizedDay);
 
         actualEvents.push({
           ...event,
@@ -233,60 +295,130 @@ const groupEventsByMonth = (
           day: getDay(occurrenceDate),
         });
       }
+    }
+  }
 
-      continue;
+  return {
+    actualEvents,
+    overdueEvents,
+  };
+};
+
+/**
+ * Группирует актуальные события по месяцам для отображения в календаре
+ * Создает структуру EventMonthGroup с метаданными для каждого месяца
+ * @param calendarizedEvents - Массив событий с календарными компонентами
+ * @param today - Текущая дата (для формирования label)
+ * @returns Массив групп событий, отсортированный по году и месяцу (ASC)
+ * 
+ * Формирует label:
+ * - Для текущего года: "Октябрь"
+ * - Для других лет: "Октябрь 2026"
+ * 
+ * События внутри каждой группы сортируются по дню (ASC)
+ */
+const buildActualGroups = (
+  calendarizedEvents: CalendarizedEvent[],
+  today: Date
+): EventMonthGroup[] => {
+  if (calendarizedEvents.length === 0) {
+    return [];
+  }
+
+  const groupsMap = new Map<string, CalendarizedEvent[]>();
+
+  for (const calendarizedEvent of calendarizedEvents) {
+    const key = `${calendarizedEvent.year}-${String(calendarizedEvent.month).padStart(2, '0')}`;
+
+    if (!groupsMap.has(key)) {
+      groupsMap.set(key, []);
     }
 
-    let targetDate: Date;
+    groupsMap.get(key)!.push(calendarizedEvent);
+  }
 
-    if (isOriginallyOverdue && isYearlyRecurrence) {
-      const eventDate = new Date(parsed);
-      eventDate.setFullYear(currentYear);
-      const isYearlyOverdue = diffInCalendarDays(eventDate, today) >= overdueDays;
+  const actualGroups: EventMonthGroup[] = [];
+  const currentYear = getYear(today);
 
-      if (isYearlyOverdue) {
-        eventDate.setFullYear(currentYear + 1);
-      }
-      targetDate = eventDate;
-    } else {
-      targetDate = parsed;
-    }
+  for (const [key, items] of Array.from(groupsMap.entries())) {
+    const [yearStr, monthStr] = key.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
 
-    actualEvents.push({
-      ...event,
-      nextDate: formatDateToString(targetDate),
-      year: getYear(targetDate),
-      month: getMonth(targetDate),
-      day: getDay(targetDate),
+    items.sort((first, second) => first.day - second.day);
+
+    const monthDate = new Date(year, month - 1, 1);
+    const monthName = capitalizeFirst(ruMonthFormatter.format(monthDate));
+    const label = year === currentYear ? monthName : `${monthName} ${year}`;
+
+    actualGroups.push({
+      year,
+      month,
+      key,
+      label,
+      items,
     });
   }
 
-  const groupedActualEvents = buildGroupingEvents(actualEvents);
+  actualGroups.sort((first, second) => {
+    if (first.year !== second.year) {
+      return first.year - second.year;
+    }
 
-  console.log('actual', groupedActualEvents);
-  console.log('past', pastEvents);
-  console.log('overdue', overdueEvents);
-  console.log('today', formatDateToString(today));
+    return first.month - second.month;
+  });
+
+  return actualGroups;
+};
+
+/**
+ * Основная функция группировки событий по категориям
+ * Классифицирует события на актуальные (по месяцам), прошедшие и просроченные
+ * @param events - Массив всех событий из базы данных
+ * @param today - Текущая дата (по умолчанию new Date(), параметр для тестирования)
+ * @returns Объект EventsGrouped с тремя категориями событий
+ * 
+ * Константы конфигурации:
+ * - PAST_WINDOW_FROM_DAYS = 1 (≥1 день назад)
+ * - PAST_WINDOW_TO_DAYS = 7 (≤7 дней назад)
+ * - MONTHLY_FORWARD_MONTHS = 12 (годовой цикл для monthly событий)
+ * - DEFAULT_OVERDUE_DAYS = 1 (≥1 день назад = просрочено)
+ */
+export const groupEventsByMonth = (
+  events: Event[],
+  today: Date = new Date()
+): EventsGrouped => {
+  const PAST_WINDOW_FROM_DAYS = 1;
+  const PAST_WINDOW_TO_DAYS = 7;
+  const MONTHLY_FORWARD_MONTHS = 12;
+  const DEFAULT_OVERDUE_DAYS = 1;
+
+  const pastEvents = buildPastEvents(events, today, PAST_WINDOW_FROM_DAYS, PAST_WINDOW_TO_DAYS);
+  const { actualEvents, overdueEvents } = buildActualCalendarizedEvents(
+    events,
+    today,
+    DEFAULT_OVERDUE_DAYS,
+    MONTHLY_FORWARD_MONTHS,
+  );
+  const actualGroups = buildActualGroups(actualEvents, today);
 
   return {
-    actual: groupedActualEvents,
+    actual: actualGroups,
     past: pastEvents,
     overdue: overdueEvents,
   };
 };
 
 /**
- * Возвращает мемоизированные группы событий по месяцам.
- * Пересчитывает результат при изменении списка событий или значений опций.
- * @param events Список событий
- * @param options Опции группировки (напр., overdueDays)
- * @returns Объект `{ actual, overdue }`:
- *          - `actual`: массив месячных групп (сортировка по году/месяцу и по дням внутри)
- *          - `past`: плоский список событий за последние PAST_WINDOW_TO_DAYS дней
- *          - `overdue`: плоский список просроченных не ежегодных событий
+ * React хук для группировки и классификации событий календаря
+ * Использует мемоизацию для оптимизации производительности
+ * @param events - Массив всех событий из базы данных
+ * @returns Сгруппированные события по категориям: actual (по месяцам), past, overdue
+ * 
+ * Пересчет происходит только при изменении массива events (useMemo)
+ * Возвращает пустой результат, если events пустой или undefined
  */
-export const useGroupedEvents = (events: Event[], options?: GroupingOptions): EventsGrouped => {
-  const { overdueDays = DEFAULT_OVERDUE_DAYS } = options ?? {};
+export const useGroupedEvents = (events: Event[]): EventsGrouped => {
 
   return useMemo(() => {
     if (!events || events.length === 0) {
@@ -297,6 +429,6 @@ export const useGroupedEvents = (events: Event[], options?: GroupingOptions): Ev
       };
     };
 
-    return groupEventsByMonth(events, { overdueDays });
-  }, [events, overdueDays]);
+    return groupEventsByMonth(events);
+  }, [events]);
 };
