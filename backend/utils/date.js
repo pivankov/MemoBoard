@@ -170,7 +170,7 @@ export function calculateNextDate(originalDate, recurrence) {
     return '';
   }
 
-  const todayIso = new Date('2025-01-03').toISOString().slice(0, 10);
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   if (compareIsoDates(originalDate, todayIso) > 0) {
     return '';
