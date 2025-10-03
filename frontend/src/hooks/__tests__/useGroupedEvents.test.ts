@@ -1,25 +1,25 @@
-import { groupEventsByMonth, type CalendarizedEvent } from '../useGroupedEvents';
 import {
   createEvent,
-  formatDate,
   createRelativeDate,
-  generateFutureOriginalDateEvents,
-  generatePastWindowBoundaryEvents,
-  generateOverdueBoundaryEvents,
+  formatDate,
   generateDayNormalizationEvents,
-  generateYearTransitionEvents,
+  generateFutureOriginalDateEvents,
   generateLeapYearEvents,
+  generateOverdueBoundaryEvents,
+  generatePastWindowBoundaryEvents,
+  generateYearTransitionEvents,
 } from '../__tests-helpers__/testDataGenerator.helper';
 import {
-  hasEventWithId,
-  hasEventInGroups,
+  countEventOccurrences,
+  countEventsInGroups,
+  createGroupsStructureSnapshot,
   findEventInGroups,
   findGroup,
-  countEventsInGroups,
-  countEventOccurrences,
+  hasEventInGroups,
+  hasEventWithId,
   validateResultStructure,
-  createGroupsStructureSnapshot,
 } from '../__tests-helpers__/testUtils.helper';
+import { type CalendarizedEvent,groupEventsByMonth } from '../useGroupedEvents';
 
 describe('useGroupedEvents', () => {
   

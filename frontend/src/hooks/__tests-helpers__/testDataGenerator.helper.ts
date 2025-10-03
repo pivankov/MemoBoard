@@ -1,6 +1,5 @@
-import type { Event } from "types/events";
-import type { Recurrence } from "types/events";
 import { eventType } from "enums/events";
+import type { Event , Recurrence } from "types/events";
 
 /**
  * Создает тестовое событие с заданными параметрами

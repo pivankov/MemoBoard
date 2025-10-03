@@ -1,5 +1,6 @@
 import type { Event } from "types/events";
-import type { EventsGrouped, EventMonthGroup, CalendarizedEvent } from "../useGroupedEvents";
+
+import type { CalendarizedEvent,EventMonthGroup, EventsGrouped } from "../useGroupedEvents";
 
 /**
  * Проверяет наличие события с указанным id в массиве
