@@ -14,90 +14,26 @@ const ARGON2_PARALLELISM = 1;
 const ADMIN_EMAIL = 'admin@example.com';
 const GUEST_EMAIL = 'guest@example.com';
 
-const DUMMY_EVENTS_OLD = [
-  { start_at: '2024-05-01T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'h3j6q', type: 'other', user_id: 1, title: 'Всемирный день борьбы со СПИДом', description: 'Международный день, направленный на повышение осведомленности о ВИЧ/СПИДе и демонстрацию международной солидарности перед лицом пандемии.' },
-  { start_at: '2024-05-12T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'f1v7y', type: 'holiday', user_id: 1, title: 'День Конституции Российской Федерации', description: 'Государственный праздник, посвященный принятию Конституции РФ на всенародном голосовании 12 декабря 1993 года.' },
-  { start_at: '2024-06-31T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'b8n2z', type: 'holiday', user_id: 1, title: 'Новогодний праздник', description: 'Главный праздник года, отмечаемый в ночь с 31 декабря на 1 января. Время подведения итогов и загадывания желаний.' },
-  { start_at: '2025-08-07T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'e4c9m', type: 'holiday', user_id: 1, title: 'Рождество Христово', description: 'Один из главных христианских праздников, установленный в честь рождения Иисуса Христа в Вифлееме.' },
-  { start_at: '2025-08-23T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'a6d3k', type: 'holiday', user_id: 1, title: 'День защитника Отечества', description: 'Государственный праздник, посвященный вооруженным силам России. Традиционно считается мужским праздником.' },
-  { start_at: '2025-09-01T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 's2g5l', type: 'holiday', user_id: 1, title: 'Международный женский день', description: 'Международный праздник, отмечаемый ежегодно 8 марта в ряде стран как день солидарности женщин в борьбе за равные права.' },
-  { start_at: '2025-09-02T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'u7i1x', type: 'other', user_id: 1, title: 'День космонавтики', description: 'Памятная дата, установленная в ознаменование первого полета человека в космос. 12 апреля 1961 года Юрий Гагарин совершил первый космический полет.' },
-  { start_at: '2025-09-03T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'w9o4p', type: 'holiday', user_id: 1, title: 'День Победы', description: 'Праздник победы Красной армии и советского народа над нацистской Германией в Великой Отечественной войне 1941-1945 годов.' },
-  { start_at: '2025-09-04T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'q6r8t', type: 'holiday', user_id: 1, title: 'День России', description: 'Государственный праздник Российской Федерации, отмечаемый ежегодно 12 июня. В этот день в 1990 году была принята Декларация о государственном суверенитете РСФСР.' },
-  { start_at: '2025-09-05T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'z3h2j', type: 'other', user_id: 1, title: 'День знаний', description: 'Праздник начала нового учебного года для школьников, студентов, учителей и преподавателей. Традиционно отмечается 1 сентября.' },
-  { start_at: '2025-09-05T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'l5k7n', type: 'other', user_id: 1, title: 'День учителя', description: 'Профессиональный праздник работников сферы образования. В России отмечается 5 октября, в день, когда в 1966 году была принята международная рекомендация о статусе учителей.' },
-  { start_at: '2025-09-06T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'm1v4b', type: 'holiday', user_id: 1, title: 'День народного единства', description: 'Государственный праздник, посвященный событиям 1612 года, когда народное ополчение под предводительством Минина и Пожарского освободило Москву от польских интервентов.' },
-  { start_at: '2025-10-03T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'x8c6f', type: 'other', user_id: 1, title: 'Международный день инвалидов', description: 'Международный день, направленный на привлечение внимания к проблемам инвалидов, защиту их достоинства, прав и благополучия.' },
-  { start_at: '2025-10-22T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'y2g9h', type: 'other', user_id: 1, title: 'День энергетика', description: 'Профессиональный праздник работников энергетической промышленности, отмечаемый в день зимнего солнцестояния.' },
-  { start_at: '2025-11-27T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'd7s3a', type: 'other', user_id: 1, title: 'День спасателя Российской Федерации', description: 'Профессиональный праздник сотрудников МЧС России, установленный в честь создания Российского корпуса спасателей в 1990 году.' },
-  { start_at: '2025-12-20T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 'n4w1e', type: 'other', user_id: 1, title: 'Международный день солидарности людей', description: 'Международный день, провозглашенный Генеральной Ассамблеей ООН для укрепления солидарности между народами и государствами.' },
-  { start_at: '2025-12-21T00:00:00Z', is_yearly: 0, is_monthly: 0, uid: 't6q8i', type: 'other', user_id: 1, title: 'День зимнего солнцестояния', description: 'Астрономическое явление, когда Солнце находится на самом большом угловом расстоянии от небесного экватора. Самый короткий день в году.' },
-];
-
 const DUMMY_EVENTS = [
-  { start_at: '2024-09-10', recurrence: 'none', uid: 'h3j6q1', type: 'holiday', user_id: 1, title: '2024-past-none', description: '' },
-  { start_at: '2024-09-25', recurrence: 'monthly', uid: 'h3j6q2', type: 'holiday', user_id: 1, title: '2024-past-monthly', description: '' },
-  { start_at: '2024-09-30', recurrence: 'monthly', uid: 'h3j6q22', type: 'holiday', user_id: 1, title: '2024-past-monthly', description: '' },
-  { start_at: '2024-09-26', recurrence: 'yearly', uid: 'h3j6q33', type: 'holiday', user_id: 1, title: '2024-past-yearly', description: '' },
-
-  { start_at: '2025-09-28', recurrence: 'none', uid: 'h3j6q4', type: 'holiday', user_id: 1, title: '2025-past-none', description: '' },
-  { start_at: '2025-09-28', recurrence: 'monthly', uid: 'h3j6q5', type: 'holiday', user_id: 1, title: '2025-past-monthly', description: '' },
-  { start_at: '2025-09-28', recurrence: 'yearly', uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '2025-past-yearly', description: '' },
-
-  { start_at: '2025-09-29', recurrence: 'none', uid: 'h3j6q7111', type: 'holiday', user_id: 1, title: '2025-past-none', description: '' },
-  { start_at: '2025-09-29', recurrence: 'monthly', uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '2025-past-monthly', description: '' },
-  { start_at: '2025-09-30', recurrence: 'monthly', uid: 'h3j6q7222', type: 'holiday', user_id: 1, title: '2025-today-monthly', description: '' },
-  { start_at: '2025-09-30', recurrence: 'yearly', uid: 'h3j6q8', type: 'holiday', user_id: 1, title: '2025-today-yearly', description: '' },
-
-  { start_at: '2025-10-01', recurrence: 'none', uid: 'h3j6q9333', type: 'holiday', user_id: 1, title: '2025-past-none', description: '' },
-  { start_at: '2025-10-02', recurrence: 'monthly', uid: 'h3j6q9', type: 'holiday', user_id: 1, title: '2025-past-monthly', description: '' },
-  { start_at: '2025-10-03', recurrence: 'yearly', uid: 'h3j6q10', type: 'holiday', user_id: 1, title: '2025-current-yearly', description: '' },
-
-  { start_at: '2026-01-02', recurrence: 'monthly', uid: 'h3j6q11', type: 'holiday', user_id: 1, title: '2026-future-monthly', description: '' },
-  { start_at: '2026-01-10', recurrence: 'yearly', uid: 'h3j6q112', type: 'holiday', user_id: 1, title: '2026-future-yearly', description: '' },
-
-
-
-
-
-  // { start_at: '2024-05-02', recurrence: 'yearly', uid: 'h3j6q', type: 'holiday', user_id: 1, title: '1-1+', description: '' },
-  // { start_at: '2024-05-13', recurrence: 'yearly', uid: 'f1v7y', type: 'holiday', user_id: 1, title: '1-2+', description: '' },
-  // { start_at: '2024-06-02', recurrence: 'yearly', uid: 'b8n2z', type: 'holiday', user_id: 1, title: '2-1+', description: '' },
-  // { start_at: '2024-06-13', recurrence: 'yearly', uid: 'e4c9m', type: 'holiday', user_id: 1, title: '2-2+', description: '' },
-  // { start_at: '2025-07-13', recurrence: 'none', uid: 'a6d3k', type: 'holiday', user_id: 1, title: '3-1', description: '' },
-  // { start_at: '2025-07-14', recurrence: 'none', uid: 't6q8i', type: 'holiday', user_id: 1, title: '3-2', description: '' },
-  // { start_at: '2025-07-13', recurrence: 'monthly', uid: 'n4w1e', type: 'holiday', user_id: 1, title: '3-3+++++', description: '' },
-
-  // { start_at: '2024-09-25', recurrence: 'yearly', uid: 'h3j6q313123121', type: 'holiday', user_id: 1, title: '4-0+', description: '' },
-  // { start_at: '2025-09-26', recurrence: 'yearly', uid: 'h3j6q31312312', type: 'holiday', user_id: 1, title: '4-1+', description: '' },
-  // { start_at: '2025-09-26', recurrence: 'monthly', uid: 'h3j6q313123', type: 'holiday', user_id: 1, title: '4-2+++++', description: '' },
-  // { start_at: '2025-09-27', recurrence: 'none', uid: 'h3j6q31', type: 'holiday', user_id: 1, title: '4-3', description: '' },
-  // { start_at: '2024-09-27', recurrence: 'yearly', uid: 'h3j6q310', type: 'holiday', user_id: 1, title: '4-4+', description: '' },
-  // { start_at: '2024-09-27', recurrence: 'none', uid: 'h3j6q3101', type: 'holiday', user_id: 1, title: '4-5', description: '' },
-  // { start_at: '2025-09-28', recurrence: 'yearly', uid: 'h3j6q3', type: 'holiday', user_id: 1, title: '4-6+', description: '' },
-  // { start_at: '2025-09-29', recurrence: 'none', uid: 'h3j6q313', type: 'holiday', user_id: 1, title: '4-7', description: '' },
-  // { start_at: '2024-09-30', recurrence: 'yearly', uid: 'h3j6q312', type: 'holiday', user_id: 1, title: '4-8+', description: '' },
-
-  // { start_at: '2025-10-02', recurrence: 'none', uid: 'h3j6q4', type: 'holiday', user_id: 1, title: '5-1', description: '' },
-  // { start_at: '2025-10-13', recurrence: 'none', uid: 'h3j6q5', type: 'holiday', user_id: 1, title: '5-2', description: '' },
-  // { start_at: '2026-02-02', recurrence: 'none', uid: 'h3j6q6', type: 'holiday', user_id: 1, title: '6-1', description: '' },
-  // { start_at: '2026-05-03', recurrence: 'none', uid: 'h3j6q7', type: 'holiday', user_id: 1, title: '7-1', description: '' },
-  // { start_at: '2026-09-07', recurrence: 'yearly', uid: 'h3j6q38', type: 'holiday', user_id: 1, title: '8-1+', description: '' },
-
-
-  // { start_at: '2025-12-22', recurrence: 'none', uid: 'h3j6q383231', type: 'holiday', user_id: 1, title: '9-1', description: '' },
-  // { start_at: '2025-12-23', recurrence: 'yearly', uid: 'h3j6q383232', type: 'holiday', user_id: 1, title: '9-2', description: '' },
-  // { start_at: '2024-12-20', recurrence: 'monthly', uid: 'h3j6q38323', type: 'holiday', user_id: 1, title: '9-3+++++', description: '' },
-  // { start_at: '2025-12-21', recurrence: 'monthly', uid: 'h3j6q383235', type: 'holiday', user_id: 1, title: '9-4+++++', description: '' },
+  { start_at: '2025-01-01', recurrence: 'yearly', uid: '1', type: 'holiday', user_id: 1, title: 'Новый год', description: 'Празднование начала нового календарного года.' },
+  { start_at: '2025-01-07', recurrence: 'yearly', uid: '2', type: 'church', user_id: 1, title: 'Рождество Христово', description: '' },
+  { start_at: '2025-01-14', recurrence: 'yearly', uid: '3', type: 'holiday', user_id: 1, title: 'Старый Новый год', description: '' },
+  { start_at: '2025-01-25', recurrence: 'yearly', uid: '4', type: 'holiday', user_id: 1, title: 'Татьянин день', description: '' },
+  { start_at: '2025-02-23', recurrence: 'yearly', uid: '5', type: 'holiday', user_id: 1, title: 'День защитника Отечества', description: '' },
+  { start_at: '2025-03-08', recurrence: 'yearly', uid: '6', type: 'holiday', user_id: 1, title: 'Международный женский день', description: '' },
+  { start_at: '2025-04-12', recurrence: 'yearly', uid: '7', type: 'holiday', user_id: 1, title: 'День космонавтики', description: '' },
+  { start_at: '2025-05-01', recurrence: 'yearly', uid: '8', type: 'holiday', user_id: 1, title: 'Первомай', description: 'День солидарности трудящихся, выходящий из советских времен.' },
+  { start_at: '2025-05-09', recurrence: 'yearly', uid: '9', type: 'holiday', user_id: 1, title: 'День Победы', description: '' },
+  { start_at: '2025-06-12', recurrence: 'yearly', uid: '10', type: 'holiday', user_id: 1, title: 'День России', description: 'государственный праздник, отмечаемый в честь принятия декларации о суверенитете РСФСР.' },
+  { start_at: '2025-09-01', recurrence: 'yearly', uid: '11', type: 'holiday', user_id: 1, title: 'День знаний', description: '' },
+  { start_at: '2025-10-01', recurrence: 'yearly', uid: '12', type: 'holiday', user_id: 1, title: 'День пожилого человека', description: '' },
+  { start_at: '2025-10-05', recurrence: 'yearly', uid: '13', type: 'holiday', user_id: 1, title: 'День учителя', description: '' },
+  { start_at: '2025-10-14', recurrence: 'yearly', uid: '14', type: 'church', user_id: 1, title: 'Покрова', description: 'Покро́в день — день в народном календаре восточных славян, приходящийся на 1 октября. В народной традиции этот день отмечал встречу осени с зимой, начало вечерних девичьих посиделок и осеннего свадебного сезона.' },
+  { start_at: '2025-11-04', recurrence: 'yearly', uid: '15', type: 'holiday', user_id: 1, title: 'День народного единства', description: '' },
+  { start_at: '2025-12-12', recurrence: 'yearly', uid: '16', type: 'holiday', user_id: 1, title: 'День Конституции РФ', description: '' },
+  { start_at: '1982-03-02', recurrence: 'yearly', uid: '17', type: 'birthday', user_id: 1, title: 'День рождения Ильи', description: '' },
+  { start_at: '2013-05-29', recurrence: 'none', uid: '18', type: 'other', user_id: 1, title: 'React дата первого релиза', description: 'React впервые был выпущен 29 мая 2013 года как проект с открытым исходным кодом на GitHub, разработанный Джорданом Уоком из Facebook. ' },
 ];
-
-// for (let i = 0; i < Math.min(DUMMY_EVENTS.length, DUMMY_EVENTS_OLD.length); i++) {
-//   const oldItem = DUMMY_EVENTS_OLD[i];
-//   if (oldItem && typeof oldItem.title === 'string') {
-//     DUMMY_EVENTS[i].title = oldItem.title;
-//   }
-// }
-
 
 const USERS_FIELDS = {
    id: 'INTEGER PRIMARY KEY',
