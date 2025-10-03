@@ -74,4 +74,4 @@
   - `backend/routes/events/index.js` - API endpoints
   - `types/events.ts` - типы данных
   - `useEvents.ts` - API взаимодействие
-  - `useGroupedEvents.ts` - основная логика группировки событий
+  - `useGroupedEvents.ts` - основная логика группировки событий. Документация хука `frontend/docs/useGroupedEvents.md`
