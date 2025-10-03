@@ -192,7 +192,7 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
               <TextArea
                 id="description"
                 showCount
-                maxLength={100}
+                maxLength={250}
                 placeholder="Укажите описание события"
                 style={{ height: 120, resize: 'none' }}
               />
