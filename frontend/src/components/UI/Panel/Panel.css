@@ -1,0 +1,51 @@
+.panel {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  bottom: 0;
+
+  display: flex;
+  visibility: hidden;
+
+  width: 540px;
+
+  border-left: solid 1px var(--border-color);
+  background: #fff;
+  opacity: 0;
+
+  transform: translateX(100%);
+  transition-property: transform, opacity, visibility;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition-delay: 0s, 0s, 200ms;
+}
+
+.panel--opened {
+  visibility: visible;
+  opacity: 1;
+
+  transform: translateX(0);
+  transition-delay: 0s, 0s, 0s;
+}
+
+.panel__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.panel__wrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+.panel__body {
+  padding: 48px;
+}
+
+.panel__title {
+  margin-bottom: 40px;
+  font-size: 28px;
+  /* font-weight: 800; */
+}

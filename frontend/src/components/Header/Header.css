@@ -1,0 +1,14 @@
+.header {
+  display: flex;
+  align-items: center;
+  height: 80px;
+}
+
+.header__panel {
+  margin-left: auto;
+}
+
+.header__panel-icon {
+  color: var(--color-text-secondary);
+  border-color: #dcdfe6;
+}

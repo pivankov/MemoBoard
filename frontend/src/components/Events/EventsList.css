@@ -1,0 +1,15 @@
+.events-list {
+  max-width: 768px;
+}
+
+.events-list__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4F46E5;
+  margin: 28px 0 10px 0;
+}
+
+.events-list__items {
+  margin: 0;
+  padding: 0;
+}

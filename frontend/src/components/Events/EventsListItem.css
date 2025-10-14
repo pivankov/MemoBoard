@@ -1,0 +1,86 @@
+.events-list-item {
+  position: relative;
+  display: flex;
+  padding: 28px 0;
+}
+
+.events-list-item::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 19px;
+  width: 2px;
+  height: 100%;
+  background-color: #CBD4E1;
+}
+
+.events-list-item:last-child::before {
+  display: none;
+}
+
+.events-list-item__icon {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 16px;
+  background-color: #94A3B8;
+  border-radius: 9999px;
+  color: #FFF;
+  font-size: 20px;
+}
+
+.events-list-item__wrapper {
+  flex: 1;
+}
+
+.events-list-item__title {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.events-list-item__flags {
+  .ant-badge-status-text {
+    color: var(--color-text-secondary)!important;
+    font-size: 13px!important;
+  }
+}
+
+.events-list-item__description {
+  margin-top: 16px;
+  padding: 16px 20px 20px 16px;
+  background-color: #E2E8F0;
+  border-radius: 8px;
+}
+
+.events-list-item--church {
+  .events-list-item__icon {
+    color: #d48806;
+    background: #ffe58f;
+  } 
+}
+
+.events-list-item--birthday {
+  .events-list-item__icon {
+    color: #fff;
+    background: #ff4d4f;
+  } 
+}
+
+.events-list-item__event-date {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 4px;
+
+  .events-list-item__event-date-day {
+    margin-right: 4px;
+    font-size: 20px;
+  }
+  .events-list-item__event-date-month {
+    font-size: 12px;
+    color: var(--color-text-secondary);    
+  }
+}
