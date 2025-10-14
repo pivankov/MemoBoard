@@ -62,11 +62,6 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
   const form = useRef<any>(null);
   const [nextDate, setNextDate] = useState<Dayjs | null>(null);
 
-  /**
-   * Вычисляет следующую дату события на основе originalDate и recurrence
-   * @param originalDate - исходная дата события
-   * @param recurrence - тип повторения
-   */
   const calculateNextDateValue = (originalDate: Dayjs | undefined, recurrence: string) => {
     if (!originalDate || !recurrence) {
       setNextDate(null);
@@ -135,8 +130,6 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
 
     if (onSubmit) {
       onSubmit(result);
-    } else {
-      console.log("SUBMIT:", result);
     }
   };
 
