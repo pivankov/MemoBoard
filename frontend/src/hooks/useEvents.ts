@@ -2,24 +2,46 @@ import { useCallback,useEffect, useState } from 'react';
 
 import { Event, EventFormValues } from 'types/events';
 
+/**
+ * Возвращаемое значение хука useEvents
+ */
 interface UseEventsReturn {
+  /** Список всех событий */
   events: Event[];
+  /** Флаг загрузки данных */
   loading: boolean;
+  /** Сообщение об ошибке или null */
   error: string | null;
+  /** Метод добавления нового события */
   addEvent: (event: EventFormValues) => Promise<boolean>;
+  /** Метод обновления существующего события */
   updateEvent: (id: string, event: EventFormValues) => Promise<boolean>;
+  /** Метод удаления события */
   deleteEvent: (id: string) => Promise<boolean>;
+  /** Метод принудительного обновления списка событий */
   refreshEvents: () => Promise<void>;
+  /** Метод получения события по ID */
   getEventById: (id: string) => Promise<Event | null>;
 }
 
 const API_BASE_URL = 'http://localhost:4000/api/events';
 
+/**
+ * Хук для работы с событиями через REST API
+ * 
+ * Предоставляет методы для CRUD операций с событиями и управления их состоянием.
+ * Автоматически загружает список событий при монтировании компонента.
+ * 
+ * @returns объект с методами и состоянием для работы с событиями
+ */
 export const useEvents = (): UseEventsReturn => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Загружает список всех событий с сервера
+   */
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -45,6 +67,12 @@ export const useEvents = (): UseEventsReturn => {
     }
   }, []);
 
+  /**
+   * Создаёт новое событие
+   * 
+   * @param eventData - данные нового события
+   * @returns true в случае успешного создания, false при ошибке
+   */
   const addEvent = useCallback(async (eventData: EventFormValues): Promise<boolean> => {
     setError(null);
     
@@ -85,6 +113,13 @@ export const useEvents = (): UseEventsReturn => {
     }
   }, []);
 
+  /**
+   * Обновляет существующее событие
+   * 
+   * @param id - идентификатор события для обновления
+   * @param eventData - новые данные события
+   * @returns true в случае успешного обновления, false при ошибке
+   */
   const updateEvent = useCallback(async (id: string, eventData: EventFormValues): Promise<boolean> => {
     setError(null);
     
@@ -124,6 +159,12 @@ export const useEvents = (): UseEventsReturn => {
     }
   }, []);
 
+  /**
+   * Удаляет событие
+   * 
+   * @param id - идентификатор события для удаления
+   * @returns true в случае успешного удаления, false при ошибке
+   */
   const deleteEvent = useCallback(async (id: string): Promise<boolean> => {
     setError(null);
 
@@ -147,10 +188,19 @@ export const useEvents = (): UseEventsReturn => {
     }
   }, []);
 
+  /**
+   * Принудительно обновляет список событий с сервера
+   */
   const refreshEvents = useCallback(async () => {
     await fetchEvents();
   }, [fetchEvents]);
 
+  /**
+   * Получает событие по его идентификатору
+   * 
+   * @param id - идентификатор события
+   * @returns объект события или null при ошибке/отсутствии
+   */
   const getEventById = useCallback(async (id: string): Promise<Event | null> => {
     setError(null);
 
