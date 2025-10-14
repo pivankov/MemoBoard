@@ -1,7 +1,6 @@
 import { Button } from 'antd';
 import { BellOutlined,ExpandOutlined, SearchOutlined } from '@ant-design/icons';
 
-import logoImg from "assets/img/logo-text.svg";
 import HeaderNavigation from "components/Header/HeaderNavigation";
 
 import "./Header.css";
@@ -9,10 +8,6 @@ import "./Header.css";
 const Header: React.FC = () => {
   return (
     <div className="header">
-      <div className="header__logo">
-        <img src={logoImg} alt="" />
-      </div>
-
       <HeaderNavigation />
       
       <div className="header__panel">
