@@ -1,0 +1,74 @@
+.bookmarks-list-item {
+  position: relative;
+  display: flex;
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color);
+  text-decoration: none;
+
+  &:hover,
+  &.active {
+    background-color: #f1f5f9;
+  }  
+}
+
+.bookmarks-list-item__preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 58px;
+  overflow: hidden;
+  margin: 4px 16px 0 0;
+}
+
+.bookmarks-list-item__preview-blank {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  top: 50%;
+  left: 50%;
+  margin-top: -24px;
+  margin-left: -20px;
+  stroke-width: 2px;
+  color: var(--color-text-secondary);
+}
+
+
+.bookmarks-list-item__container {
+  display: block;
+  flex: 1;
+}
+
+.bookmarks-list-item__title {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: initial;  
+}
+
+.bookmarks-list-item__description {
+  display: block;
+  margin-bottom: 8px;
+  color: initial;
+}
+
+.bookmarks-list-item__details {
+  display: block;
+}
+
+.bookmarks-list-item__details-site, 
+.bookmarks-list-item__details-date {
+  color: var(--color-text-secondary);
+}
+
+.bookmarks-list-item__details-sep {
+  padding: 0 12px;
+
+  &::before {
+    content: '.';
+    position: relative;
+    top: -4px;
+    color: var(--color-text-secondary);
+  }  
+}

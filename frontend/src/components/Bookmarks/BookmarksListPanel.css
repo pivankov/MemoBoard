@@ -1,0 +1,22 @@
+.bookmarks-list-panel {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  border-bottom: 1px solid #e2e8f0;  
+}
+
+.bookmarks-list-panel__title {
+  display: flex;
+  align-items: center;
+  margin-right: 32px;  
+}
+
+.bookmarks-list-panel__title-text {
+  margin-left: 8px;
+  font-size: 16px;
+  font-weight: 500;  
+}
+
+.bookmarks-list-panel__side {
+  margin-left: auto;  
+}

@@ -1,5 +1,7 @@
+import Bookmarks from "components/Bookmarks/Bookmarks";
+
 function BookmarksPage() {
-  return <h1>Bookmarks</h1>;
+  return <Bookmarks />;
 }
 
 export default BookmarksPage;
