@@ -2,6 +2,8 @@
   position: relative;
   display: flex;
   flex: 1 1 auto; 
+  width: 100%;
+  height: 100%;  
   background-color: #FFF;
 }
 
@@ -26,7 +28,6 @@
   flex: 1;  
   position: relative;
   z-index: 1;
-  height: 100%;
   margin-left: 288px;
   margin-right: 0;
   overflow: hidden;

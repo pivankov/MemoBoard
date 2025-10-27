@@ -7,6 +7,7 @@ import EventsMiniList from "components/Events/EventsMiniList";
 import Panel from "components/UI/Panel/Panel"
 import { useEvents } from 'hooks/useEvents';
 import { useGroupedEvents } from 'hooks/useGroupedEvents';
+import SingleColumnLayout from "layouts/SingleColumnLayout";
 import { Event } from 'types/events';
 
 import { useNotifications } from 'providers/NotificationsProvider';
@@ -92,7 +93,7 @@ const Events: React.FC = () => {
   }
 
   return (
-    <>
+    <SingleColumnLayout>
       <div className={isPanelOpened ? 'events events--narrow' : 'events'}>
         <div className="events__wrapper">
           <div className="events__body">
@@ -166,7 +167,7 @@ const Events: React.FC = () => {
           onCancel={handleClosePanel}
         />
       </Panel>
-    </>
+    </SingleColumnLayout>
   );
 };
 
