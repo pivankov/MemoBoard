@@ -22,7 +22,7 @@
   margin: 4px 16px 0 0;
 }
 
-.bookmarks-list-item__preview-blank {
+.bookmarks-list-item__preview-blank svg {
   position: absolute;
   width: 40px;
   height: 40px;

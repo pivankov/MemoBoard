@@ -64,11 +64,11 @@ const ICON_NAMES = {
   Photo: PhotoIcon,
 } as const;
 
-interface Props {
+interface IconProps {
   name: keyof typeof ICON_NAMES;
 }
 
-const Icon: React.FC<Props> = ({ name }) => {
+const Icon: React.FC<IconProps> = ({ name }) => {
   const Icon = ICON_NAMES[name];
   const isSolid = name ? name.toLowerCase().endsWith('solid') : null;
 
