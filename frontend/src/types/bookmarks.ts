@@ -14,3 +14,12 @@ export type Bookmark = {
   transitionCounter: number | null;
   isFavorite: boolean;
 };
+
+/**
+ * Тип тега
+ */
+export type Tag = {
+  id: string;
+  title: string;
+  amount: number;
+};
