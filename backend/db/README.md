@@ -1,16 +1,16 @@
 ## База данных (SQLite + better-sqlite3)
 
 - Файл БД: `db/data.db`
-- Версия схемы: `PRAGMA user_version` (текущая — 1)
+- Версия схемы: `PRAGMA user_version` (текущая — 2)
 - Дата/время: TEXT в ISO‑8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
 - Булево: INTEGER 0/1, с `CHECK (field IN (0,1))`
 
 ### Инициализация и сиды
 - Команда (с сидами): `npm run db:init`
-- Создаёт таблицы, включает внешние ключи, добавляет базовые данные:
+- Создаёт таблицы, включает внешние ключи, добавляет базовые данные (пользователи, типы событий, события, категории закладок, теги, закладки).
 
 - Команда (без сидов): `npm run db:init:noseed`
-  - Создаёт только схему БД, без вставки пользователей/типов/событий.
+  - Создаёт только схему БД, без вставки данных.
 
 - Сброс БД: `npm run db:reset`
   - Удаляет файл `db/data.db` и запускает полную инициализацию с сидами.
@@ -52,15 +52,73 @@
 - `type_id` INTEGER NOT NULL REFERENCES event_types(id) ON DELETE RESTRICT ON UPDATE RESTRICT
 - `start_at` TEXT NOT NULL
 - `description` TEXT
-- `is_yearly` INTEGER NOT NULL DEFAULT 0 CHECK (is_yearly IN (0,1))
+- `recurrence` TEXT NOT NULL DEFAULT 'none' CHECK (recurrence IN ('none','monthly','yearly'))
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - UNIQUE(user_id, uid)
 
 Индексы:
-- `events(user_id)`
-- `events(user_id, start_at)`
-- `events(user_id, type_id)`
+- `idx_events_user_id` на `events(user_id)`
+- `idx_events_user_start_at` на `events(user_id, start_at)`
+- `idx_events_user_type` на `events(user_id, type_id)`
+
+#### bookmark_categories
+- `id` INTEGER PRIMARY KEY
+- `uid` TEXT UNIQUE NOT NULL
+- `parent_id` INTEGER REFERENCES bookmark_categories(id) ON DELETE SET NULL
+- `title` TEXT NOT NULL
+- `icon` TEXT
+- `position` INTEGER NOT NULL DEFAULT 0
+- `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
+- `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
+
+Индексы: UNIQUE по `uid` (уникальность покрывает индекс).
+
+#### bookmark_tags
+- `id` INTEGER PRIMARY KEY
+- `uid` TEXT UNIQUE NOT NULL
+- `title` TEXT NOT NULL
+- `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
+- `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
+
+Индексы: UNIQUE по `uid` (уникальность покрывает индекс).
+
+#### bookmarks
+- `id` INTEGER PRIMARY KEY
+- `uid` TEXT UNIQUE NOT NULL
+- `user_id` INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE RESTRICT
+- `category_id` INTEGER REFERENCES bookmark_categories(id) ON DELETE SET NULL ON UPDATE RESTRICT
+- `url` TEXT NOT NULL
+- `title` TEXT NOT NULL
+- `description` TEXT
+- `preview` TEXT
+- `opened_at` TEXT
+- `transition_counter` INTEGER NOT NULL DEFAULT 0
+- `favorite` INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0,1))
+- `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
+- `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
+
+Индексы:
+- UNIQUE по `uid` (уникальность покрывает индекс).
+- `idx_bookmarks_user_id` на `bookmarks(user_id)`
+- `idx_bookmarks_category_id` на `bookmarks(category_id)`
+
+#### bookmark_tag_relations
+- `bookmark_id` INTEGER NOT NULL REFERENCES bookmarks(id) ON DELETE CASCADE
+- `tag_id` INTEGER NOT NULL REFERENCES bookmark_tags(id) ON DELETE CASCADE
+- PRIMARY KEY (bookmark_id, tag_id)
+
+Индексы:
+- `idx_bookmark_tag_relations_bookmark_id` на `bookmark_tag_relations(bookmark_id)`
+- `idx_bookmark_tag_relations_tag_id` на `bookmark_tag_relations(tag_id)`
+
+### Данные для посева (seeds)
+
+Данные для инициализации базы данных находятся в директории `db/seeds/`:
+- `events.js` — события
+- `bookmarks.js` — категории, теги и закладки
+
+Скрипт инициализации является идемпотентным: повторный запуск с сидами не создаёт дубликаты благодаря использованию `INSERT OR IGNORE` и проверкам существования записей.
 
 ### Примеры SQL
 
@@ -87,7 +145,16 @@ CREATE TABLE IF NOT EXISTS child (
 ### Добавление новой таблицы
 1. Определите поля и ограничения (даты — TEXT ISO‑8601, булево — 0/1 + CHECK).
 2. Добавьте описание полей и SQL в `db/initdb.js` по аналогии с существующими.
-3. При необходимости поднимите версию схемы и добавьте миграцию.
-4. Добавьте сид‑данные (опционально).
+3. При необходимости поднимите версию схемы (`SCHEMA_VERSION`) и добавьте функцию миграции (`migrateFromXToY`).
+4. Добавьте сид‑данные (опционально) в соответствующий файл в `db/seeds/`.
+5. Обновите документацию в `db/README.md`.
+
+### Миграции
+
+Миграции выполняются автоматически при инициализации БД. Текущие миграции:
+- `migrateFrom0To1`: создание таблиц users, event_types, events
+- `migrateFrom1To2`: создание таблиц bookmark_categories, bookmark_tags, bookmarks, bookmark_tag_relations
+
+Все миграции являются идемпотентными и безопасными для повторного запуска.
 
 
