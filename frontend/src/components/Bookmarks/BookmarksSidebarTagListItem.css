@@ -16,8 +16,8 @@
     color: #1e293b;
     background-color: rgba(30, 41, 59, 0.05);
 
-    .label,
-    .icon {
+    .bookmarks-sidebar-tag-list-item__title,
+    .bookmarks-sidebar-tag-list-item__icon {
       color: initial;
       opacity: 1;
     }
