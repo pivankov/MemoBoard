@@ -375,10 +375,13 @@ async function initDb(options = {}) {
         }
         
         visiting.add(catId);
-        const parentId = cat.parentId && cat.parentId !== "0" && cat.parentId !== "" ? cat.parentId : null;
+
+        const parentId = cat.parent_id && cat.parent_id !== "0" && cat.parent_id !== "" ? cat.parent_id : null;
+
         if (parentId && !processed.has(parentId) && categoryMap.has(parentId)) {
           visit(parentId);
         }
+
         visiting.delete(catId);
         processed.add(catId);
         sortedCategories.push(cat);
@@ -400,8 +403,8 @@ async function initDb(options = {}) {
             continue;
           }
           
-          const parentIdValue = cat.parentId && cat.parentId !== "0" && cat.parentId !== "" 
-            ? uidToCategoryId[cat.parentId] ?? null 
+          const parentIdValue = cat.parent_id && cat.parent_id !== "0" && cat.parent_id !== "" 
+            ? uidToCategoryId[cat.parent_id] ?? null 
             : null;
           
           const result = insertCategory.run({
@@ -495,15 +498,16 @@ async function initDb(options = {}) {
           }
           
           // Валидация categoryId
-          const categoryId = bm.categoryId ? categoryUidToId[bm.categoryId] ?? null : null;
-          if (bm.categoryId && !categoryId) {
-            console.warn(`Предупреждение: категория с uid "${bm.categoryId}" не найдена для закладки "${bm.title}" (uid: ${bm.id})`);
+          const categoryId = bm.category_id ? categoryUidToId[bm.category_id] ?? null : null;
+
+          if (bm.category_id && !categoryId) {
+            console.warn(`Предупреждение: категория с uid "${bm.category_id}" не найдена для закладки "${bm.title}" (uid: ${bm.id})`);
           }
           
           // Преобразуем формат даты из "YYYY-MM-DD HH:MM:SS" в "YYYY-MM-DDTHH:MM:SSZ" (ISO-8601)
           // Используем одно и то же время для created_at и updated_at, если updatedAt не указано
-          const createdAt = bm.createdAt ? bm.createdAt.replace(' ', 'T') + 'Z' : new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-          const updatedAt = bm.updatedAt ? bm.updatedAt.replace(' ', 'T') + 'Z' : createdAt;
+          const createdAt = bm.created_at ? bm.created_at.replace(' ', 'T') + 'Z' : new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+          const updatedAt = bm.updated_at ? bm.updated_at.replace(' ', 'T') + 'Z' : createdAt;
           
           const result = insertBookmark.run({
             uid: bm.id,
@@ -513,8 +517,8 @@ async function initDb(options = {}) {
             title: bm.title,
             description: bm.description || null,
             preview: bm.preview || null,
-            transition_counter: bm.transitionCounter ?? 0,
-            favorite: bm.isFavorite ? 1 : 0,
+            transition_counter: bm.transition_counter ?? 0,
+            favorite: bm.favorite ? 1 : 0,
             created_at: createdAt,
             updated_at: updatedAt,
           });
