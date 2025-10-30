@@ -340,7 +340,7 @@ async function initDb(options = {}) {
         return;
       }
 
-      // Сиды для категорий
+      // === Категории закладок ===
       const insertCategory = db.prepare(`
         INSERT OR IGNORE INTO bookmark_categories (uid, parent_id, title, icon, position, created_at, updated_at)
         VALUES (@uid, @parent_id, @title, @icon, @position, datetime('now'), datetime('now'))
@@ -356,59 +356,59 @@ async function initDb(options = {}) {
       }
       
       // Топологическая сортировка категорий для корректной обработки многоуровневой иерархии
-      const categoryMap = new Map(DUMMY_BOOKMARK_CATEGORIES.map(cat => [cat.id, cat]));
+      const categoryMap = new Map(DUMMY_BOOKMARK_CATEGORIES.map(cat => [cat.uid, cat]));
       const sortedCategories = [];
       const processed = new Set();
       const visiting = new Set();
       
-      const visit = (catId) => {
-        if (visiting.has(catId)) {
-          throw new Error(`Циклическая зависимость обнаружена в категориях: ${catId}`);
+      const visit = (catUid) => {
+        if (visiting.has(catUid)) {
+          throw new Error(`Циклическая зависимость обнаружена в категориях: ${catUid}`);
         }
-        if (processed.has(catId)) {
+        if (processed.has(catUid)) {
           return;
         }
         
-        const cat = categoryMap.get(catId);
+        const cat = categoryMap.get(catUid);
         if (!cat) {
-          throw new Error(`Категория ${catId} не найдена, но на неё ссылается другая категория`);
+          throw new Error(`Категория ${catUid} не найдена, но на неё ссылается другая категория`);
         }
         
-        visiting.add(catId);
+        visiting.add(catUid);
 
-        const parentId = cat.parent_id && cat.parent_id !== "0" && cat.parent_id !== "" ? cat.parent_id : null;
+        const parentUid = cat.parent_uid && cat.parent_uid !== "0" && cat.parent_uid !== "" ? cat.parent_uid : null;
 
-        if (parentId && !processed.has(parentId) && categoryMap.has(parentId)) {
-          visit(parentId);
+        if (parentUid && !processed.has(parentUid) && categoryMap.has(parentUid)) {
+          visit(parentUid);
         }
 
-        visiting.delete(catId);
-        processed.add(catId);
+        visiting.delete(catUid);
+        processed.add(catUid);
         sortedCategories.push(cat);
       };
       
       // Обрабатываем все категории
       for (const cat of DUMMY_BOOKMARK_CATEGORIES) {
-        if (!processed.has(cat.id)) {
-          visit(cat.id);
+        if (!processed.has(cat.uid)) {
+          visit(cat.uid);
         }
       }
 
       const seedCategories = db.transaction(() => {
         for (const cat of sortedCategories) {
-          // Пропускаем если уже существует
-          const existing = selectCategoryUid.get(cat.id);
+          // Проверяем по uid
+          const existing = selectCategoryUid.get(cat.uid);
           if (existing) {
-            uidToCategoryId[cat.id] = existing.id;
+            uidToCategoryId[cat.uid] = existing.id;
             continue;
           }
           
-          const parentIdValue = cat.parent_id && cat.parent_id !== "0" && cat.parent_id !== "" 
-            ? uidToCategoryId[cat.parent_id] ?? null 
+          const parentIdValue = cat.parent_uid && cat.parent_uid !== "0" && cat.parent_uid !== "" 
+            ? uidToCategoryId[cat.parent_uid] ?? null 
             : null;
           
           const result = insertCategory.run({
-            uid: cat.id,
+            uid: cat.uid,
             parent_id: parentIdValue,
             title: cat.title,
             icon: cat.icon || null,
@@ -416,12 +416,12 @@ async function initDb(options = {}) {
           });
           
           if (result.changes > 0) {
-            uidToCategoryId[cat.id] = result.lastInsertRowid;
+            uidToCategoryId[cat.uid] = result.lastInsertRowid;
           } else {
             // Если INSERT OR IGNORE не вставил (из-за UNIQUE), получаем существующий id
-            const existingCat = selectCategoryUid.get(cat.id);
+            const existingCat = selectCategoryUid.get(cat.uid);
             if (existingCat) {
-              uidToCategoryId[cat.id] = existingCat.id;
+              uidToCategoryId[cat.uid] = existingCat.id;
             }
           }
         }
@@ -429,7 +429,7 @@ async function initDb(options = {}) {
       
       seedCategories();
 
-      // Сиды для тегов
+      // === Теги закладок ===
       const insertTag = db.prepare(`
         INSERT OR IGNORE INTO bookmark_tags (uid, title, created_at, updated_at)
         VALUES (@uid, @title, datetime('now'), datetime('now'))
@@ -444,35 +444,28 @@ async function initDb(options = {}) {
         uidToTagId[tag.uid] = tag.id;
       }
       
-      const seedTags = db.transaction(() => {
-        for (const tag of DUMMY_BOOKMARK_TAGS) {
-          // Пропускаем если уже существует
-          const existing = selectTagUid.get(tag.id);
-          if (existing) {
-            uidToTagId[tag.id] = existing.id;
-            continue;
-          }
-          
-          const result = insertTag.run({
-            uid: tag.id,
-            title: tag.title,
-          });
-          
-          if (result.changes > 0) {
-            uidToTagId[tag.id] = result.lastInsertRowid;
-          } else {
-            // Если INSERT OR IGNORE не вставил (из-за UNIQUE), получаем существующий id
-            const existingTag = selectTagUid.get(tag.id);
-            if (existingTag) {
-              uidToTagId[tag.id] = existingTag.id;
-            }
+      for (const tag of DUMMY_BOOKMARK_TAGS) {
+        // Проверяем по uid
+        const existing = selectTagUid.get(tag.uid);
+        if (existing) {
+          uidToTagId[tag.uid] = existing.id;
+          continue;
+        }
+        const result = insertTag.run({
+          uid: tag.uid,
+          title: tag.title,
+        });
+        if (result.changes > 0) {
+          uidToTagId[tag.uid] = result.lastInsertRowid;
+        } else {
+          const existingTag = selectTagUid.get(tag.uid);
+          if (existingTag) {
+            uidToTagId[tag.uid] = existingTag.id;
           }
         }
-      });
+      }
       
-      seedTags();
-
-      // Сиды для закладок
+      // === Закладки ===
       const insertBookmark = db.prepare(`
         INSERT OR IGNORE INTO bookmarks (uid, user_id, category_id, url, title, description, preview, transition_counter, favorite, created_at, updated_at)
         VALUES (@uid, @user_id, @category_id, @url, @title, @description, @preview, @transition_counter, @favorite, @created_at, @updated_at)
@@ -489,71 +482,52 @@ async function initDb(options = {}) {
       const categoryRows = db.prepare('SELECT id, uid FROM bookmark_categories').all();
       const categoryUidToId = Object.fromEntries(categoryRows.map(r => [r.uid, r.id]));
 
-      const seedBookmarks = db.transaction(() => {
-        for (const bm of DUMMY_BOOKMARKS) {
-          // Пропускаем если уже существует
-          const existing = selectBookmarkUid.get(bm.id);
-          if (existing) {
-            continue;
-          }
-          
-          // Валидация categoryId
-          const categoryId = bm.category_id ? categoryUidToId[bm.category_id] ?? null : null;
-
-          if (bm.category_id && !categoryId) {
-            console.warn(`Предупреждение: категория с uid "${bm.category_id}" не найдена для закладки "${bm.title}" (uid: ${bm.id})`);
-          }
-          
-          // Преобразуем формат даты из "YYYY-MM-DD HH:MM:SS" в "YYYY-MM-DDTHH:MM:SSZ" (ISO-8601)
-          // Используем одно и то же время для created_at и updated_at, если updatedAt не указано
-          const createdAt = bm.created_at ? bm.created_at.replace(' ', 'T') + 'Z' : new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-          const updatedAt = bm.updated_at ? bm.updated_at.replace(' ', 'T') + 'Z' : createdAt;
-          
-          const result = insertBookmark.run({
-            uid: bm.id,
-            user_id: adminId,
-            category_id: categoryId,
-            url: bm.url,
-            title: bm.title,
-            description: bm.description || null,
-            preview: bm.preview || null,
-            transition_counter: bm.transition_counter ?? 0,
-            favorite: bm.favorite ? 1 : 0,
-            created_at: createdAt,
-            updated_at: updatedAt,
-          });
-          
-          // Получаем id закладки (либо из результата вставки, либо из существующей записи)
-          let bookmarkId;
-          if (result.changes > 0) {
-            bookmarkId = result.lastInsertRowid;
-          } else {
-            // Если INSERT OR IGNORE не вставил, получаем существующий id
-            const existingBm = selectBookmarkUid.get(bm.id);
-            if (!existingBm) {
-              continue; // Пропускаем если не удалось получить id
-            }
-            bookmarkId = existingBm.id;
-          }
-          
-          // Добавляем связи с тегами
-          if (bm.tags && Array.isArray(bm.tags)) {
-            for (const tagUid of bm.tags) {
-              const tagId = uidToTagId[tagUid];
-              if (tagId) {
-                insertBookmarkTagRelation.run({
-                  bookmark_id: bookmarkId,
-                  tag_id: tagId,
-                });
-              } else {
-                console.warn(`Предупреждение: тег с uid "${tagUid}" не найден для закладки "${bm.title}" (uid: ${bm.id})`);
-              }
+      for (const bm of DUMMY_BOOKMARKS) {
+        // Проверяем по uid
+        const existing = selectBookmarkUid.get(bm.uid);
+        if (existing) {
+          continue;
+        }
+        // Валидация category_uid
+        const categoryId = bm.category_uid ? categoryUidToId[bm.category_uid] ?? null : null;
+        if (bm.category_uid && !categoryId) {
+          console.warn(`Предупреждение: категория с uid "${bm.category_uid}" не найдена для закладки "${bm.title}" (uid: ${bm.uid})`);
+        }
+        const createdAt = bm.created_at ? bm.created_at.replace(' ', 'T') + 'Z' : new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+        const updatedAt = bm.updated_at ? bm.updated_at.replace(' ', 'T') + 'Z' : createdAt;
+        const result = insertBookmark.run({
+          uid: bm.uid,
+          user_id: adminId,
+          category_id: categoryId,
+          url: bm.url,
+          title: bm.title,
+          description: bm.description || null,
+          preview: bm.preview || null,
+          transition_counter: bm.transition_counter ?? 0,
+          favorite: bm.favorite ? 1 : 0,
+          created_at: createdAt,
+          updated_at: updatedAt,
+        });
+        let bookmarkId;
+        if (result.changes > 0) {
+          bookmarkId = result.lastInsertRowid;
+        } else {
+          const existingBm = selectBookmarkUid.get(bm.uid);
+          if (!existingBm) continue;
+          bookmarkId = existingBm.id;
+        }
+        // Добавляем связи с тегами (массив uid)
+        if (bm.tags && Array.isArray(bm.tags)) {
+          for (const tagUid of bm.tags) {
+            const tagId = uidToTagId[tagUid];
+            if (tagId) {
+              insertBookmarkTagRelation.run({ bookmark_id: bookmarkId, tag_id: tagId });
+            } else {
+              console.warn(`Предупреждение: тег с uid "${tagUid}" не найден для закладки "${bm.title}" (uid: ${bm.uid})`);
             }
           }
         }
-      });
-      
-      seedBookmarks();
+      }
     }
   };
 
