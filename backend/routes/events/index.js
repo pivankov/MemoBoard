@@ -1,12 +1,9 @@
 import { Router } from 'express';
 import { randomUUID } from 'crypto';
-import tagsRouter from './tags.js';
 import { db } from '../../db/initdb.js';
 import { normalizeInputDate } from "../../utils/date.js"
 
 const router = Router();
-
-router.use('/tags', tagsRouter);
 
 router.get('/', async (req, res) => {
   try {
@@ -23,7 +20,7 @@ router.get('/', async (req, res) => {
       originalDate: String(row.start_at ?? ''),
       nextDate: '',
       type: String(row.type ?? ''),
-      description: row.description ? String(row.description) : '',
+      description: String(row.description ?? ''),
       recurrence: String(row.recurrence ?? 'none'),
     }));
 
@@ -63,7 +60,7 @@ router.get('/:id', async (req, res) => {
       originalDate: String(row.start_at ?? ''),
       nextDate: '',
       type: String(row.type ?? ''),
-      description: row.description ? String(row.description) : '',
+      description: String(row.description ?? ''),
       recurrence: String(row.recurrence ?? 'none'),
     };
 
