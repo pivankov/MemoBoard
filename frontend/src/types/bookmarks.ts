@@ -12,7 +12,7 @@ export type Bookmark = {
   createdAt: string;
   updatedAt: string | null;
   transitionCounter: number | null;
-  isFavorite: boolean;
+  favorite: boolean;
 };
 
 /**
