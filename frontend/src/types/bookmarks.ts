@@ -23,3 +23,17 @@ export type Tag = {
   title: string;
   amount: number;
 };
+
+/**
+ * Тип категории закладки
+ */
+export type Category = {
+  id: string;
+  parentId: string | null;
+  title: string;
+  icon: string | null;
+  position: number;
+  amount: number;
+  createdAt: string;
+  updatedAt: string | null;
+};
