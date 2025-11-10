@@ -72,3 +72,8 @@
     color: var(--color-text-secondary);
   }  
 }
+
+.bookmarks-list-item__tags {
+  display: block;
+  margin-top: 12px;
+}

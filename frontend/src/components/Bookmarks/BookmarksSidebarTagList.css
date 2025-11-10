@@ -1,3 +1,9 @@
-.bookmarks-sidebar-tag-list {
-  
+.bookmarks-sidebar-tag-list__title {
+  padding: 10px 16px;
+  font-size: 12px;
+  line-height: 24px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--theme-text-color);
 }

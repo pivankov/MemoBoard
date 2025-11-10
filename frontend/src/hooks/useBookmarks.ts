@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Bookmark, Category,Tag } from 'types/bookmarks';
+import { Bookmark, Category, Tag } from 'types/bookmarks';
 
 /**
  * Возвращаемое значение хука useBookmarks

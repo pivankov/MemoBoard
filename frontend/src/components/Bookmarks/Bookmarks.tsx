@@ -17,7 +17,7 @@ const Bookmarks: React.FC = () => {
     <TwoColumnLayout
       sidebarHeader="Закладки"    
       sidebar={sidebar}
-      content={<BookmarksList data={bookmarks} />}
+      content={<BookmarksList bookmarks={bookmarks} tags={tags} />}
     />
   );
 };

@@ -1,11 +1,17 @@
+import { Tag } from 'antd';
+
 import Icon from 'components/UI/Icon/Icon'
-import { Bookmark } from "types/bookmarks";
+import type { Bookmark, Tag as BookmarkTag } from "types/bookmarks";
 import { formatDateString } from "utils/date";
 import { getDomainName } from "utils/http";
 
 import "./BookmarksListItem.css";
 
-const BookmarksListItem: React.FC<Bookmark> = ({ url, title, description, createdAt }) => {
+type BookmarkWithTags = Omit<Bookmark, 'tags'> & {
+  tags: BookmarkTag[];
+};
+
+const BookmarksListItem: React.FC<BookmarkWithTags> = ({ url, title, description, createdAt, tags }) => {
   const siteName = getDomainName(url);
   const date = formatDateString(createdAt);
 
@@ -31,6 +37,13 @@ const BookmarksListItem: React.FC<Bookmark> = ({ url, title, description, create
           <span className="bookmarks-list-item__details-date">
             {date}
           </span>
+        </span>
+        <span className="bookmarks-list-item__tags">
+          {
+            tags.map((tag) => (
+              <Tag key={tag.id} color="blue">{tag.title}</Tag>
+            ))
+          }
         </span>
       </span>
     </a>
