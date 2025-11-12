@@ -64,9 +64,14 @@ const ICON_NAMES = {
   Photo: PhotoIcon,
 } as const;
 
+type IconName = keyof typeof ICON_NAMES;
+
 interface IconProps {
-  name: keyof typeof ICON_NAMES;
+  name: IconName;
 }
+
+export const isIconName = (value: string): value is IconName =>
+  Object.prototype.hasOwnProperty.call(ICON_NAMES, value);
 
 const Icon: React.FC<IconProps> = ({ name }) => {
   const Icon = ICON_NAMES[name];
