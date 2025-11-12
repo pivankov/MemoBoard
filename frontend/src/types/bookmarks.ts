@@ -37,3 +37,14 @@ export type Category = {
   createdAt: string;
   updatedAt: string | null;
 };
+
+export type BookmarkCategogiesGrouped = {
+  id: string;
+  title: string;
+  children: Category[];
+}
+
+export type BookmarksListPanelHeader = {
+  title: string;
+  icon: string;  
+}

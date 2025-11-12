@@ -11,6 +11,11 @@
   margin-right: 32px;  
 }
 
+.bookmarks-list-panel__title-icon {
+  width: 24px;
+  height: 24px;
+}
+
 .bookmarks-list-panel__title-text {
   margin-left: 8px;
   font-size: 16px;
