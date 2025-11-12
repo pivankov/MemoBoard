@@ -20,7 +20,7 @@ const BookmarksList: React.FC<{ bookmarks: Bookmark[], tags: Tag[] }> = ({ bookm
 
   return (
     <>
-      <BookmarksListPanel />
+      <BookmarksListPanel tags={tags} />
       
       <div className="bookmarks-list">
         {

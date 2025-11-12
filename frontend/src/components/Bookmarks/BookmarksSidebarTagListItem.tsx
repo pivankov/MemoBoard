@@ -1,13 +1,15 @@
+import { Link } from "react-router";
+
 import Icon from 'components/UI/Icon/Icon'
 import { Tag } from "types/bookmarks";
 
 import "./BookmarksSidebarTagListItem.css";
 
-const BookmarksSidebarTagListItem: React.FC<Tag> = ({ title, amount }) => {
+const BookmarksSidebarTagListItem: React.FC<Tag> = ({ id, title, amount }) => {
   const hasAmount = !!amount;
 
   return (
-    <a className="bookmarks-sidebar-tag-list-item" href="#">
+    <Link to={`/bookmarks/tag/${id}`} className="bookmarks-sidebar-tag-list-item">
       <span className="bookmarks-sidebar-tag-list-item__icon">
         <Icon name="Tag" />
       </span>
@@ -19,7 +21,7 @@ const BookmarksSidebarTagListItem: React.FC<Tag> = ({ title, amount }) => {
           {amount}
         </span>
       )}
-    </a>
+    </Link>
   );
 };
 

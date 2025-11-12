@@ -1,10 +1,20 @@
+import { useParams } from "react-router";
 import { Button } from 'antd';
 
 import Icon from 'components/UI/Icon/Icon'
+import { Tag } from "types/bookmarks";
 
 import "./BookmarksListPanel.css";
 
-const BookmarksListPanel: React.FC = () => {
+const BookmarksListPanel: React.FC<{ tags: Tag[] }> = ({ tags }) => {
+  const params = useParams();
+  const tagId = params.tagId;
+
+  const currentTag = tags.find((tag) => tag.id === tagId);
+  const currentTagName = currentTag?.title;
+
+  const title = currentTagName || '';
+
   return (
     <div className="bookmarks-list-panel">
       <div className="bookmarks-list-panel__title">
@@ -12,7 +22,7 @@ const BookmarksListPanel: React.FC = () => {
           <Icon name="Folder" />
         </div>
         <div className="bookmarks-list-panel__title-text">
-          Несортированные
+          {title}
         </div>
       </div>
 
