@@ -10,8 +10,8 @@ import BookmarksSidebarCategoryList from "./BookmarksSidebarCategoryList";
 import BookmarksSidebarTagList from "./BookmarksSidebarTagList";
 
 const Bookmarks: React.FC = () => {
-  const { tagId, categoryId } = useParams();
-  const { bookmarks, tags, categories, loading, error } = useBookmarks();
+  const { tagId, categoryId } = useParams<{ tagId?: string; categoryId?: string }>();
+  const { bookmarks, tags, categories, loading, error } = useBookmarks({ tagId, categoryId });
 
   const panelHeader: BookmarksListPanelHeader = useMemo(() => {
     const currentCategory = categories.find((category) => category.id === categoryId);

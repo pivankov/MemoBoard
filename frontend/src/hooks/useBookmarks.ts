@@ -20,6 +20,16 @@ interface UseBookmarksReturn {
   refreshBookmarks: () => Promise<void>;  
 }
 
+/**
+ * Параметры хука useBookmarks
+ */
+interface UseBookmarksParams {
+  /** ID тега для фильтрации закладок */
+  tagId?: string;
+  /** ID категории для фильтрации закладок */
+  categoryId?: string;
+}
+
 const API_BASE_URL = 'http://localhost:4000/api/bookmarks';
 
 /**
@@ -30,7 +40,7 @@ const API_BASE_URL = 'http://localhost:4000/api/bookmarks';
  * 
  * @returns объект с методами и состоянием для работы с закладками
  */
-export const useBookmarks = (): UseBookmarksReturn => {
+export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): UseBookmarksReturn => {
   const [bookmarks, setBookmarks] = useState<BookmarksItem[]>([]);
   const [tags, setTags] = useState<BookmarksTag[]>([]);
   const [categories, setCategories] = useState<BookmarksCategory[]>([]);
@@ -60,6 +70,56 @@ export const useBookmarks = (): UseBookmarksReturn => {
       throw err;
     }
   }, []);
+
+  /**
+   * Загружает список закладок по указанному ID тега
+   */  
+  const fetchBookmarksByTag = useCallback(async (id: string) => {
+    try {
+      const path = `${API_BASE_URL}/tags/${id}/bookmarks`;
+      const response = await fetch(path);
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки закладок по тегу: ${response.status} ${response.statusText}`);
+      }
+      
+      const payload = await response.json();
+      const list: BookmarksItem[] = Array.isArray(payload?.data) ? payload.data : [];
+
+      setBookmarks(list);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке закладок';
+
+      setError(errorMessage);
+      console.error('Ошибка загрузки закладок:', err);
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Загружает список закладок по указанному ID категории
+   */  
+  const fetchBookmarksByCategory = useCallback(async (id: string) => {
+    try {
+      const path = `${API_BASE_URL}/categories/${id}/bookmarks`;
+      const response = await fetch(path);
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки закладок по категории: ${response.status} ${response.statusText}`);
+      }
+      
+      const payload = await response.json();
+      const list: BookmarksItem[] = Array.isArray(payload?.data) ? payload.data : [];
+
+      setBookmarks(list);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке закладок';
+
+      setError(errorMessage);
+      console.error('Ошибка загрузки закладок:', err);
+      throw err;
+    }
+  }, []);  
 
   /**
    * Загружает список всех тегов с сервера
@@ -108,6 +168,23 @@ export const useBookmarks = (): UseBookmarksReturn => {
   }, []);
 
   /**
+   * Загружает список закладок в зависимости от выбранных фильтров
+   */
+  const fetchFilteredBookmarks = useCallback(async () => {
+    if (categoryId) {
+      await fetchBookmarksByCategory(categoryId);
+      return;
+    }
+
+    if (tagId) {
+      await fetchBookmarksByTag(tagId);
+      return;
+    }
+
+    await fetchBookmarks();
+  }, [categoryId, tagId, fetchBookmarksByCategory, fetchBookmarksByTag, fetchBookmarks]);
+
+  /**
    * Загружает все данные: закладки, теги и категории
    */
   const fetchAll = useCallback(async () => {
@@ -116,17 +193,16 @@ export const useBookmarks = (): UseBookmarksReturn => {
     
     try {
       await Promise.all([
-        fetchBookmarks(),
+        fetchFilteredBookmarks(),
         fetchTags(),
         fetchCategories(),
       ]);
     } catch (err) {
-      // Ошибки уже обработаны в отдельных методах
       console.error('Ошибка загрузки данных:', err);
     } finally {
       setLoading(false);
     }
-  }, [fetchBookmarks, fetchTags, fetchCategories]);
+  }, [fetchFilteredBookmarks, fetchTags, fetchCategories]);
 
   /**
    * Принудительно обновляет все списки с сервера
