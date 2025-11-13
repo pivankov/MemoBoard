@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id/bookmarks', async (req, res) => {
+router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
