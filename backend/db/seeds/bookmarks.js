@@ -54,7 +54,7 @@ export const DUMMY_BOOKMARK_TAGS = [
 export const DUMMY_BOOKMARKS = [
   {
     uid: "dSMicJ",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "Полный гайд на Резюме в IT - Как Правильно составить резюме программисту?",
     url: "https://www.youtube.com/watch?v=mU-MghntMxg",
     description: "Enjoy the videos and music that you love, upload original content and share it all with friends, family and the world on YouTube.",
@@ -67,7 +67,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "UIje1I",
-    category_uid: "ktGDhX",
+    category_uid: "7LSI",
     title: " Nest + Typia = Nestia. Доминация Typescript",
     url: "https://www.youtube.com/watch?v=eAFq35Z6z5I",
     description: "Enjoy the videos and music that you love, upload original content and share it all with friends, family and the world on YouTube.",
@@ -80,7 +80,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "qRN4eu",
-    category_uid: "ktGDhX",
+    category_uid: "7i95",
     title: "\"Star Rail LIVE 2025\" Concert Full Recording | Honkai: Star Rail - YouTube",
     url: "https://www.youtube.com/watch?v=FAckVYINs8E",
     description: "The Official Recording of \"Star Rail LIVE\" Honkai: Star Rail Concert 2025 is Online — The Cosmos Resonates for You!Attention, passengers, the Express is abou...",
@@ -93,7 +93,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "NUjbfo",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "Lenovo Legion Y700 Как настроить планшет , установить русский язык , удалить китайские приложения - YouTube",
     url: "https://www.youtube.com/watch?v=EsyqqjnwOws",
     description: "Lenovo Legion Y700 Китайская версия с китайской оригинальной прошивкой с русским языком .Настрока планшета,установка русского языка,удаление китайских прилож...",
@@ -106,7 +106,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "MmD8cr",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "Встреча христианского клуба НИУ ВШЭ | иерей Павел Островский - YouTube",
     url: "https://www.youtube.com/watch?v=ZN7YTvMaw0w",
     description: "Как найти ответы на сложные вопросы о вере? Где обсудить важные темы на простом, доступном языке? На встрече с иереем Павлом Островским в Культурном центре «...",
@@ -119,7 +119,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "pIDIZR",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "Дмитрий Лаврик - YouTube",
     url: "https://www.youtube.com/@dmitrylavrik/videos",
     description: "Полезные материалы по программированию и веб-разработке",
@@ -132,7 +132,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "W9QGHV",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "VK Лекторий | Москва, VK Fest | 2024 | Павел Островский: Лайки, юмор и семья",
     url: "https://vkvideo.ru/video-165631795_456239998",
     description: "",
@@ -145,7 +145,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "qczCGW",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "СОВСЕМ НЕВЫДУМАННАЯ ИСТОРИЯ (РХ 2024)",
     url: "https://vk.com/video-38080110_456239734",
     description: "",
@@ -158,7 +158,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "tqGXiv",
-    category_uid: "ktGDhX",
+    category_uid: "7LSI",
     title: "Введение в Node.js. Часть 1. Знакомство с языком - YouTube",
     url: "https://www.youtube.com/watch?v=kkU_Lk8kdms",
     description: "- общие концепция Node- однопоточный или нет, идея event loop- ключевые отличия от Node от PHP- hello world server- почему сейчас я всё чаще выбираю node для...",
@@ -171,7 +171,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "5kvx9r",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "Ошибки приготовления кофе в воронке | Hario v60",
     url: "https://www.youtube.com/watch?v=VJ07UreDgII",
     description: "В этом видео наш оператор и арт-директор Федор впервые готовит кофе в воронке! \n\nИспользуя классику альтернативы — Hario v60, он попробует приготовить напиток по своему рецепту, а если что-то пойдёт не так, Николай внесёт свои корректировки. Или не внесёт?",
@@ -184,7 +184,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "arl0na",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "КОНЕЦ СВЕТА БЛИЗКО?! Мысли математика и священника. Савватеев и Островский - YouTube",
     url: "https://www.youtube.com/watch?v=hlfjUaCugXw",
     description: "▶︎ Подарите ненужным гаджетам новую жизнь вместе с Авито - https://bit.ly/3VfSvr4?erid=LjN8KL8SV▶︎ Компактный и удобный компрессорный ингалятор Армед для ком...",
@@ -197,7 +197,7 @@ export const DUMMY_BOOKMARKS = [
   },
   {
     uid: "hiqXlv",
-    category_uid: "ktGDhX",
+    category_uid: "V8dU",
     title: "BMW k1600gtl полезный и бесполезный тюнинг - YouTube",
     url: "https://www.youtube.com/watch?v=U2oHuW47O8I",
     description: "Всем привет, в сегодняшнем видео я решил рассказать про доработки, которые планирую произвести к сезону со своим мотоциклом BMW k1600gtl. Также будет актуаль...",
