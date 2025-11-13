@@ -76,7 +76,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
    */  
   const fetchBookmarksByTag = useCallback(async (id: string) => {
     try {
-      const path = `${API_BASE_URL}/tags/${id}/bookmarks`;
+      const path = `${API_BASE_URL}/tags/${id}`;
       const response = await fetch(path);
       
       if (!response.ok) {
@@ -101,7 +101,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
    */  
   const fetchBookmarksByCategory = useCallback(async (id: string) => {
     try {
-      const path = `${API_BASE_URL}/categories/${id}/bookmarks`;
+      const path = `${API_BASE_URL}/categories/${id}`;
       const response = await fetch(path);
       
       if (!response.ok) {
