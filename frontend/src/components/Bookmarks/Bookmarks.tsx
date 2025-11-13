@@ -10,34 +10,35 @@ import BookmarksSidebarCategoryList from "./BookmarksSidebarCategoryList";
 import BookmarksSidebarTagList from "./BookmarksSidebarTagList";
 
 const Bookmarks: React.FC = () => {
-  const params = useParams();
+  const { tagId, categoryId } = useParams();
   const { bookmarks, tags, categories, loading, error } = useBookmarks();
 
   const panelHeader: BookmarksListPanelHeader = useMemo(() => {
-    const currentTag = tags.find((tag) => tag.id === params.tagId);
-    const currentCategory = categories.find((category) => category.id === params.categoryId);
-    const icon = currentCategory?.icon || 'Tag';
+    const currentCategory = categories.find((category) => category.id === categoryId);
+    const currentTag = tags.find((tag) => tag.id === tagId);
 
     return {
       title: currentCategory?.title || currentTag?.title || '',
-      icon,
+      icon: currentCategory?.icon || 'Tag',
     };
-  }, [categories, tags, params]);
+  }, [categories, tags, tagId, categoryId]);
 
 
   const groupedCategories = useMemo(() => {
-    const collections = categories.filter((elem) => !elem.parentId);
-    const sortedCollections = collections.sort((a, b) => a.position - b.position);
+    const collections = categories
+      .filter((elem) => !elem.parentId)
+      .sort((a, b) => a.position - b.position);
 
-    return sortedCollections.map((collection) => {
-      const categoriesByCollection = categories.filter((category) => category.parentId === collection.id);
-      const sortedCategories = categoriesByCollection.sort((a, b) => a.position - b.position);
+    return collections.map((collection) => {
+      const children = categories
+        .filter((category) => category.parentId === collection.id)
+        .sort((a, b) => a.position - b.position);
   
       return {
         id: collection.id,
         title: collection.title,
-        children: sortedCategories,
-      }
+        children,
+      };
     });
   }, [categories]);
 
