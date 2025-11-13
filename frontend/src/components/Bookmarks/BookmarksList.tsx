@@ -10,7 +10,7 @@ import "./BookmarksList.css";
 const BookmarksList: React.FC<{ bookmarks: Bookmark[], tags: Tag[], panelHeader: BookmarksListPanelHeader  }> = ({ bookmarks, tags, panelHeader }) => {
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t] as const)), [tags]);
 
-  const tagsMapping = (bookmarkTags: string[]): Tag[] => {
+  const mapTagIdsToTags = (bookmarkTags: string[]): Tag[] => {
     return bookmarkTags.flatMap((tagId) => {
       const tag = tagById.get(tagId);
       
@@ -24,7 +24,7 @@ const BookmarksList: React.FC<{ bookmarks: Bookmark[], tags: Tag[], panelHeader:
       
       <div className="bookmarks-list">
         {
-          bookmarks.map((bookmark) => <BookmarksListItem key={bookmark.id} {...bookmark} tags={tagsMapping(bookmark.tags)} />)
+          bookmarks.map((bookmark) => <BookmarksListItem key={bookmark.id} {...bookmark} tags={mapTagIdsToTags(bookmark.tags)} />)
         }
       </div>
     </>
