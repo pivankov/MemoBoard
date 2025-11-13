@@ -1,16 +1,16 @@
 import { useMemo } from "react";
 
-import { Bookmark, BookmarksListPanelHeader,Tag } from "types/bookmarks";
+import { BookmarksItem, BookmarksListPanelHeader, BookmarksTag } from "types/bookmarks";
 
 import BookmarksListItem from "./BookmarksListItem";
 import BookmarksListPanel from "./BookmarksListPanel";
 
 import "./BookmarksList.css";
 
-const BookmarksList: React.FC<{ bookmarks: Bookmark[], tags: Tag[], panelHeader: BookmarksListPanelHeader  }> = ({ bookmarks, tags, panelHeader }) => {
+const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[], panelHeader: BookmarksListPanelHeader  }> = ({ bookmarks, tags, panelHeader }) => {
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t] as const)), [tags]);
 
-  const mapTagIdsToTags = (bookmarkTags: string[]): Tag[] => {
+  const mapTagIdsToTags = (bookmarkTags: string[]): BookmarksTag[] => {
     return bookmarkTags.flatMap((tagId) => {
       const tag = tagById.get(tagId);
       

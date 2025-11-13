@@ -1,7 +1,7 @@
 /**
  * Основной тип закладки
  */
-export type Bookmark = {
+export type BookmarksItem = {
   id: string;
   categoryId: string;
   url: string;
@@ -18,7 +18,7 @@ export type Bookmark = {
 /**
  * Тип тега
  */
-export type Tag = {
+export type BookmarksTag = {
   id: string;
   title: string;
   amount: number;
@@ -27,7 +27,7 @@ export type Tag = {
 /**
  * Тип категории закладки
  */
-export type Category = {
+export type BookmarksCategory = {
   id: string;
   parentId: string | null;
   title: string;
@@ -38,12 +38,18 @@ export type Category = {
   updatedAt: string | null;
 };
 
-export type BookmarkCategogiesGrouped = {
+/**
+ * Тип сгруппированных категорий
+ */
+export type BookmarksCategoriesGrouped = {
   id: string;
   title: string;
-  children: Category[];
+  children: BookmarksCategory[];
 }
 
+/**
+ * Тип заголовка панели списка закладок
+ */
 export type BookmarksListPanelHeader = {
   title: string;
   icon: string;  

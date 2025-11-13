@@ -1,10 +1,10 @@
-import { BookmarkCategogiesGrouped } from "types/bookmarks";
+import { BookmarksCategoriesGrouped } from "types/bookmarks";
 
 import BookmarksSidebarCategoryListItem from "./BookmarksSidebarCategoryListItem";
 
 import "./BookmarksSidebarCategoryList.css";
 
-const BookmarksSidebarCategoryList: React.FC<{ data: BookmarkCategogiesGrouped[] }> = ({ data }) => {
+const BookmarksSidebarCategoryList: React.FC<{ data: BookmarksCategoriesGrouped[] }> = ({ data }) => {
   return (
     <>
       {

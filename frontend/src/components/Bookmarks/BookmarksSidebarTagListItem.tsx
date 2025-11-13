@@ -1,11 +1,11 @@
 import { Link } from "react-router";
 
 import Icon from 'components/UI/Icon/Icon'
-import { Tag } from "types/bookmarks";
+import { BookmarksTag } from "types/bookmarks";
 
 import "./BookmarksSidebarTagListItem.css";
 
-const BookmarksSidebarTagListItem: React.FC<Tag> = ({ id, title, amount }) => {
+const BookmarksSidebarTagListItem: React.FC<BookmarksTag> = ({ id, title, amount }) => {
   const hasAmount = !!amount;
 
   return (

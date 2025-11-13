@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { Bookmark, Category, Tag } from 'types/bookmarks';
+import { BookmarksCategory, BookmarksItem, BookmarksTag } from 'types/bookmarks';
 
 /**
  * Возвращаемое значение хука useBookmarks
  */
 interface UseBookmarksReturn {
   /** Список всех закладок */
-  bookmarks: Bookmark[];
+  bookmarks: BookmarksItem[];
   /** Список всех тегов */
-  tags: Tag[];
+  tags: BookmarksTag[];
   /** Список всех категорий */
-  categories: Category[];
+  categories: BookmarksCategory[];
   /** Флаг загрузки данных */
   loading: boolean;
   /** Сообщение об ошибке или null */
@@ -31,9 +31,9 @@ const API_BASE_URL = 'http://localhost:4000/api/bookmarks';
  * @returns объект с методами и состоянием для работы с закладками
  */
 export const useBookmarks = (): UseBookmarksReturn => {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [bookmarks, setBookmarks] = useState<BookmarksItem[]>([]);
+  const [tags, setTags] = useState<BookmarksTag[]>([]);
+  const [categories, setCategories] = useState<BookmarksCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +49,7 @@ export const useBookmarks = (): UseBookmarksReturn => {
       }
       
       const payload = await response.json();
-      const list: Bookmark[] = Array.isArray(payload?.data) ? payload.data : [];
+      const list: BookmarksItem[] = Array.isArray(payload?.data) ? payload.data : [];
 
       setBookmarks(list);
     } catch (err) {
@@ -73,7 +73,7 @@ export const useBookmarks = (): UseBookmarksReturn => {
       }
       
       const payload = await response.json();
-      const list: Tag[] = Array.isArray(payload?.data) ? payload.data : [];
+      const list: BookmarksTag[] = Array.isArray(payload?.data) ? payload.data : [];
 
       setTags(list);
     } catch (err) {
@@ -96,7 +96,7 @@ export const useBookmarks = (): UseBookmarksReturn => {
       }
       
       const payload = await response.json();
-      const list: Category[] = Array.isArray(payload?.data) ? payload.data : [];
+      const list: BookmarksCategory[] = Array.isArray(payload?.data) ? payload.data : [];
 
       setCategories(list);
     } catch (err) {

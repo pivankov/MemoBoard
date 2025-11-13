@@ -1,11 +1,11 @@
 import { Button } from 'antd';
 
 import Icon, { isIconName } from 'components/UI/Icon/Icon'
-import { BookmarksListPanelHeader,Tag } from "types/bookmarks";
+import { BookmarksListPanelHeader, BookmarksTag } from "types/bookmarks";
 
 import "./BookmarksListPanel.css";
 
-const BookmarksListPanel: React.FC<{ tags: Tag[], header: BookmarksListPanelHeader }> = ({ tags, header }) => {
+const BookmarksListPanel: React.FC<{ tags: BookmarksTag[], header: BookmarksListPanelHeader }> = ({ tags, header }) => {
   const iconName = header.icon && isIconName(header.icon) ? header.icon : null;
 
   return (

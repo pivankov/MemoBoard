@@ -1,10 +1,10 @@
-import { Tag } from "types/bookmarks";
+import { BookmarksTag } from "types/bookmarks";
 
 import BookmarksSidebarTagListItem from "./BookmarksSidebarTagListItem";
 
 import "./BookmarksSidebarTagList.css";
 
-const BookmarksSidebarTagList: React.FC<{ data: Tag[] }> = ({ data }) => {
+const BookmarksSidebarTagList: React.FC<{ data: BookmarksTag[] }> = ({ data }) => {
   return (
     <div className="bookmarks-sidebar-tag-list">
       <div className="bookmarks-sidebar-tag-list__title">Теги</div>

@@ -1,11 +1,11 @@
 import { Link } from "react-router";
 
 import Icon, { isIconName } from 'components/UI/Icon/Icon'
-import { Category } from "types/bookmarks";
+import { BookmarksCategory } from "types/bookmarks";
 
 import "./BookmarksSidebarCategoryListItem.css";
 
-const BookmarksSidebarCategoryListItem: React.FC<Category> = ({ id, title, icon, amount }) => {
+const BookmarksSidebarCategoryListItem: React.FC<BookmarksCategory> = ({ id, title, icon, amount }) => {
   const hasAmount = !!amount;
   const iconName = icon && isIconName(icon) ? icon : null;
 
