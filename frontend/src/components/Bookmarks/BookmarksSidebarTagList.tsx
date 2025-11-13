@@ -1,19 +1,23 @@
 import { BookmarksTag } from "types/bookmarks";
 
-import BookmarksSidebarTagListItem from "./BookmarksSidebarTagListItem";
-
-import "./BookmarksSidebarTagList.css";
+import BookmarksSidebarList from "./BookmarksSidebarList";
+import BookmarksSidebarListItem from "./BookmarksSidebarListItem";
 
 const BookmarksSidebarTagList: React.FC<{ data: BookmarksTag[] }> = ({ data }) => {
   return (
-    <div className="bookmarks-sidebar-tag-list">
-      <div className="bookmarks-sidebar-tag-list__title">Теги</div>
-      <div className="bookmarks-sidebar-tag-list__wrapper">
-        {
-          data.map((tag) => <BookmarksSidebarTagListItem key={tag.id} {...tag} />)
-        }
-      </div>
-    </div>
+    <BookmarksSidebarList title="Теги">
+      {
+        data.map((item) => (
+          <BookmarksSidebarListItem
+            key={item.id}
+            link={`/bookmarks/tag/${item.id}`}
+            icon="Tag"
+            title={item.title}
+            amount={item.amount}
+          />          
+        ))
+      }
+    </BookmarksSidebarList>
   );
 };
 

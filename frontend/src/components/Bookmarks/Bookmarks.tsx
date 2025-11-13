@@ -44,13 +44,8 @@ const Bookmarks: React.FC = () => {
 
   const sidebar = (
     <>
-      <div className="bookmarks-list-sidebar__wrapper">
-        <BookmarksSidebarCategoryList data={groupedCategories} />
-      </div>
-
-      <div className="bookmarks-list-sidebar__wrapper">
-        <BookmarksSidebarTagList data={tags} />
-      </div>    
+      <BookmarksSidebarCategoryList data={groupedCategories} />
+      <BookmarksSidebarTagList data={tags} />
     </>
   );
 

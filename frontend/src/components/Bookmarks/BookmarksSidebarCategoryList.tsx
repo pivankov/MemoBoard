@@ -1,25 +1,27 @@
 import { BookmarksCategoriesGrouped } from "types/bookmarks";
 
-import BookmarksSidebarCategoryListItem from "./BookmarksSidebarCategoryListItem";
-
-import "./BookmarksSidebarCategoryList.css";
+import BookmarksSidebarList from "./BookmarksSidebarList";
+import BookmarksSidebarListItem from "./BookmarksSidebarListItem";
 
 const BookmarksSidebarCategoryList: React.FC<{ data: BookmarksCategoriesGrouped[] }> = ({ data }) => {
   return (
     <>
       {
         data.map((parent) => (
-          <div className="bookmarks-sidebar-category-list" key={parent.id}>
-            <div className="bookmarks-sidebar-category-list__title">
-              {parent.title}
-            </div>
-            <div className="bookmarks-sidebar-category-list__wrapper">
-              {
-                parent.children.map((item) => <BookmarksSidebarCategoryListItem key={item.id} {...item} />)
-              }
-            </div>
-          </div>
-        ))      
+          <BookmarksSidebarList title={parent.title} key={parent.id}>
+            {
+              parent.children.map((item) => (
+                <BookmarksSidebarListItem
+                  key={item.id}
+                  link={`/bookmarks/category/${item.id}`}
+                  icon={item.icon}
+                  title={item.title}
+                  amount={item.amount}
+                />
+              ))
+            }
+          </BookmarksSidebarList>
+        ))
       }
     </>
   );
