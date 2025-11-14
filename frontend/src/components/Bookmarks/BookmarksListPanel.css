@@ -25,3 +25,9 @@
 .bookmarks-list-panel__side {
   margin-left: auto;  
 }
+
+.bookmarks-list-panel__tags {
+  .ant-tag:hover {
+    background-color: #ededed;
+  }
+}
