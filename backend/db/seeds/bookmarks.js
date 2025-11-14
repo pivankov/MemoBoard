@@ -53,6 +53,19 @@ export const DUMMY_BOOKMARK_TAGS = [
 
 export const DUMMY_BOOKMARKS = [
   {
+    uid: "dSMacJ",
+    category_uid: "tVhm",
+    title: "Darken Color - mdigi.tools",
+    url: "https://mdigi.tools/darken-color",
+    description: "Darken a color online. Enter color in rgb, hex, hsl or hsv and get different darker shades of the color.",
+    tags: [],
+    preview: "",
+    created_at: "2025-06-30 02:38:20",
+    updated_at: "2025-06-30 02:38:27",
+    transition_counter: 1,
+    favorite: true,
+  },
+  {
     uid: "dSMicJ",
     category_uid: "V8dU",
     title: "Полный гайд на Резюме в IT - Как Правильно составить резюме программисту?",
@@ -175,7 +188,7 @@ export const DUMMY_BOOKMARKS = [
     title: "Ошибки приготовления кофе в воронке | Hario v60",
     url: "https://www.youtube.com/watch?v=VJ07UreDgII",
     description: "В этом видео наш оператор и арт-директор Федор впервые готовит кофе в воронке! \n\nИспользуя классику альтернативы — Hario v60, он попробует приготовить напиток по своему рецепту, а если что-то пойдёт не так, Николай внесёт свои корректировки. Или не внесёт?",
-    tags: ["ZJf5O", "ymCVP"],
+    tags: ["ymCVP"],
     preview: "",
     created_at: "2024-12-15 16:50:21",
     updated_at: "2024-12-15 16:50:49",
