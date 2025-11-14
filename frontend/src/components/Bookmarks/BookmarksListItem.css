@@ -76,8 +76,4 @@
 .bookmarks-list-item__tags {
   display: block;
   margin-top: 12px;
-
-  .ant-tag-blue:hover {
-    background-color: #cee9ff;
-  }
 }

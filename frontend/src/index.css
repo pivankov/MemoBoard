@@ -204,3 +204,12 @@ a {
   outline: none;
   width: 100%;  
 }
+
+
+.ant-tag:hover {
+  background-color: #ededed;
+}
+
+.ant-tag-blue:hover {
+  background-color: #cee9ff;
+}
