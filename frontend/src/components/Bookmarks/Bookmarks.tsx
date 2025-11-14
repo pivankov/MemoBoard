@@ -23,7 +23,6 @@ const Bookmarks: React.FC = () => {
     };
   }, [categories, tags, tagId, categoryId]);
 
-
   const groupedCategories = useMemo(() => {
     const collections = categories
       .filter((elem) => !elem.parentId)

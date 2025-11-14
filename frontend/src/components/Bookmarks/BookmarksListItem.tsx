@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router';
 import { Tag } from 'antd';
 
 import Icon from 'components/UI/Icon/Icon'
@@ -12,8 +13,16 @@ type BookmarksItemWithTags = Omit<BookmarksItem, 'tags'> & {
 };
 
 const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ url, title, description, createdAt, tags }) => {
+  const navigate = useNavigate();
   const siteName = getDomainName(url);
   const date = formatDateString(createdAt);
+
+  const handleTagClick = (event: React.MouseEvent, tagId: string) => {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    navigate(`/bookmarks/tag/${tagId}`);
+  };
 
   return (
     <a className="bookmarks-list-item" href={url} target="_blank" rel="noreferrer">
@@ -41,7 +50,14 @@ const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ url, title, descri
         <span className="bookmarks-list-item__tags">
           {
             tags.map((tag) => (
-              <Tag key={tag.id} color="blue">{tag.title}</Tag>
+              <Tag 
+                key={tag.id} 
+                onClick={(e) => handleTagClick(e, tag.id)} 
+                color="blue"
+                style={{ cursor: 'pointer' }}
+              >
+                {tag.title}
+              </Tag>
             ))
           }
         </span>
