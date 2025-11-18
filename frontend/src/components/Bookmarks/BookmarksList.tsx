@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Tag } from 'antd';
 
-import { BookmarksItem, BookmarksListPanelHeader, BookmarksTag } from "types/bookmarks";
+import { BookmarksItem, BookmarksListPanelHeader, BookmarksTag, BookmarksTagWithSelected } from "types/bookmarks";
 
 import BookmarksListItem from "./BookmarksListItem";
 import BookmarksListPanel from "./BookmarksListPanel";
@@ -11,14 +11,23 @@ import "./BookmarksList.css";
 const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[], panelHeader: BookmarksListPanelHeader  }> = ({ bookmarks, tags, panelHeader }) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t] as const)), [tags]);
+  const selectedTagsSet = useMemo(() => new Set(selectedTags), [selectedTags]);
 
-  const mapTagIdsToTags = useCallback((bookmarkTags: string[]): BookmarksTag[] => {
+  /**
+   * Преобразует ID тегов в объекты тегов с флагом выбора
+   * @param bookmarkTags - массив ID тегов закладки
+   * @returns массив тегов с флагом selected
+   */
+  const mapTagIdsToTags = useCallback((bookmarkTags: string[]): BookmarksTagWithSelected[] => {
     return bookmarkTags.flatMap((tagId) => {
       const tag = tagById.get(tagId);
       
-      return tag ? [tag] : [];
+      return tag ? [{
+        ...tag,
+        selected: selectedTagsSet.has(tagId)
+      }] : [];
     });
-  }, [tagById]);
+  }, [tagById, selectedTagsSet]);
 
   const handleClickTag = useCallback((id: string) => {
     setSelectedTags((prev) => {

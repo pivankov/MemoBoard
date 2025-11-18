@@ -25,6 +25,14 @@ export type BookmarksTag = {
 };
 
 /**
+ * Расширенный тип тега с флагом выбора
+ * Используется для отображения тегов в списке закладок
+ */
+export type BookmarksTagWithSelected = BookmarksTag & {
+  selected: boolean;
+};
+
+/**
  * Тип категории закладки
  */
 export type BookmarksCategory = {

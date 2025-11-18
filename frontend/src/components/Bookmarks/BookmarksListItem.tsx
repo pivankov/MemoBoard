@@ -2,14 +2,14 @@ import { useNavigate } from 'react-router';
 import { Tag } from 'antd';
 
 import Icon from 'components/UI/Icon/Icon'
-import type { BookmarksItem, BookmarksTag } from "types/bookmarks";
+import type { BookmarksItem, BookmarksTagWithSelected } from "types/bookmarks";
 import { formatDateString } from "utils/date";
 import { getDomainName } from "utils/http";
 
 import "./BookmarksListItem.css";
 
 type BookmarksItemWithTags = Omit<BookmarksItem, 'tags'> & {
-  tags: BookmarksTag[];
+  tags: BookmarksTagWithSelected[];
 };
 
 const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ url, title, description, createdAt, tags }) => {
@@ -53,7 +53,7 @@ const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ url, title, descri
               <Tag 
                 key={tag.id} 
                 onClick={(e) => handleTagClick(e, tag.id)} 
-                color="blue"
+                color={tag.selected ? "blue" : ""}
                 style={{ cursor: 'pointer' }}
               >
                 {tag.title}
