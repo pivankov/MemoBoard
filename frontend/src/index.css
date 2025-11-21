@@ -213,3 +213,8 @@ a {
 .ant-tag-blue:hover {
   background-color: #cee9ff;
 }
+
+.ant-modal-title {
+  font-size: 18px!important;
+  font-weight: 400!important;
+}
