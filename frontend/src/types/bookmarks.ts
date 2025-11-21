@@ -62,3 +62,26 @@ export type BookmarksListPanelHeader = {
   title: string;
   icon: string;  
 }
+
+/**
+ * Данные закладки, полученные после парсинга URL
+ */
+export type BookmarksParsedData = {
+  url: string;
+  title: string;
+  description: string;
+  preview: string;
+};
+
+/**
+ * Данные формы для создания/редактирования закладки
+ */
+export type BookmarksFormData = {
+  url: string;
+  title: string;
+  description: string;
+  categoryId: string;
+  tags: string[];
+  preview: string;
+  favorite: boolean;
+};

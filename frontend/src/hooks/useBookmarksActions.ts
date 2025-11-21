@@ -1,0 +1,146 @@
+import { useCallback } from 'react';
+
+import { BookmarksFormData, BookmarksItem, BookmarksParsedData } from 'types/bookmarks';
+
+const API_BASE_URL = 'http://localhost:4000/api/bookmarks';
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+/**
+ * Возвращаемое значение хука useBookmarksActions
+ */
+interface UseBookmarksActionsReturn {
+  /** Парсит URL сайта и возвращает метаданные */
+  parseUrl: (url: string) => Promise<BookmarksParsedData>;
+  /** Создает новую закладку */
+  createBookmark: (data: BookmarksFormData) => Promise<void>;
+  /** Обновляет существующую закладку */
+  updateBookmark: (id: string, data: BookmarksFormData) => Promise<void>;
+  /** Удаляет закладку */
+  deleteBookmark: (id: string) => Promise<void>;
+  /** Получает одну закладку по ID */
+  getBookmarkById: (id: string) => Promise<BookmarksItem | null>;
+}
+
+/**
+ * Хук для CRUD операций с закладками
+ * 
+ * Предоставляет методы для создания, редактирования, удаления и парсинга закладок.
+ * Не управляет state - только выполняет API запросы.
+ * 
+ * @returns объект с методами для работы с закладками
+ */
+export const useBookmarksActions = (): UseBookmarksActionsReturn => {
+  /**
+   * Парсит URL сайта и возвращает метаданные
+   */
+  const parseUrl = useCallback(async (url: string): Promise<BookmarksParsedData> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/parse`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify({ url }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка парсинга URL: ${response.status} ${response.statusText}`);
+      }
+      
+      const payload = await response.json();
+      return payload.data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при парсинге URL';
+      console.error('Ошибка парсинга URL:', err);
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  /**
+   * Создает новую закладку
+   */
+  const createBookmark = useCallback(async (data: BookmarksFormData): Promise<void> => {
+    try {
+      const response = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка создания закладки: ${response.status} ${response.statusText}`);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при создании закладки';
+      console.error('Ошибка создания закладки:', err);
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  /**
+   * Обновляет существующую закладку
+   */
+  const updateBookmark = useCallback(async (id: string, data: BookmarksFormData): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'PUT',
+        headers: JSON_HEADERS,
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка обновления закладки: ${response.status} ${response.statusText}`);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при обновлении закладки';
+      console.error('Ошибка обновления закладки:', err);
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  /**
+   * Удаляет закладку
+   */
+  const deleteBookmark = useCallback(async (id: string): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка удаления закладки: ${response.status} ${response.statusText}`);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при удалении закладки';
+      console.error('Ошибка удаления закладки:', err);
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  /**
+   * Получает одну закладку по ID
+   */
+  const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки закладки: ${response.status} ${response.statusText}`);
+      }
+      
+      const payload = await response.json();
+      return payload.data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке закладки';
+      console.error('Ошибка загрузки закладки:', err);
+      throw new Error(errorMessage);
+    }
+  }, []);
+
+  return {
+    parseUrl,
+    createBookmark,
+    updateBookmark,
+    deleteBookmark,
+    getBookmarkById,
+  };
+};
+
