@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { db } from '../../db/initdb.js';
 import tagsRouter from './tags.js';
 import categoriesRouter from './categories.js';
+import urlMetadata from 'url-metadata';
+import { generateBookmarkUid } from '../../utils/uid.js';
 
 const router = Router();
 
@@ -109,6 +111,90 @@ router.get('/:id', async (req, res) => {
     console.error(`Ошибка получения закладки ${id}:`, error);
 
     return res.status(500).json({ error: 'Не удалось получить закладку' });
+  }
+});
+
+router.post('/', async (req, res) => {
+  const { url, categoryId } = req.body ?? {};
+  
+  try {
+    if (!url || typeof url !== 'string' || url.trim().length === 0) {
+      return res.status(400).json({ error: 'URL обязателен для заполнения' });
+    }
+    
+    if (!categoryId || typeof categoryId !== 'string' || categoryId.trim().length === 0) {
+      return res.status(400).json({ error: 'Категория обязательна для заполнения' });
+    }
+
+    const userRow = db.prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
+
+    if (!userRow?.id) {
+      return res.status(500).json({ error: 'Не найден пользователь по умолчанию для привязки события' });
+    }    
+    
+    const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(categoryId);
+    
+    if (!categoryRow) {
+      return res.status(400).json({ error: 'Категория не найдена' });
+    }
+    
+    const categoryIdInternal = categoryRow.id;
+    
+    let title = url;
+    let description = '';
+    
+    try {
+      const metadata = await urlMetadata(url, {
+        timeout: 5000,
+        ensureSecureImageRequest: false,
+      });
+      
+      // Приоритет: Open Graph > Twitter Cards > обычные meta теги
+      title = metadata['og:title'] || metadata['twitter:title'] || metadata.title || url;
+      description = metadata['og:description'] || metadata['twitter:description'] || metadata.description || '';
+      
+      if (title.length > 500) {
+        title = title.substring(0, 500);
+      }
+
+      if (description.length > 1000) {
+        description = description.substring(0, 1000);
+      }
+      
+    } catch (parseError) {
+      console.warn('Не удалось распарсить URL:', url, parseError.message);
+    }
+    
+    const uid = generateBookmarkUid();
+    
+    const insertBookmark = db.prepare(`
+      INSERT INTO bookmarks (
+        uid, user_id, category_id, url, title, description, 
+        preview, transition_counter, favorite, created_at, updated_at
+      )
+      VALUES (
+        @uid, @user_id, @category_id, @url, @title, @description,
+        @preview, @transition_counter, @favorite, datetime('now'), datetime('now')
+      )
+    `);
+    
+    insertBookmark.run({
+      uid,
+      user_id: Number(userRow.id),
+      category_id: categoryIdInternal,
+      url: url.trim(),
+      title: title.trim(),
+      description: description.trim(),
+      preview: '',
+      transition_counter: 0,
+      favorite: 0,
+    });
+    
+    return res.status(201).json({ success: true });
+    
+  } catch (error) {
+    console.error('Ошибка создания закладки:', error);
+    return res.status(500).json({ error: 'Не удалось создать закладку' });
   }
 });
 
