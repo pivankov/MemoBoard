@@ -74,9 +74,17 @@ export type BookmarksParsedData = {
 };
 
 /**
- * Данные формы для создания/редактирования закладки
+ * Данные формы для создания закладки
  */
-export type BookmarksFormData = {
+export type BookmarksCreateFormData = {
+  url: string;
+  categoryId: string | null;
+};
+
+/**
+ * Данные формы для редактирования закладки
+ */
+export type BookmarksUpdateFormData = {
   url: string;
   title: string;
   description: string;

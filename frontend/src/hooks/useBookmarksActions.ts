@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import { BookmarksFormData, BookmarksItem, BookmarksParsedData } from 'types/bookmarks';
+import { BookmarksCreateFormData, BookmarksItem, BookmarksParsedData, BookmarksUpdateFormData } from 'types/bookmarks';
 
 const API_BASE_URL = 'http://localhost:4000/api/bookmarks';
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -12,9 +12,9 @@ interface UseBookmarksActionsReturn {
   /** Парсит URL сайта и возвращает метаданные */
   parseUrl: (url: string) => Promise<BookmarksParsedData>;
   /** Создает новую закладку */
-  createBookmark: (data: BookmarksFormData) => Promise<void>;
+  createBookmark: (data: BookmarksCreateFormData) => Promise<void>;
   /** Обновляет существующую закладку */
-  updateBookmark: (id: string, data: BookmarksFormData) => Promise<void>;
+  updateBookmark: (id: string, data: BookmarksUpdateFormData) => Promise<void>;
   /** Удаляет закладку */
   deleteBookmark: (id: string) => Promise<void>;
   /** Получает одну закладку по ID */
@@ -57,7 +57,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   /**
    * Создает новую закладку
    */
-  const createBookmark = useCallback(async (data: BookmarksFormData): Promise<void> => {
+  const createBookmark = useCallback(async (data: BookmarksCreateFormData): Promise<void> => {
     try {
       const response = await fetch(API_BASE_URL, {
         method: 'POST',
@@ -78,7 +78,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   /**
    * Обновляет существующую закладку
    */
-  const updateBookmark = useCallback(async (id: string, data: BookmarksFormData): Promise<void> => {
+  const updateBookmark = useCallback(async (id: string, data: BookmarksUpdateFormData): Promise<void> => {
     try {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'PUT',
