@@ -9,8 +9,6 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' };
  * Возвращаемое значение хука useBookmarksActions
  */
 interface UseBookmarksActionsReturn {
-  /** Парсит URL сайта и возвращает метаданные */
-  parseUrl: (url: string) => Promise<BookmarksParsedData>;
   /** Создает новую закладку */
   createBookmark: (data: BookmarksCreateFormData) => Promise<void>;
   /** Обновляет существующую закладку */
@@ -30,30 +28,6 @@ interface UseBookmarksActionsReturn {
  * @returns объект с методами для работы с закладками
  */
 export const useBookmarksActions = (): UseBookmarksActionsReturn => {
-  /**
-   * Парсит URL сайта и возвращает метаданные
-   */
-  const parseUrl = useCallback(async (url: string): Promise<BookmarksParsedData> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/parse`, {
-        method: 'POST',
-        headers: JSON_HEADERS,
-        body: JSON.stringify({ url }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Ошибка парсинга URL: ${response.status} ${response.statusText}`);
-      }
-      
-      const payload = await response.json();
-      return payload.data;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при парсинге URL';
-      console.error('Ошибка парсинга URL:', err);
-      throw new Error(errorMessage);
-    }
-  }, []);
-
   /**
    * Создает новую закладку
    */
@@ -136,7 +110,6 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   }, []);
 
   return {
-    parseUrl,
     createBookmark,
     updateBookmark,
     deleteBookmark,
