@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router';
-import { Tag } from 'antd';
+import { Button, Flex, Tag } from 'antd';
+import { DeleteOutlined, EditOutlined, StarOutlined } from "@ant-design/icons";
 
 import Icon from 'components/UI/Icon/Icon'
 import type { BookmarksItem, BookmarksTagWithSelected } from "types/bookmarks";
@@ -17,12 +18,28 @@ const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ url, title, descri
   const siteName = getDomainName(url);
   const date = formatDateString(createdAt);
 
-  const handleTagClick = (event: React.MouseEvent, tagId: string) => {
+  const withStopEvent = <T extends any[]>(callback: (...args: T) => void) => (event: React.MouseEvent, ...args: T) => {
     event.stopPropagation();
     event.preventDefault();
-    
-    navigate(`/bookmarks/tag/${tagId}`);
+
+    callback(...args);
   };
+
+  const handleTagClick = withStopEvent((tagId: string) => {
+    navigate(`/bookmarks/tag/${tagId}`);
+  });
+
+  const handleClickPin = withStopEvent(() => {
+    console.log("pin", url);
+  });
+
+  const handleClickEdit = withStopEvent(() => {
+    console.log("edit", url);
+  });
+
+  const handleClickDelete = withStopEvent(() => {
+    console.log("delete", url);
+  });
 
   return (
     <a className="bookmarks-list-item" href={url} target="_blank" rel="noreferrer">
@@ -60,6 +77,13 @@ const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ url, title, descri
               </Tag>
             ))
           }
+        </span>
+        <span className="bookmarks-list-item__buttons">
+          <Flex wrap gap="small">
+            <Button variant="solid" color="gold" shape="circle" icon={<StarOutlined />} onClick={handleClickPin} />
+            <Button variant="solid" color="cyan" shape="circle" icon={<EditOutlined />} onClick={handleClickEdit} />
+            <Button variant="solid" color="danger" shape="circle" icon={<DeleteOutlined />} onClick={handleClickDelete} />
+          </Flex>
         </span>
       </span>
     </a>

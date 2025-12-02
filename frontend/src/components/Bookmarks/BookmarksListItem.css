@@ -8,7 +8,13 @@
   &:hover,
   &.active {
     background-color: #f1f5f9;
-  }  
+  }
+
+  &:hover {
+    .bookmarks-list-item__buttons {
+      display: block;
+    }
+  }
 }
 
 .bookmarks-list-item__preview {
@@ -76,4 +82,12 @@
 .bookmarks-list-item__tags {
   display: block;
   margin-top: 12px;
+}
+
+.bookmarks-list-item__buttons {
+  position: absolute;
+  z-index: 2;
+  top: 16px;
+  right: 24px;
+  display: none;
 }
