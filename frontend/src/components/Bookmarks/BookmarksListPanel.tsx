@@ -4,6 +4,8 @@ import { Button, Space } from 'antd';
 import Icon, { isIconName } from 'components/UI/Icon/Icon'
 import { BookmarksListPanelHeader } from "types/bookmarks";
 
+import { useBookmarksUIContext } from 'contexts/BookmarksUIContext';
+
 import "./BookmarksListPanel.css";
 
 interface BookmarksListPanelProps {
@@ -20,6 +22,7 @@ interface BookmarksListPanelProps {
  * @param onResetFilters - опциональный коллбек для сброса фильтров. Если не передан, кнопка сброса не отображается
  */
 const BookmarksListPanel: React.FC<BookmarksListPanelProps> = ({ header, children, onResetFilters }) => {
+  const { openAddModal } = useBookmarksUIContext();
   const iconName = header.icon && isIconName(header.icon) ? header.icon : null;
 
   return (
@@ -53,7 +56,8 @@ const BookmarksListPanel: React.FC<BookmarksListPanelProps> = ({ header, childre
           )}
           <Button 
             type="primary" 
-            shape="round" 
+            shape="round"
+            onClick={openAddModal}
           >
             Добавить закладку
           </Button>

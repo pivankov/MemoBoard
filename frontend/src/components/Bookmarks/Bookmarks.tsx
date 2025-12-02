@@ -6,12 +6,16 @@ import TwoColumnLayout from "layouts/TwoColumnLayout";
 import { BookmarksListPanelHeader } from "types/bookmarks";
 
 import BookmarksList from "./BookmarksList";
+import BookmarksModalContainer from "./BookmarksModalContainer";
 import BookmarksSidebarCategoryList from "./BookmarksSidebarCategoryList";
 import BookmarksSidebarTagList from "./BookmarksSidebarTagList";
+import { BookmarksActionsProvider } from 'contexts/BookmarksActionsContext';
+import { BookmarksUIProvider } from 'contexts/BookmarksUIContext';
 
 const Bookmarks: React.FC = () => {
   const { tagId, categoryId } = useParams<{ tagId?: string; categoryId?: string }>();
-  const { bookmarks, tags, categories, loading, error } = useBookmarks({ tagId, categoryId });
+  
+  const { bookmarks, tags, categories, loading, error, refreshBookmarks } = useBookmarks({ tagId, categoryId });
 
   const panelHeader: BookmarksListPanelHeader = useMemo(() => {
     const currentCategory = categories.find((category) => category.id === categoryId);
@@ -49,11 +53,17 @@ const Bookmarks: React.FC = () => {
   );
 
   return (
-    <TwoColumnLayout
-      sidebarHeader="Закладки"    
-      sidebar={sidebar}
-      content={<BookmarksList bookmarks={bookmarks} tags={tags} panelHeader={panelHeader} />}
-    />
+    <BookmarksActionsProvider refreshBookmarks={refreshBookmarks}>
+      <BookmarksUIProvider>
+        <TwoColumnLayout
+          sidebarHeader="Закладки"    
+          sidebar={sidebar}
+          content={<BookmarksList bookmarks={bookmarks} tags={tags} panelHeader={panelHeader} />}
+        />
+
+        <BookmarksModalContainer categoryId={categoryId} />
+      </BookmarksUIProvider>
+    </BookmarksActionsProvider>    
   );
 };
 
