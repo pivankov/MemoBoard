@@ -3,6 +3,33 @@ import { db } from '../../db/initdb.js';
 
 const router = Router();
 
+/**
+ * Получает список всех категорий с подсчетом количества закладок
+ * 
+ * Категории возвращаются отсортированными по позиции (position) и названию.
+ * Для каждой категории подсчитывается количество закладок (amount).
+ * 
+ * @route GET /api/bookmarks/categories
+ * @returns {Object} 200 - JSON объект с массивом категорий в поле data
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": [
+ *     {
+ *       "id": "cat1",
+ *       "parentId": null,
+ *       "title": "Разработка",
+ *       "icon": "code",
+ *       "position": 0,
+ *       "amount": 5,
+ *       "createdAt": "2024-12-01T10:00:00Z",
+ *       "updatedAt": "2024-12-01T10:00:00Z"
+ *     }
+ *   ]
+ * }
+ */
 router.get('/', async (req, res) => {
   try {
     const categoriesQuery = db.prepare(`
@@ -34,6 +61,39 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * Получает все закладки в указанной категории
+ * 
+ * Возвращает список закладок, отсортированных по дате обновления (DESC).
+ * Для каждой закладки также возвращаются связанные теги.
+ * 
+ * @route GET /api/bookmarks/categories/:id
+ * @param {string} req.params.id - UID категории
+ * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 400 - Некорректный идентификатор категории
+ * @returns {Object} 404 - Категория не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": [
+ *     {
+ *       "id": "abc12345",
+ *       "categoryId": "cat1",
+ *       "url": "https://example.com",
+ *       "title": "Пример сайта",
+ *       "preview": "",
+ *       "description": "Описание",
+ *       "tags": ["tag1"],
+ *       "createdAt": "2024-12-01T10:00:00Z",
+ *       "updatedAt": "2024-12-01T10:00:00Z",
+ *       "transitionCounter": 3,
+ *       "favorite": false
+ *     }
+ *   ]
+ * }
+ */
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 

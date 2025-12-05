@@ -10,6 +10,33 @@ const router = Router();
 router.use('/tags', tagsRouter);
 router.use('/categories', categoriesRouter);
 
+/**
+ * Получает список всех закладок с тегами
+ * 
+ * @route GET /api/bookmarks
+ * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": [
+ *     {
+ *       "id": "abc12345",
+ *       "categoryId": "cat1",
+ *       "url": "https://example.com",
+ *       "title": "Пример сайта",
+ *       "preview": "",
+ *       "description": "Описание сайта",
+ *       "tags": ["tag1", "tag2"],
+ *       "createdAt": "2024-12-01T10:00:00Z",
+ *       "updatedAt": "2024-12-01T10:00:00Z",
+ *       "transitionCounter": 5,
+ *       "favorite": false
+ *     }
+ *   ]
+ * }
+ */
 router.get('/', async (req, res) => {
   try {
     const bookmarksQuery = db.prepare(`
@@ -62,6 +89,34 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * Получает закладку по уникальному идентификатору
+ * 
+ * @route GET /api/bookmarks/:id
+ * @param {string} req.params.id - UID закладки
+ * @returns {Object} 200 - JSON объект с закладкой в поле data
+ * @returns {Object} 400 - Некорректный идентификатор закладки
+ * @returns {Object} 404 - Закладка не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": {
+ *     "id": "abc12345",
+ *     "categoryId": "cat1",
+ *     "url": "https://example.com",
+ *     "title": "Пример сайта",
+ *     "preview": "",
+ *     "description": "Описание сайта",
+ *     "tags": ["tag1", "tag2"],
+ *     "createdAt": "2024-12-01T10:00:00Z",
+ *     "updatedAt": "2024-12-01T10:00:00Z",
+ *     "transitionCounter": 5,
+ *     "favorite": false
+ *   }
+ * }
+ */
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -115,6 +170,34 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * Создает новую закладку с автоматическим парсингом метаданных URL
+ * 
+ * При создании закладки сервер автоматически пытается получить метаданные страницы
+ * (title, description) через парсинг Open Graph, Twitter Cards и стандартных meta-тегов.
+ * Если парсинг не удается, используется URL в качестве заголовка.
+ * 
+ * @route POST /api/bookmarks
+ * @param {Object} req.body - Данные новой закладки
+ * @param {string} req.body.url - URL закладки
+ * @param {string} req.body.categoryId - UID категории
+ * @returns {Object} 201 - JSON объект с результатом создания
+ * @returns {Object} 400 - URL или категория не указаны / категория не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Тело запроса:
+ * {
+ *   "url": "https://example.com",
+ *   "categoryId": "cat1"
+ * }
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "success": true
+ * }
+ */
 router.post('/', async (req, res) => {
   const { url, categoryId } = req.body ?? {};
   
@@ -199,6 +282,45 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * Обновляет существующую закладку
+ * 
+ * При обновлении тегов все старые связи удаляются и создаются новые.
+ * Если тег из массива не найден в БД, выводится предупреждение в лог.
+ * 
+ * @route PUT /api/bookmarks/:id
+ * @param {string} req.params.id - UID закладки
+ * @param {Object} req.body - Данные для обновления закладки
+ * @param {string} req.body.url - URL закладки
+ * @param {string} req.body.title - Заголовок закладки
+ * @param {string} [req.body.description] - Описание
+ * @param {string} req.body.categoryId - UID категории
+ * @param {string[]} [req.body.tags] - Массив UID тегов
+ * @param {string} [req.body.preview] - URL превью изображения
+ * @param {boolean} [req.body.favorite] - Избранное
+ * @returns {Object} 200 - JSON объект с результатом обновления
+ * @returns {Object} 400 - Некорректные данные / теги не массив / категория не найдена
+ * @returns {Object} 404 - Закладка не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Тело запроса:
+ * {
+ *   "url": "https://example.com",
+ *   "title": "Обновленный заголовок",
+ *   "description": "Обновленное описание",
+ *   "categoryId": "cat1",
+ *   "tags": ["tag1", "tag2"],
+ *   "preview": "https://example.com/preview.jpg",
+ *   "favorite": true
+ * }
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "success": true
+ * }
+ */
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { url, title, description, categoryId, tags, preview, favorite } = req.body ?? {};
@@ -299,6 +421,24 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+/**
+ * Удаляет закладку по идентификатору
+ * 
+ * При удалении закладки автоматически удаляются все связи с тегами (CASCADE).
+ * 
+ * @route DELETE /api/bookmarks/:id
+ * @param {string} req.params.id - UID закладки
+ * @returns {Object} 200 - JSON объект с результатом удаления
+ * @returns {Object} 400 - Некорректный идентификатор закладки
+ * @returns {Object} 404 - Закладка не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "success": true
+ * }
+ */
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   

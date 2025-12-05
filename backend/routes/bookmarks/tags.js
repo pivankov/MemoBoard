@@ -3,6 +3,28 @@ import { db } from '../../db/initdb.js';
 
 const router = Router();
 
+/**
+ * Получает список всех тегов с подсчетом количества закладок
+ * 
+ * Теги возвращаются отсортированными по названию (ASC).
+ * Для каждого тега подсчитывается количество связанных закладок (amount).
+ * 
+ * @route GET /api/bookmarks/tags
+ * @returns {Object} 200 - JSON объект с массивом тегов в поле data
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": [
+ *     {
+ *       "id": "tag1",
+ *       "title": "JavaScript",
+ *       "amount": 10
+ *     }
+ *   ]
+ * }
+ */
 router.get('/', async (req, res) => {
   try {
     const tagsQuery = db.prepare(`
@@ -28,6 +50,39 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * Получает все закладки с указанным тегом
+ * 
+ * Возвращает список закладок, связанных с указанным тегом.
+ * Для каждой закладки также возвращаются все её теги (не только указанный).
+ * 
+ * @route GET /api/bookmarks/tags/:id
+ * @param {string} req.params.id - UID тега
+ * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 400 - Некорректный идентификатор тега
+ * @returns {Object} 404 - Тег не найден
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": [
+ *     {
+ *       "id": "abc12345",
+ *       "categoryId": "cat1",
+ *       "url": "https://example.com",
+ *       "title": "Пример сайта",
+ *       "preview": "",
+ *       "description": "Описание",
+ *       "tags": ["tag1", "tag2"],
+ *       "createdAt": "2024-12-01T10:00:00Z",
+ *       "updatedAt": "2024-12-01T10:00:00Z",
+ *       "transitionCounter": 3,
+ *       "favorite": false
+ *     }
+ *   ]
+ * }
+ */
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 

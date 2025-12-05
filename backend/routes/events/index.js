@@ -5,6 +5,29 @@ import { normalizeInputDate } from "../../utils/date.js"
 
 const router = Router();
 
+/**
+ * Получает список всех событий
+ * 
+ * @route GET /api/events
+ * @returns {Object} 200 - JSON объект с массивом событий в поле data
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": [
+ *     {
+ *       "id": "550e8400-e29b",
+ *       "title": "День рождения",
+ *       "originalDate": "2024-06-13T00:00:00Z",
+ *       "nextDate": "",
+ *       "type": "birthday",
+ *       "description": "Важное событие",
+ *       "recurrence": "yearly"
+ *     }
+ *   ]
+ * }
+ */
 router.get('/', async (req, res) => {
   try {
     const eventsQuery = db.prepare(`
@@ -32,6 +55,30 @@ router.get('/', async (req, res) => {
   }
 });
 
+/**
+ * Получает событие по уникальному идентификатору
+ * 
+ * @route GET /api/events/:id
+ * @param {string} req.params.id - UID события
+ * @returns {Object} 200 - JSON объект с событием в поле data
+ * @returns {Object} 400 - Некорректный идентификатор события
+ * @returns {Object} 404 - Событие не найдено
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": {
+ *     "id": "550e8400-e29b",
+ *     "title": "День рождения",
+ *     "originalDate": "2024-06-13T00:00:00Z",
+ *     "nextDate": "",
+ *     "type": "birthday",
+ *     "description": "Важное событие",
+ *     "recurrence": "yearly"
+ *   }
+ * }
+ */
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -72,6 +119,43 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * Создает новое событие
+ * 
+ * @route POST /api/events
+ * @param {Object} req.body - Данные нового события
+ * @param {string} req.body.title - Название события
+ * @param {string} req.body.originalDate - Дата события (ISO 8601 или YYYY-MM-DD)
+ * @param {string} req.body.type - Тип события (birthday, holiday, anniversary, other)
+ * @param {string} [req.body.description] - Описание события
+ * @param {string} [req.body.recurrence=none] - Повторение (none, monthly, yearly)
+ * @returns {Object} 201 - JSON объект с созданным событием в поле data
+ * @returns {Object} 400 - Некорректные данные (заголовок, дата, тип или recurrence)
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Тело запроса:
+ * {
+ *   "title": "День рождения",
+ *   "originalDate": "2024-06-13",
+ *   "type": "birthday",
+ *   "description": "Важное событие",
+ *   "recurrence": "yearly"
+ * }
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": {
+ *     "id": "550e8400-e29b",
+ *     "title": "День рождения",
+ *     "originalDate": "2024-06-13T00:00:00Z",
+ *     "type": "birthday",
+ *     "description": "Важное событие",
+ *     "recurrence": "yearly"
+ *   }
+ * }
+ */
 router.post('/', async (req, res) => {
   try {
     const { title, originalDate, type, recurrence, description } = req.body ?? {};
@@ -147,6 +231,45 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * Обновляет существующее событие
+ * 
+ * @route PUT /api/events/:id
+ * @param {string} req.params.id - UID события
+ * @param {Object} req.body - Данные для обновления события
+ * @param {string} req.body.title - Название события
+ * @param {string} req.body.originalDate - Дата события (ISO 8601 или YYYY-MM-DD)
+ * @param {string} req.body.type - Тип события (birthday, holiday, anniversary, other)
+ * @param {string} [req.body.description] - Описание события
+ * @param {string} req.body.recurrence - Повторение (none, monthly, yearly)
+ * @returns {Object} 200 - JSON объект с обновленным событием в поле data
+ * @returns {Object} 400 - Некорректные данные
+ * @returns {Object} 404 - Событие не найдено
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Тело запроса:
+ * {
+ *   "title": "День рождения (обновлено)",
+ *   "originalDate": "2024-06-13",
+ *   "type": "birthday",
+ *   "description": "Обновленное описание",
+ *   "recurrence": "yearly"
+ * }
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": {
+ *     "id": "550e8400-e29b",
+ *     "title": "День рождения (обновлено)",
+ *     "originalDate": "2024-06-13T00:00:00Z",
+ *     "type": "birthday",
+ *     "description": "Обновленное описание",
+ *     "recurrence": "yearly"
+ *   }
+ * }
+ */
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   
@@ -231,6 +354,19 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+/**
+ * Удаляет событие по идентификатору
+ * 
+ * @route DELETE /api/events/:id
+ * @param {string} req.params.id - UID события
+ * @returns {void} 204 - Успешное удаление (пустой ответ)
+ * @returns {Object} 400 - Некорректный идентификатор события
+ * @returns {Object} 404 - Событие не найдено
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ: 204 No Content (пустой ответ)
+ */
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
 
