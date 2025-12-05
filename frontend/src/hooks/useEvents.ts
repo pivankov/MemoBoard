@@ -2,6 +2,8 @@ import { useCallback,useEffect, useState } from 'react';
 
 import { Event, EventFormValues } from 'types/events';
 
+import { API_EVENTS_BASE_URL } from 'constants/api';
+
 /**
  * Возвращаемое значение хука useEvents
  */
@@ -24,8 +26,6 @@ interface UseEventsReturn {
   getEventById: (id: string) => Promise<Event | null>;
 }
 
-const API_BASE_URL = 'http://localhost:4000/api/events';
-
 /**
  * Хук для работы с событиями через REST API
  * 
@@ -47,7 +47,7 @@ export const useEvents = (): UseEventsReturn => {
     setError(null);
     
     try {
-      const response = await fetch(API_BASE_URL);
+      const response = await fetch(API_EVENTS_BASE_URL);
       
       if (!response.ok) {
         throw new Error(`Ошибка загрузки событий: ${response.status} ${response.statusText}`);
@@ -77,7 +77,7 @@ export const useEvents = (): UseEventsReturn => {
     setError(null);
     
     try {
-      const response = await fetch(API_BASE_URL, {
+      const response = await fetch(API_EVENTS_BASE_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ export const useEvents = (): UseEventsReturn => {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
+      const response = await fetch(`${API_EVENTS_BASE_URL}/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ export const useEvents = (): UseEventsReturn => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
+      const response = await fetch(`${API_EVENTS_BASE_URL}/${id}`, {
         method: 'DELETE',
       });
 
@@ -205,7 +205,7 @@ export const useEvents = (): UseEventsReturn => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`);
+      const response = await fetch(`${API_EVENTS_BASE_URL}/${id}`);
 
       if (!response.ok) {
         throw new Error(`Ошибка загрузки события: ${response.status} ${response.statusText}`);

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { BookmarksCategory, BookmarksItem, BookmarksTag } from 'types/bookmarks';
 
+import { API_BOOKMARKS_BASE_URL } from 'constants/api';
+
 /**
  * Возвращаемое значение хука useBookmarks
  */
@@ -30,8 +32,6 @@ interface UseBookmarksParams {
   categoryId?: string;
 }
 
-const API_BASE_URL = 'http://localhost:4000/api/bookmarks';
-
 /**
  * Хук для работы с закладками через REST API
  * 
@@ -52,7 +52,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
    */
   const fetchBookmarks = useCallback(async () => {
     try {
-      const response = await fetch(API_BASE_URL);
+      const response = await fetch(API_BOOKMARKS_BASE_URL);
       
       if (!response.ok) {
         throw new Error(`Ошибка загрузки закладок: ${response.status} ${response.statusText}`);
@@ -76,7 +76,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
    */  
   const fetchBookmarksByTag = useCallback(async (id: string) => {
     try {
-      const path = `${API_BASE_URL}/tags/${id}`;
+      const path = `${API_BOOKMARKS_BASE_URL}/tags/${id}`;
       const response = await fetch(path);
       
       if (!response.ok) {
@@ -101,7 +101,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
    */  
   const fetchBookmarksByCategory = useCallback(async (id: string) => {
     try {
-      const path = `${API_BASE_URL}/categories/${id}`;
+      const path = `${API_BOOKMARKS_BASE_URL}/categories/${id}`;
       const response = await fetch(path);
       
       if (!response.ok) {
@@ -126,7 +126,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
    */
   const fetchTags = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/tags`);
+      const response = await fetch(`${API_BOOKMARKS_BASE_URL}/tags`);
       
       if (!response.ok) {
         throw new Error(`Ошибка загрузки тегов: ${response.status} ${response.statusText}`);
@@ -149,7 +149,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
    */
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/categories`);
+      const response = await fetch(`${API_BOOKMARKS_BASE_URL}/categories`);
       
       if (!response.ok) {
         throw new Error(`Ошибка загрузки категорий: ${response.status} ${response.statusText}`);

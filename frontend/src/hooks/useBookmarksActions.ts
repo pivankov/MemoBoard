@@ -2,9 +2,9 @@ import { useCallback } from 'react';
 
 import { BookmarksCreateFormData, BookmarksItem, BookmarksParsedData, BookmarksUpdateFormData } from 'types/bookmarks';
 
+import { API_BOOKMARKS_BASE_URL } from 'constants/api';
 import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 
-const API_BASE_URL = 'http://localhost:4000/api/bookmarks';
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 /**
@@ -37,14 +37,14 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
    */
   const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem | null> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`);
+      const response = await fetch(`${API_BOOKMARKS_BASE_URL}/${id}`);
       
       if (!response.ok) {
         throw new Error(`Ошибка загрузки закладки: ${response.status} ${response.statusText}`);
       }
       
       const payload = await response.json();
-      
+
       return payload.data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке закладки';
@@ -58,7 +58,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
    */
   const createBookmark = useCallback(async (data: BookmarksCreateFormData): Promise<void> => {
     try {
-      const response = await fetch(API_BASE_URL, {
+      const response = await fetch(API_BOOKMARKS_BASE_URL, {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify(data),
@@ -79,7 +79,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
    */
   const updateBookmark = useCallback(async (id: string, data: BookmarksUpdateFormData): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
+      const response = await fetch(`${API_BOOKMARKS_BASE_URL}/${id}`, {
         method: 'PUT',
         headers: JSON_HEADERS,
         body: JSON.stringify(data),
@@ -122,7 +122,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
    */
   const deleteBookmark = useCallback(async (id: string): Promise<void> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/${id}`, {
+      const response = await fetch(`${API_BOOKMARKS_BASE_URL}/${id}`, {
         method: 'DELETE',
       });
 
