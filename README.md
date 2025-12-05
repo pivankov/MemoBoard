@@ -120,7 +120,7 @@ npm run db:reset
    ```bash
    npm start
    ```
-   Сервер запустится на `http://localhost:3001`
+   Сервер запустится на `http://localhost:4000`
 
 2. **Запустите frontend** (из папки `frontend/`):
    ```bash
@@ -142,7 +142,7 @@ npm run db:reset
    cd backend
    npm start
    ```
-   Приложение доступно на `http://localhost:3001`
+   Приложение доступно на `http://localhost:4000`
 
 ---
 
