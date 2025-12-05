@@ -59,6 +59,7 @@ router.get('/:id', async (req, res) => {
       FROM bookmarks b
       LEFT JOIN bookmark_categories bc ON b.category_id = bc.id
       WHERE b.category_id = ?
+      ORDER BY b.updated_at DESC
     `);
     const rows = bookmarksQuery.all(categoryRow.id);
 

@@ -16,6 +16,7 @@ router.get('/', async (req, res) => {
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
+      ORDER BY b.updated_at DESC
     `);
     const rows = bookmarksQuery.all();
 
