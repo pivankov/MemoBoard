@@ -5,10 +5,12 @@ import { BookmarksItem, BookmarksListPanelHeader, BookmarksTag, BookmarksTagWith
 
 import BookmarksListItem from "./BookmarksListItem";
 import BookmarksListPanel from "./BookmarksListPanel";
+import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
 
 import "./BookmarksList.css";
 
 const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[], panelHeader: BookmarksListPanelHeader  }> = ({ bookmarks, tags, panelHeader }) => {
+  const { removeBookmark } = useBookmarksActionsContext();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t] as const)), [tags]);
   const selectedTagsSet = useMemo(() => new Set(selectedTags), [selectedTags]);
@@ -43,6 +45,10 @@ const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[]
     setSelectedTags([]);
   }, []);
 
+  const handleDelete = useCallback((bookmarkId: string, categoryId: string) => {
+    removeBookmark(bookmarkId, categoryId);
+  }, [removeBookmark]);
+
   /**
    * Активные теги с подсчетом количества закладок для каждого тега
    */
@@ -76,7 +82,7 @@ const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[]
     
     return bookmarks.filter((bookmark) => 
       bookmark.tags.some((tagId) => selectedTagsSet.has(tagId))
-      // Вариант фильтрации, когда отображаются закладки включающие в себя все выбранные теги
+      // Вариант фильтрации(AND), когда отображаются закладки включающие в себя все выбранные теги 
       // selectedTags.every((tagId) => bookmark.tags.includes(tagId))
     );
   }, [bookmarks, selectedTags]);
@@ -104,7 +110,8 @@ const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[]
             <BookmarksListItem 
               key={bookmark.id} 
               {...bookmark} 
-              tags={mapTagIdsToTags(bookmark.tags)} 
+              tags={mapTagIdsToTags(bookmark.tags)}
+              onDelete={handleDelete}
             />
           ))
         }

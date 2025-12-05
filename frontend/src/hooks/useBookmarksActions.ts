@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 
 import { BookmarksCreateFormData, BookmarksItem, BookmarksParsedData, BookmarksUpdateFormData } from 'types/bookmarks';
 
+import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
+
 const API_BASE_URL = 'http://localhost:4000/api/bookmarks';
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
@@ -13,6 +15,8 @@ interface UseBookmarksActionsReturn {
   createBookmark: (data: BookmarksCreateFormData) => Promise<void>;
   /** Обновляет существующую закладку */
   updateBookmark: (id: string, data: BookmarksUpdateFormData) => Promise<void>;
+  /** Перемещает закладку в корзину */
+  moveToTrash: (id: string) => Promise<void>;
   /** Удаляет закладку */
   deleteBookmark: (id: string) => Promise<void>;
   /** Получает одну закладку по ID */
@@ -28,6 +32,27 @@ interface UseBookmarksActionsReturn {
  * @returns объект с методами для работы с закладками
  */
 export const useBookmarksActions = (): UseBookmarksActionsReturn => {
+  /**
+   * Получает одну закладку по ID
+   */
+  const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/${id}`);
+      
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки закладки: ${response.status} ${response.statusText}`);
+      }
+      
+      const payload = await response.json();
+      
+      return payload.data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке закладки';
+      console.error('Ошибка загрузки закладки:', err);
+      throw new Error(errorMessage);
+    }
+  }, []);
+    
   /**
    * Создает новую закладку
    */
@@ -71,6 +96,28 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   }, []);
 
   /**
+   * Перемещает закладку в корзину (изменяет категорию на "Корзина")
+   */
+  const moveToTrash = useCallback(async (id: string): Promise<void> => {
+    try {
+      const bookmark = await getBookmarkById(id);
+      
+      if (!bookmark) {
+        throw new Error('Закладка не найдена');
+      }
+      
+      await updateBookmark(id, {
+        ...bookmark,
+        categoryId: SYSTEM_CATEGORIES.TRASH,
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при перемещении закладки в корзину';
+      console.error('Ошибка перемещения закладки в корзину:', err);
+      throw new Error(errorMessage);
+    }
+  }, [getBookmarkById, updateBookmark]);
+
+  /**
    * Удаляет закладку
    */
   const deleteBookmark = useCallback(async (id: string): Promise<void> => {
@@ -78,33 +125,16 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
       const response = await fetch(`${API_BASE_URL}/${id}`, {
         method: 'DELETE',
       });
+
+      console.log("DELETE", 1);
       
       if (!response.ok) {
         throw new Error(`Ошибка удаления закладки: ${response.status} ${response.statusText}`);
       }
     } catch (err) {
+      console.log("DELETE", 2);
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при удалении закладки';
       console.error('Ошибка удаления закладки:', err);
-      throw new Error(errorMessage);
-    }
-  }, []);
-
-  /**
-   * Получает одну закладку по ID
-   */
-  const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem | null> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/${id}`);
-      
-      if (!response.ok) {
-        throw new Error(`Ошибка загрузки закладки: ${response.status} ${response.statusText}`);
-      }
-      
-      const payload = await response.json();
-      return payload.data;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке закладки';
-      console.error('Ошибка загрузки закладки:', err);
       throw new Error(errorMessage);
     }
   }, []);
@@ -112,6 +142,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   return {
     createBookmark,
     updateBookmark,
+    moveToTrash,
     deleteBookmark,
     getBookmarkById,
   };
