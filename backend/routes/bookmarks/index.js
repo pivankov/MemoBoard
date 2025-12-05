@@ -199,4 +199,132 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { url, title, description, categoryId, tags, preview, favorite } = req.body ?? {};
+  
+  try {
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор закладки' });
+    }
+    
+    if (!url || typeof url !== 'string' || url.trim().length === 0) {
+      return res.status(400).json({ error: 'URL обязателен для заполнения' });
+    }
+    
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Заголовок обязателен для заполнения' });
+    }
+    
+    if (!categoryId || typeof categoryId !== 'string' || categoryId.trim().length === 0) {
+      return res.status(400).json({ error: 'Категория обязательна для заполнения' });
+    }
+    
+    if (tags && !Array.isArray(tags)) {
+      return res.status(400).json({ error: 'Теги должны быть массивом' });
+    }
+    
+    const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
+    
+    if (!bookmarkRow) {
+      return res.status(404).json({ error: 'Закладка не найдена' });
+    }
+    
+    const bookmarkIdInternal = bookmarkRow.id;
+
+    const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(categoryId);
+    
+    if (!categoryRow) {
+      return res.status(400).json({ error: 'Категория не найдена' });
+    }
+    
+    const categoryIdInternal = categoryRow.id;
+    
+    const updateBookmark = db.prepare(`
+      UPDATE bookmarks
+      SET 
+        url = @url,
+        title = @title,
+        description = @description,
+        category_id = @category_id,
+        preview = @preview,
+        favorite = @favorite
+      WHERE id = @id
+    `);
+    
+    updateBookmark.run({
+      id: bookmarkIdInternal,
+      url: url.trim(),
+      title: title.trim(),
+      description: description ? description.trim() : '',
+      category_id: categoryIdInternal,
+      preview: preview ? preview.trim() : '',
+      favorite: favorite ? 1 : 0,
+    });
+    
+    // Обрабатываем теги
+    if (tags && Array.isArray(tags)) {
+      // Удаляем все старые связи с тегами
+      const deleteTagRelations = db.prepare('DELETE FROM bookmark_tag_relations WHERE bookmark_id = ?');
+      deleteTagRelations.run(bookmarkIdInternal);
+      
+      // Создаем новые связи с тегами
+      if (tags.length > 0) {
+        const insertTagRelation = db.prepare(`
+          INSERT OR IGNORE INTO bookmark_tag_relations (bookmark_id, tag_id)
+          VALUES (@bookmark_id, @tag_id)
+        `);
+        
+        for (const tagUid of tags) {
+          // Получаем внутренний id тега по uid
+          const tagRow = db.prepare('SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1').get(tagUid);
+          
+          if (tagRow) {
+            insertTagRelation.run({
+              bookmark_id: bookmarkIdInternal,
+              tag_id: tagRow.id,
+            });
+          } else {
+            console.warn(`Предупреждение: тег с uid "${tagUid}" не найден при обновлении закладки "${title}" (uid: ${id})`);
+          }
+        }
+      }
+    }
+    
+    return res.status(200).json({ success: true });
+    
+  } catch (error) {
+    console.error(`Ошибка обновления закладки ${id}:`, error);
+    return res.status(500).json({ error: 'Не удалось обновить закладку' });
+  }
+});
+
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор закладки' });
+    }
+    
+    const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
+    
+    if (!bookmarkRow) {
+      return res.status(404).json({ error: 'Закладка не найдена' });
+    }
+    
+    const bookmarkIdInternal = bookmarkRow.id;
+    
+    // Удаляем закладку (связи с тегами удалятся автоматически через CASCADE)
+    const deleteBookmark = db.prepare('DELETE FROM bookmarks WHERE id = ?');
+    deleteBookmark.run(bookmarkIdInternal);
+    
+    return res.status(200).json({ success: true });
+    
+  } catch (error) {
+    console.error(`Ошибка удаления закладки ${id}:`, error);
+    return res.status(500).json({ error: 'Не удалось удалить закладку' });
+  }
+});
+
 export default router;
