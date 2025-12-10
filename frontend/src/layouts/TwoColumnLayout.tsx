@@ -14,7 +14,7 @@ interface TwoColumnLayoutProps {
  */
 function TwoColumnLayout({ sidebar, sidebarHeader, content }: TwoColumnLayoutProps) {
   return (
-    <div className="two-column-layout">
+    <div className="two-column-layout" id="two-column-layout">
       <aside className="two-column-layout__sidebar">
         {sidebarHeader && (
           <div className="two-column-layout__sidebar-header">
