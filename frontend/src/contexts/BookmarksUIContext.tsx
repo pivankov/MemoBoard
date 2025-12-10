@@ -6,11 +6,17 @@ import { createContext, ReactNode, useCallback, useContext, useMemo, useState } 
 interface BookmarksUIContextValue {
   /** Флаг открытия модального окна добавления */
   isAddModalOpen: boolean;
+  /** Флаг открытия панели редактирования */
+  isEditPanelOpen: boolean;
   
   /** Открывает модальное окно для ввода URL */
   openAddModal: () => void;
   /** Закрывает модальное окно добавления */
   closeAddModal: () => void;
+  /** Открывает панель редактирования */
+  openEditPanel: () => void;
+  /** Закрывает панель редактирования */
+  closeEditPanel: () => void;
 }
 
 const BookmarksUIContext = createContext<BookmarksUIContextValue | null>(null);
@@ -22,13 +28,14 @@ interface BookmarksUIProviderProps {
 /**
  * Provider для UI состояния закладок
  * 
- * Управляет состоянием модальных окон, панелей редактирования и процессом парсинга URL.
+ * Управляет состоянием модальных окон и панелей редактированияё.
  * Содержит изменяемый state, поэтому потребители будут ре-рендериться при изменениях.
  * 
  * Оркестрирует взаимодействие между модальным окном ввода URL и боковой панелью редактирования.
  */
 export const BookmarksUIProvider: React.FC<BookmarksUIProviderProps> = ({ children }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
   
   /**
    * Открывает модальное окно для ввода URL
@@ -38,20 +45,40 @@ export const BookmarksUIProvider: React.FC<BookmarksUIProviderProps> = ({ childr
   }, []);
   
   /**
-   * Закрывает модальное окно и очищает данные парсинга
+   * Закрывает модальное окно
    */
   const closeAddModal = useCallback(() => {
     setIsAddModalOpen(false);
   }, []);
+
+  /**
+   * Открывает панель редактирования
+   */
+  const openEditPanel = useCallback(() => {
+    setIsEditPanelOpen(true);
+  }, []);
+  
+  /**
+   * Закрывает панель редактирования
+   */
+  const closeEditPanel = useCallback(() => {
+    setIsEditPanelOpen(false);
+  }, []);
   
   const value = useMemo(() => ({
     isAddModalOpen,
+    isEditPanelOpen,
     openAddModal,
     closeAddModal,
+    openEditPanel,
+    closeEditPanel,
   }), [
     isAddModalOpen,
+    isEditPanelOpen,
     openAddModal,
     closeAddModal,
+    openEditPanel,
+    closeEditPanel,    
   ]);
   
   return (
