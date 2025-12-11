@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import { BookmarksCreateFormData, BookmarksItem, BookmarksParsedData, BookmarksUpdateFormData } from 'types/bookmarks';
+import { BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 
 import { API_BOOKMARKS_BASE_URL } from 'constants/api';
 import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
