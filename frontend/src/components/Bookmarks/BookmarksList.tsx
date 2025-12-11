@@ -9,7 +9,15 @@ import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
 
 import "./BookmarksList.css";
 
-const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[], panelHeader: BookmarksListPanelHeader  }> = ({ bookmarks, tags, panelHeader }) => {
+interface BookmarksListProps {
+  bookmarks: BookmarksItem[];
+  tags: BookmarksTag[];
+  panelHeader: BookmarksListPanelHeader;
+  /** Коллбэк открытия редактирования закладки */
+  onEdit: (bookmarkId: string) => void;
+}
+
+const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, panelHeader, onEdit }) => {
   const { removeBookmark } = useBookmarksActionsContext();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t] as const)), [tags]);
@@ -48,6 +56,10 @@ const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[]
   const handleDelete = useCallback((bookmarkId: string, categoryId: string) => {
     removeBookmark(bookmarkId, categoryId);
   }, [removeBookmark]);
+
+  const handleEdit = useCallback((bookmarkId: string) => {
+    onEdit(bookmarkId);
+  }, [onEdit]);
 
   /**
    * Активные теги с подсчетом количества закладок для каждого тега
@@ -111,6 +123,7 @@ const BookmarksList: React.FC<{ bookmarks: BookmarksItem[], tags: BookmarksTag[]
               key={bookmark.id} 
               {...bookmark} 
               tags={mapTagIdsToTags(bookmark.tags)}
+              onEdit={handleEdit}
               onDelete={handleDelete}
             />
           ))
