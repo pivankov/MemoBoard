@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo } from 'react';
 
 import { useBookmarksActions } from 'hooks/useBookmarksActions';
-import { BookmarksCreateFormData } from 'types/bookmarks';
+import { BookmarksCreateFormData, BookmarksItem } from 'types/bookmarks';
 
 import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 import { useNotifications } from 'providers/NotificationsProvider';
@@ -23,6 +23,8 @@ interface BookmarksActionsContextValue {
    * Если закладка в корзине - удаляет окончательно, иначе - перемещает в корзину
    */
   removeBookmark: (bookmarkId: string, bookmarkCategoryId: string) => void;
+  /** Получает закладку по ID */
+  getBookmarkById: (id: string) => Promise<BookmarksItem | null>;
 }
 
 const BookmarksActionsContext = createContext<BookmarksActionsContextValue | null>(null);
@@ -49,6 +51,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     createBookmark: createBookmarkAction,
     moveToTrash: moveToTrashAction,
     deleteBookmark: deleteBookmarkAction,
+    getBookmarkById: getBookmarkByIdAction,
   } = useBookmarksActions();
   
   const { notifySuccess, notifyError } = useNotifications();
@@ -95,13 +98,27 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     }
   }, [deleteBookmark, moveToTrash]);
 
+  /**
+   * Получает закладку по ID
+   * @param id - ID закладки
+   */
+  const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem | null> => {
+    try {
+      return await getBookmarkByIdAction(id);
+    } catch (error) {
+      notifyError({ description: 'Не удалось загрузить закладку' });
+      return null;
+    }
+  }, [getBookmarkByIdAction, notifyError]);
+
   const value = useMemo(() => ({
     createBookmark,
     deleteBookmark,    
     moveToTrash,
     removeBookmark,
     refreshBookmarks,
-  }), [createBookmark, deleteBookmark, moveToTrash, removeBookmark, refreshBookmarks]);
+    getBookmarkById,
+  }), [createBookmark, deleteBookmark, moveToTrash, removeBookmark, refreshBookmarks, getBookmarkById]);
   
   return (
     <BookmarksActionsContext.Provider value={value}>
