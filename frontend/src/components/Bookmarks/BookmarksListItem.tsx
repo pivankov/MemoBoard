@@ -12,9 +12,10 @@ import "./BookmarksListItem.css";
 type BookmarksItemWithTags = Omit<BookmarksItem, 'tags'> & {
   tags: BookmarksTagWithSelected[];
   onDelete: (bookmarkId: string, categoryId: string) => void;
+  onEdit: (bookmarkId: string) => void;
 };
 
-const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ id, categoryId, url, title, description, createdAt, tags, onDelete }) => {
+const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ id, categoryId, url, title, description, createdAt, tags, onDelete, onEdit }) => {
   const navigate = useNavigate();
   const siteName = getDomainName(url);
   const date = formatDateString(createdAt);
@@ -35,7 +36,7 @@ const BookmarksListItem: React.FC<BookmarksItemWithTags> = ({ id, categoryId, ur
   });
 
   const handleClickEdit = withStopEvent(() => {
-    console.log("edit", id);
+    onEdit(id);
   });
 
   const handleClickDelete = withStopEvent(() => {
