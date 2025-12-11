@@ -1,10 +1,11 @@
-import { useMemo } from "react";
-import { useParams } from "react-router";
+import { useCallback, useMemo } from "react";
+import { useNavigate, useParams } from "react-router";
 
 import { useBookmarks } from 'hooks/useBookmarks';
 import TwoColumnLayout from "layouts/TwoColumnLayout";
 import { BookmarksListPanelHeader } from "types/bookmarks";
 
+import BookmarksEdit from "./BookmarksEdit";
 import BookmarksList from "./BookmarksList";
 import BookmarksModalContainer from "./BookmarksModalContainer";
 import BookmarksSidebarCategoryList from "./BookmarksSidebarCategoryList";
@@ -13,7 +14,8 @@ import { BookmarksActionsProvider } from 'contexts/BookmarksActionsContext';
 import { BookmarksUIProvider } from 'contexts/BookmarksUIContext';
 
 const Bookmarks: React.FC = () => {
-  const { tagId, categoryId } = useParams<{ tagId?: string; categoryId?: string }>();
+  const { tagId, categoryId, bookmarkId } = useParams<{ tagId?: string; categoryId?: string; bookmarkId?: string }>();
+  const navigate = useNavigate();
   
   const { bookmarks, tags, categories, loading, error, refreshBookmarks } = useBookmarks({ tagId, categoryId });
 
@@ -45,6 +47,25 @@ const Bookmarks: React.FC = () => {
     });
   }, [categories]);
 
+  /**
+   * Открывает панель редактирования через навигацию
+   */
+  const handleOpenEdit = useCallback((bookmarkId: string) => {
+    navigate(`${bookmarkId}/edit`);
+  }, [navigate]);
+
+  /**
+   * Закрывает панель редактирования через навигацию назад
+   */
+  const handleCloseEdit = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
+  /**
+   * Определяет состояние открытия панели редактирования на основе URL
+   */
+  const isEditPanelOpen = !!bookmarkId;
+
   const sidebar = (
     <>
       <BookmarksSidebarCategoryList data={groupedCategories} />
@@ -56,11 +77,16 @@ const Bookmarks: React.FC = () => {
     <BookmarksActionsProvider refreshBookmarks={refreshBookmarks}>
       <BookmarksUIProvider>
         <TwoColumnLayout
-          sidebarHeader="Закладки"    
+          sidebarHeader="Закладки"
           sidebar={sidebar}
-          content={<BookmarksList bookmarks={bookmarks} tags={tags} panelHeader={panelHeader} />}
+          content={<BookmarksList bookmarks={bookmarks} tags={tags} panelHeader={panelHeader} onEdit={handleOpenEdit} />}
         />
 
+        <BookmarksEdit
+          bookmarkId={bookmarkId}
+          isOpen={isEditPanelOpen}
+          onClose={handleCloseEdit}
+        />
         <BookmarksModalContainer categoryId={categoryId} />
       </BookmarksUIProvider>
     </BookmarksActionsProvider>    
