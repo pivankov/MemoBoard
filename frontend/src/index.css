@@ -208,6 +208,24 @@ a {
   opacity: 0.4;  
 }
 
+.edit-form__item {
+  margin-bottom: 24px;
+}
+
+.edit-form__item-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.edit-form__footer {
+  display: flex;
+  padding: 16px 48px;
+  margin: 40px -48px 0;
+  border-top: 1px solid var(--border-color);
+  background-color: #f8fafc;
+}
+
 /*  lib fix */
 .rs-picker-search-input>input {
   background: none;

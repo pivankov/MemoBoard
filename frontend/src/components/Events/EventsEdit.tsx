@@ -9,8 +9,6 @@ import { calculateNextDate } from "../../utils/date";
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 
-import "./EventsEdit.css";
-
 const { TextArea } = Input;
 
 interface EventsEditProps {
@@ -135,95 +133,93 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
 
   return (
     <div className="events-edit">
-      <div className="events-edit__form">
-        <Form
-          ref={form}
-          layout="vertical"
-          initialValues={formInitialValues}
-          onFinish={handleFinish}
-        >
-          <div className="events-edit__form-item">
-            <label className="events-edit__form-item-label" htmlFor="title">Название события</label>
-            <Form.Item name="title">
-              <Input id="title" placeholder="Пожалуйста введите название события" />
-            </Form.Item>
-          </div>
+      <Form
+        ref={form}
+        layout="vertical"
+        initialValues={formInitialValues}
+        onFinish={handleFinish}
+      >
+        <div className="edit-form__item">
+          <label className="edit-form__item-label" htmlFor="title">Название события</label>
+          <Form.Item name="title">
+            <Input id="title" placeholder="Пожалуйста введите название события" />
+          </Form.Item>
+        </div>
 
-          <div className="events-edit__form-item">
-            <label className="events-edit__form-item-label" htmlFor="originalDate">Дата начала события</label>
-            <Form.Item name="originalDate"> 
-              <DatePicker id="originalDate" placeholder="дата" onChange={handleChangeOriginalDate} />
-            </Form.Item>
-          </div>
+        <div className="edit-form__item">
+          <label className="edit-form__item-label" htmlFor="originalDate">Дата начала события</label>
+          <Form.Item name="originalDate"> 
+            <DatePicker id="originalDate" placeholder="дата" onChange={handleChangeOriginalDate} />
+          </Form.Item>
+        </div>
 
-          <div className="events-edit__form-item">
-            <label className="events-edit__form-item-label" htmlFor="nextDate">Следующая дата события</label>
-            <DatePicker value={nextDate} id="nextDate" placeholder="дата" disabled />
-          </div>          
+        <div className="edit-form__item">
+          <label className="edit-form__item-label" htmlFor="nextDate">Следующая дата события</label>
+          <DatePicker value={nextDate} id="nextDate" placeholder="дата" disabled />
+        </div>          
 
-          <div className="events-edit__form-item">
-            <label className="events-edit__form-item-label" htmlFor="type">Тип события</label>
-            <Form.Item name="type">
-              <Select options={eventTypesOptions}/>
-            </Form.Item>
-          </div>    
+        <div className="edit-form__item">
+          <label className="edit-form__item-label" htmlFor="type">Тип события</label>
+          <Form.Item name="type">
+            <Select options={eventTypesOptions}/>
+          </Form.Item>
+        </div>    
 
-          <div className="events-edit__form-item">
-            <label className="events-edit__form-item-label">Повторяемость события</label>
-            <Form.Item name="recurrence" className="mb-0">
-              <Radio.Group onChange={handleChangeRecurrence}>
-                {recurrenceOptions.map((o) => (
-                  <Radio key={o.value} value={o.value}>{o.label}</Radio>
-                ))}
-              </Radio.Group>
-            </Form.Item>
-          </div>
+        <div className="edit-form__item">
+          <label className="edit-form__item-label">Повторяемость события</label>
+          <Form.Item name="recurrence" className="mb-0">
+            <Radio.Group onChange={handleChangeRecurrence}>
+              {recurrenceOptions.map((o) => (
+                <Radio key={o.value} value={o.value}>{o.label}</Radio>
+              ))}
+            </Radio.Group>
+          </Form.Item>
+        </div>
 
-          <div className="events-edit__form-item">
-            <label className="events-edit__form-item-label" htmlFor="description">Описание</label>
-            <Form.Item name="description"> 
-              <TextArea
-                id="description"
-                showCount
-                maxLength={250}
-                placeholder="Укажите описание события"
-                style={{ height: 120, resize: 'none' }}
-              />
-            </Form.Item>
-          </div>
+        <div className="edit-form__item">
+          <label className="edit-form__item-label" htmlFor="description">Описание</label>
+          <Form.Item name="description"> 
+            <TextArea
+              id="description"
+              showCount
+              maxLength={250}
+              placeholder="Укажите описание события"
+              style={{ height: 120, resize: 'none' }}
+            />
+          </Form.Item>
+        </div>
 
-          <div className="events-edit__form-buttons">
-            <Popconfirm
-              title="Удаление события"
-              description="Вы действительно хотите удалить это событие?"
-              onConfirm={onDelete}
-              okText="Да"
-              cancelText="Нет"
-            >
-              <Button
-                shape="round"
-                color="danger"
-                variant="text"
-                htmlType="button"
-              >Удалить</Button>
-            </Popconfirm>            
+        <div className="edit-form__footer">
+          <Popconfirm
+            title="Удаление события"
+            description="Вы действительно хотите удалить это событие?"
+            onConfirm={onDelete}
+            okText="Да"
+            cancelText="Нет"
+          >
             <Button
               shape="round"
-              color="default"
-              variant="filled"
-              className="ml-auto"
+              color="danger"
+              variant="text"
               htmlType="button"
-              onClick={onCancel}
-            >Отменить</Button>
-            <Button
-              shape="round"
-              type="primary"
-              className="ml-3"
-              htmlType="submit"
-            >Сохранить</Button>
-          </div>
-        </Form>
-      </div>
+            >Удалить</Button>
+          </Popconfirm>            
+          <Button
+            shape="round"
+            color="default"
+            variant="filled"
+            className="ml-auto"
+            htmlType="button"
+            onClick={onCancel}
+          >Отменить</Button>
+          <Button
+            shape="round"
+            type="primary"
+            className="ml-3"
+            htmlType="submit"
+          >Сохранить</Button>
+        </div>
+      </Form>
     </div>
   );
 };
