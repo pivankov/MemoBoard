@@ -125,14 +125,11 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
       const response = await fetch(`${API_BOOKMARKS_BASE_URL}/${id}`, {
         method: 'DELETE',
       });
-
-      console.log("DELETE", 1);
       
       if (!response.ok) {
         throw new Error(`Ошибка удаления закладки: ${response.status} ${response.statusText}`);
       }
     } catch (err) {
-      console.log("DELETE", 2);
       const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при удалении закладки';
       console.error('Ошибка удаления закладки:', err);
       throw new Error(errorMessage);
