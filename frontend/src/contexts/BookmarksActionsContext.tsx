@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo } from 'react';
 
 import { useBookmarksActions } from 'hooks/useBookmarksActions';
-import { BookmarksCreateFormData, BookmarksItem } from 'types/bookmarks';
+import { BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 
 import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 import { useNotifications } from 'providers/NotificationsProvider';
@@ -15,7 +15,9 @@ interface BookmarksActionsContextValue {
   /** Создает новую закладку */
   createBookmark: (data: BookmarksCreateFormData) => Promise<void>;
   /** Удаляет закладку окончательно */
-  deleteBookmark: (id: string) => Promise<void>;  
+  deleteBookmark: (id: string) => Promise<void>;
+  /** Обновляет существующую закладку */
+  updateBookmark: (id: string, data: BookmarksUpdateFormData) => Promise<void>;  
   /** Перемещает закладку в корзину */
   moveToTrash: (id: string) => Promise<void>;
   /** 
@@ -51,6 +53,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     createBookmark: createBookmarkAction,
     moveToTrash: moveToTrashAction,
     deleteBookmark: deleteBookmarkAction,
+    updateBookmark: updateBookmarkAction,
     getBookmarkById: getBookmarkByIdAction,
   } = useBookmarksActions();
   
@@ -72,6 +75,17 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: 'Не удалось удалить закладку' });
     }
   }, [deleteBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);  
+
+  const updateBookmark = useCallback(async (id: string, data: BookmarksUpdateFormData) => {
+    try {
+      await updateBookmarkAction(id, data);
+      notifySuccess({ description: 'Закладка обновлена' });
+
+      await refreshBookmarks();
+    } catch (error) {
+      notifyError({ description: 'Не удалось обновить закладку' });
+    }
+  }, [updateBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);  
 
   const moveToTrash = useCallback(async (id: string) => {
     try {
@@ -114,11 +128,12 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
   const value = useMemo(() => ({
     createBookmark,
     deleteBookmark,    
+    updateBookmark,
     moveToTrash,
     removeBookmark,
     refreshBookmarks,
     getBookmarkById,
-  }), [createBookmark, deleteBookmark, moveToTrash, removeBookmark, refreshBookmarks, getBookmarkById]);
+  }), [createBookmark, deleteBookmark, updateBookmark, moveToTrash, removeBookmark, refreshBookmarks, getBookmarkById]);
   
   return (
     <BookmarksActionsContext.Provider value={value}>
