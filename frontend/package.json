@@ -26,6 +26,7 @@
     "start": "react-scripts start",
     "build": "BUILD_PATH=../backend/public react-scripts build",
     "test": "react-scripts test",
+    "test:all": "react-scripts test --watchAll=false",
     "eject": "react-scripts eject",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:fix": "eslint 'src/**/*.{ts,tsx}' --fix"
