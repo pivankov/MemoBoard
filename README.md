@@ -196,6 +196,9 @@ npm run db:reset:noseed
 ```bash
 cd frontend
 npm test
+
+# Запуск всех тестов
+npm run test:all
 ```
 
 **Структура тестов**:
