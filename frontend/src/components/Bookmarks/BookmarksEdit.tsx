@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Alert, Spin } from 'antd';
+import { Alert, Button, Form, Input, Popconfirm, Spin } from 'antd';
 
 import Panel from "components/UI/Panel/Panel"
-import { BookmarksItem } from 'types/bookmarks';
+import type { BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 
 import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
+
+const { TextArea } = Input;
 
 interface BookmarksEditProps {
   /** ID редактируемой закладки */
@@ -13,6 +15,16 @@ interface BookmarksEditProps {
   isOpen: boolean;
   /** Коллбэк закрытия панели */
   onClose: () => void;
+}
+
+/**
+ * Внутренний тип значений формы
+ * Содержит только редактируемые поля
+ */
+interface BookmarksEditFormValues {
+  url: string;
+  title: string;
+  description: string;
 }
 
 /**
@@ -26,8 +38,9 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
   isOpen, 
   onClose 
 }) => {
-  const { getBookmarkById } = useBookmarksActionsContext();
+  const { getBookmarkById, updateBookmark, deleteBookmark } = useBookmarksActionsContext();
   
+  const [form] = Form.useForm<BookmarksEditFormValues>();
   const [bookmark, setBookmark] = useState<BookmarksItem | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,12 +61,7 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
 
       try {
         const data = await getBookmarkById(bookmarkId);
-        
-        if (data) {
-          setBookmark(data);
-        } else {
-          setError('Закладка не найдена');
-        }
+        setBookmark(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки закладки');
       } finally {
@@ -65,12 +73,65 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
   }, [bookmarkId, getBookmarkById]);
 
   /**
+   * Заполняет форму данными при загрузке закладки
+   */
+  useEffect(() => {
+    if (bookmark) {
+      form.setFieldsValue({
+        url: bookmark.url,
+        title: bookmark.title,
+        description: bookmark.description,
+      });
+    }
+  }, [bookmark]);
+
+  /**
    * Сброс состояния при закрытии панели
    */
   const handleClose = () => {
     setBookmark(null);
     setError(null);
     onClose();
+  };
+
+  /**
+   * Обработчик удаления закладки
+   */
+  const handleDelete = async () => {
+    if (!bookmarkId) return;
+
+    try {
+      await deleteBookmark(bookmarkId);
+      handleClose();
+    } catch {
+      // Ошибка обработана в контексте (уведомление показано)
+      // Панель остается открытой
+    }
+  };
+
+  /**
+   * Обработчик сохранения изменений
+   */
+  const handleFinish = async (values: BookmarksEditFormValues) => {
+    if (!bookmarkId || !bookmark) return;
+
+    const updateData: BookmarksUpdateFormData = {
+      url: values.url,
+      title: values.title,
+      description: values.description,
+      categoryId: bookmark.categoryId,
+      tags: bookmark.tags,
+      preview: bookmark.preview,
+      favorite: bookmark.favorite,
+    };
+
+    try {
+      await updateBookmark(bookmarkId, updateData);
+      handleClose();
+    } catch {
+      // Ошибка обработана в контексте (уведомление показано)
+      // Панель остается открытой
+    }
   };
 
   return (
@@ -96,14 +157,82 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
       )}
 
       {!loading && !error && bookmark && (
-        <div>
-          <p><strong>ID:</strong> {bookmark.id}</p>
-          <p><strong>Название:</strong> {bookmark.title}</p>
-          <p><strong>URL:</strong> {bookmark.url}</p>
-          <p><strong>Описание:</strong> {bookmark.description || 'Нет описания'}</p>
-          <p><strong>Теги:</strong> {bookmark.tags.join(', ') || 'Нет тегов'}</p>
-          <hr />
-          <p style={{ color: '#999' }}>Здесь будет форма редактирования</p>
+        <div className="bookmarks-edit">
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleFinish}
+          >
+            <div className="edit-form__item">
+              <label className="edit-form__item-label" htmlFor="url">Адрес страницы</label>
+              <Form.Item name="url">
+                <Input id="url" disabled />
+              </Form.Item>
+            </div>
+
+            <div className="edit-form__item">
+              <label className="edit-form__item-label" htmlFor="title">Заголовок страницы</label>
+              <Form.Item 
+                name="title"
+                rules={[
+                  { required: true, message: 'Заголовок обязателен для заполнения' },
+                  { whitespace: true, message: 'Заголовок не может состоять только из пробелов' },
+                  { min: 1, message: 'Заголовок не может быть пустым' },
+                ]}
+              >
+                <Input id="title" placeholder="Укажите заголовок страницы" />
+              </Form.Item>
+            </div>
+
+            <div className="edit-form__item">
+              <label className="edit-form__item-label" htmlFor="description">Описание страницы</label>
+              <Form.Item name="description"> 
+                <TextArea
+                  id="description"
+                  showCount
+                  maxLength={250}
+                  placeholder="Укажите описание страницы"
+                  style={{ height: 120, resize: 'none' }}
+                />
+              </Form.Item>
+            </div>
+
+            <div className="edit-form__footer">
+              <Popconfirm
+                title="Удаление закладки"
+                description="Вы действительно хотите удалить эту закладку?"
+                onConfirm={handleDelete}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <Button
+                  shape="round"
+                  color="danger"
+                  variant="text"
+                  htmlType="button"
+                >Удалить</Button>
+              </Popconfirm>            
+              <Button
+                shape="round"
+                color="default"
+                variant="filled"
+                className="ml-auto"
+                htmlType="button"
+                onClick={handleClose}
+              >Отменить</Button>
+              <Form.Item shouldUpdate noStyle>
+                {() => (
+                  <Button
+                    shape="round"
+                    type="primary"
+                    className="ml-3"
+                    htmlType="submit"
+                    disabled={form.getFieldsError().some(({ errors }) => errors.length > 0)}
+                  >Сохранить</Button>
+                )}
+              </Form.Item>
+            </div>
+          </Form>
         </div>
       )}
     </Panel>
