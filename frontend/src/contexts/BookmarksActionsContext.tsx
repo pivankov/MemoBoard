@@ -2,6 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useMemo } from 'reac
 
 import { useBookmarksActions } from 'hooks/useBookmarksActions';
 import { BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
+import { getApiErrorMessage } from 'utils/errors';
 
 import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 import { useNotifications } from 'providers/NotificationsProvider';
@@ -26,7 +27,7 @@ interface BookmarksActionsContextValue {
    */
   removeBookmark: (bookmarkId: string, bookmarkCategoryId: string) => void;
   /** Получает закладку по ID */
-  getBookmarkById: (id: string) => Promise<BookmarksItem | null>;
+  getBookmarkById: (id: string) => Promise<BookmarksItem>;
 }
 
 const BookmarksActionsContext = createContext<BookmarksActionsContextValue | null>(null);
@@ -60,41 +61,70 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
   const { notifySuccess, notifyError } = useNotifications();
 
   const createBookmark = useCallback(async (data: BookmarksCreateFormData) => {
-    await createBookmarkAction(data);
-    await refreshBookmarks();
+    try {
+      await createBookmarkAction(data);
 
-  }, [createBookmarkAction, refreshBookmarks]);
+      notifySuccess({ description: 'Закладка создана' });
+
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось создать закладку');
+      
+      notifyError({ description: errorMessage });
+      console.error('Ошибка создания закладки:', error);
+
+      throw error;
+    }
+  }, [createBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);
 
   const deleteBookmark = useCallback(async (id: string) => {
     try {
       await deleteBookmarkAction(id);
+
       notifySuccess({ description: 'Закладка удалена' });
 
       await refreshBookmarks();
     } catch (error) {
-      notifyError({ description: 'Не удалось удалить закладку' });
+      const errorMessage = getApiErrorMessage(error, 'Не удалось удалить закладку');
+      
+      notifyError({ description: errorMessage });
+      console.error('Ошибка удаления закладки:', error);
+
+      throw error;
     }
   }, [deleteBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);  
 
   const updateBookmark = useCallback(async (id: string, data: BookmarksUpdateFormData) => {
     try {
       await updateBookmarkAction(id, data);
+
       notifySuccess({ description: 'Закладка обновлена' });
 
       await refreshBookmarks();
     } catch (error) {
-      notifyError({ description: 'Не удалось обновить закладку' });
+      const errorMessage = getApiErrorMessage(error, 'Не удалось обновить закладку');
+
+      notifyError({ description: errorMessage });
+      console.error('Ошибка обновления закладки:', error);
+
+      throw error;
     }
   }, [updateBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);  
 
   const moveToTrash = useCallback(async (id: string) => {
     try {
       await moveToTrashAction(id);
+      
       notifySuccess({ description: 'Закладка перемещена в корзину' });
             
       await refreshBookmarks();
     } catch (error) {
-      notifyError({ description: 'Не удалось переместить закладку в корзину' });
+      const errorMessage = getApiErrorMessage(error, 'Не удалось переместить закладку в корзину');
+      
+      notifyError({ description: errorMessage });
+      console.error('Ошибка перемещения закладки в корзину:', error);
+
+      throw error;
     }
   }, [moveToTrashAction, refreshBookmarks, notifySuccess, notifyError]);
 
@@ -116,12 +146,16 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
    * Получает закладку по ID
    * @param id - ID закладки
    */
-  const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem | null> => {
+  const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem> => {
     try {
       return await getBookmarkByIdAction(id);
     } catch (error) {
-      notifyError({ description: 'Не удалось загрузить закладку' });
-      return null;
+      const errorMessage = getApiErrorMessage(error, 'Не удалось загрузить закладку');
+
+      notifyError({ description: errorMessage });
+      console.error('Ошибка загрузки закладки:', error);
+
+      throw error;
     }
   }, [getBookmarkByIdAction, notifyError]);
 
