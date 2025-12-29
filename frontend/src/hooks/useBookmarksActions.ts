@@ -10,16 +10,18 @@ import { getApiClient } from 'services/ApiClient';
  * Возвращаемое значение хука useBookmarksActions
  */
 interface UseBookmarksActionsReturn {
+  /** Получает одну закладку по ID */
+  getBookmarkById: (id: string) => Promise<BookmarksItem>;  
   /** Создает новую закладку */
   createBookmark: (data: BookmarksCreateFormData) => Promise<void>;
   /** Обновляет существующую закладку */
   updateBookmark: (id: string, data: BookmarksUpdateFormData) => Promise<void>;
+  /** Удаляет закладку */
+  deleteBookmark: (id: string) => Promise<void>;  
   /** Перемещает закладку в корзину */
   moveToTrash: (id: string) => Promise<void>;
-  /** Удаляет закладку */
-  deleteBookmark: (id: string) => Promise<void>;
-  /** Получает одну закладку по ID */
-  getBookmarkById: (id: string) => Promise<BookmarksItem>;
+  /** Переключает статус избранного для закладки (изменяет favorite на противоположное) */
+  toggleBookmarkFavorite: (id: string) => Promise<void>;  
 }
 
 /**
@@ -73,22 +75,6 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   }, [apiClient]);
 
   /**
-   * Перемещает закладку в корзину (изменяет категорию на "Корзина")
-   */
-  const moveToTrash = useCallback(async (id: string): Promise<void> => {
-    try {
-      const bookmark = await getBookmarkById(id);
-      
-      await updateBookmark(id, {
-        ...bookmark,
-        categoryId: SYSTEM_CATEGORIES.TRASH,
-      });
-    } catch (err) {
-      throw err;
-    }
-  }, [getBookmarkById, updateBookmark]);
-
-  /**
    * Удаляет закладку
    */
   const deleteBookmark = useCallback(async (id: string): Promise<void> => {
@@ -97,13 +83,48 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     } catch (err) {
       throw err;
     }
-  }, [apiClient]);
+  }, [apiClient]);  
+
+  /**
+   * Перемещает закладку в корзину (изменяет категорию на "Корзина")
+   */
+  const moveToTrash = useCallback(async (id: string): Promise<void> => {
+    try {
+      const bookmark = await getBookmarkById(id);
+      const updatedBookmark = {
+        ...bookmark,
+        categoryId: SYSTEM_CATEGORIES.TRASH,
+      };
+      
+      await updateBookmark(id, updatedBookmark);
+    } catch (err) {
+      throw err;
+    }
+  }, [getBookmarkById, updateBookmark]);
+
+  /**
+   * Переключает статус избранного для закладки (изменяет favorite на противоположное)
+   */
+  const toggleBookmarkFavorite = useCallback(async (id: string): Promise<void> => {
+    try {
+      const bookmark = await getBookmarkById(id);
+      const updatedBookmark = {
+        ...bookmark,
+        favorite: !bookmark.favorite,
+      };      
+      
+      await updateBookmark(id, updatedBookmark);
+    } catch (err) {
+      throw err;
+    }
+  }, [getBookmarkById, updateBookmark]);    
 
   return {
+    getBookmarkById,    
     createBookmark,
     updateBookmark,
+    deleteBookmark,    
     moveToTrash,
-    deleteBookmark,
-    getBookmarkById,
+    toggleBookmarkFavorite,
   };
 };

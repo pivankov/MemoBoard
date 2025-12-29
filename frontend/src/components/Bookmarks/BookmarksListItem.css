@@ -63,6 +63,16 @@
   display: block;
 }
 
+.bookmarks-list-item__details-favorite {
+  position: relative;
+  top: 1px;
+  margin-right: 12px;
+
+  .anticon {
+    color: #ffb800;
+  }  
+}
+
 .bookmarks-list-item__details-site, 
 .bookmarks-list-item__details-date {
   color: var(--color-text-secondary);

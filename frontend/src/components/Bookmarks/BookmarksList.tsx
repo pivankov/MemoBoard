@@ -18,7 +18,7 @@ interface BookmarksListProps {
 }
 
 const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, panelHeader, onEdit }) => {
-  const { removeBookmark } = useBookmarksActionsContext();
+  const { removeBookmark, toggleBookmarkFavorite } = useBookmarksActionsContext();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t] as const)), [tags]);
   const selectedTagsSet = useMemo(() => new Set(selectedTags), [selectedTags]);
@@ -61,6 +61,10 @@ const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, panelHea
     onEdit(bookmarkId);
   }, [onEdit]);
 
+  const handleToggleFavorite = useCallback((bookmarkId: string) => {
+    toggleBookmarkFavorite(bookmarkId);
+  }, [toggleBookmarkFavorite]);
+
   /**
    * Активные теги с подсчетом количества закладок для каждого тега
    */
@@ -81,23 +85,30 @@ const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, panelHea
       }));
   }, [bookmarks, tags]);  
 
+
   /**
-   * Фильтрация закладок по выбранным тегам
-   * Использует Set для оптимизации проверки наличия тега
+   * Сортировка закладок по избранному (без мутации исходного массива)
+   * @returns массив закладок, где сначала идут избранные (favorite = true)
    */
-  const filteredBookmarksByTag = useMemo(() => {
+  const sortedBookmarks = useMemo(() => {
+    return [...bookmarks].sort((a, b) => Number(b.favorite) - Number(a.favorite));
+  }, [bookmarks]);
+
+  /**
+   * Фильтрация отсортированных закладок по выбранным тегам
+   * @returns отфильтрованный массив или все закладки, если теги не выбраны
+   */
+  const filteredBookmarks = useMemo(() => {
     if (!selectedTags.length) {
-      return bookmarks;
+      return sortedBookmarks;
     }
     
-    const selectedTagsSet = new Set(selectedTags);
-    
-    return bookmarks.filter((bookmark) => 
+    return sortedBookmarks.filter((bookmark) => 
       bookmark.tags.some((tagId) => selectedTagsSet.has(tagId))
       // Вариант фильтрации(AND), когда отображаются закладки включающие в себя все выбранные теги 
       // selectedTags.every((tagId) => bookmark.tags.includes(tagId))
     );
-  }, [bookmarks, selectedTags]);
+  }, [sortedBookmarks, selectedTags, selectedTagsSet]);
 
   return (
     <>
@@ -118,13 +129,14 @@ const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, panelHea
       
       <div className="bookmarks-list">
         {
-          filteredBookmarksByTag.map((bookmark) => (
+          filteredBookmarks.map((bookmark) => (
             <BookmarksListItem 
               key={bookmark.id} 
               {...bookmark} 
               tags={mapTagIdsToTags(bookmark.tags)}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onToggleFavorite={handleToggleFavorite}              
             />
           ))
         }

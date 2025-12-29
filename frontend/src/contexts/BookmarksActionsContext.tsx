@@ -13,21 +13,23 @@ import { useNotifications } from 'providers/NotificationsProvider';
 interface BookmarksActionsContextValue {
   /** Метод для обновления списка закладок после изменений */
   refreshBookmarks: () => Promise<void>;
+  /** Получает закладку по ID */
+  getBookmarkById: (id: string) => Promise<BookmarksItem>;  
   /** Создает новую закладку */
   createBookmark: (data: BookmarksCreateFormData) => Promise<void>;
+  /** Обновляет существующую закладку */
+  updateBookmark: (id: string, data: BookmarksUpdateFormData) => Promise<void>;    
   /** Удаляет закладку окончательно */
   deleteBookmark: (id: string) => Promise<void>;
-  /** Обновляет существующую закладку */
-  updateBookmark: (id: string, data: BookmarksUpdateFormData) => Promise<void>;  
   /** Перемещает закладку в корзину */
-  moveToTrash: (id: string) => Promise<void>;
+  moveToTrash: (id: string) => Promise<void>;  
   /** 
    * Убирает закладку из видимости
    * Если закладка в корзине - удаляет окончательно, иначе - перемещает в корзину
    */
   removeBookmark: (bookmarkId: string, bookmarkCategoryId: string) => void;
-  /** Получает закладку по ID */
-  getBookmarkById: (id: string) => Promise<BookmarksItem>;
+  /** Переключает статус избранного для закладки (изменяет favorite на противоположное) */
+  toggleBookmarkFavorite: (id: string) => Promise<void>;  
 }
 
 const BookmarksActionsContext = createContext<BookmarksActionsContextValue | null>(null);
@@ -51,15 +53,36 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
   refreshBookmarks 
 }) => {
   const { 
-    createBookmark: createBookmarkAction,
-    moveToTrash: moveToTrashAction,
-    deleteBookmark: deleteBookmarkAction,
-    updateBookmark: updateBookmarkAction,
     getBookmarkById: getBookmarkByIdAction,
+    createBookmark: createBookmarkAction,
+    updateBookmark: updateBookmarkAction,
+    deleteBookmark: deleteBookmarkAction,
+    moveToTrash: moveToTrashAction,
+    toggleBookmarkFavorite: toggleBookmarkFavoriteAction,
   } = useBookmarksActions();
   
   const { notifySuccess, notifyError } = useNotifications();
 
+  /**
+   * Получает закладку по ID
+   * @param id - ID закладки
+   */
+  const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem> => {
+    try {
+      return await getBookmarkByIdAction(id);
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось загрузить закладку');
+
+      notifyError({ description: errorMessage });
+      console.error('Ошибка загрузки закладки:', error);
+
+      throw error;
+    }
+  }, [getBookmarkByIdAction, notifyError]);  
+
+  /**
+   * Создает новую закладку
+   */  
   const createBookmark = useCallback(async (data: BookmarksCreateFormData) => {
     try {
       await createBookmarkAction(data);
@@ -77,23 +100,9 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     }
   }, [createBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);
 
-  const deleteBookmark = useCallback(async (id: string) => {
-    try {
-      await deleteBookmarkAction(id);
-
-      notifySuccess({ description: 'Закладка удалена' });
-
-      await refreshBookmarks();
-    } catch (error) {
-      const errorMessage = getApiErrorMessage(error, 'Не удалось удалить закладку');
-      
-      notifyError({ description: errorMessage });
-      console.error('Ошибка удаления закладки:', error);
-
-      throw error;
-    }
-  }, [deleteBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);  
-
+  /**
+   * Обновляет существующую закладку
+   */  
   const updateBookmark = useCallback(async (id: string, data: BookmarksUpdateFormData) => {
     try {
       await updateBookmarkAction(id, data);
@@ -109,8 +118,31 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
       throw error;
     }
-  }, [updateBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);  
+  }, [updateBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);    
 
+  /**
+   * Удаляет закладку
+   */  
+  const deleteBookmark = useCallback(async (id: string) => {
+    try {
+      await deleteBookmarkAction(id);
+
+      notifySuccess({ description: 'Закладка удалена' });
+
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось удалить закладку');
+      
+      notifyError({ description: errorMessage });
+      console.error('Ошибка удаления закладки:', error);
+
+      throw error;
+    }
+  }, [deleteBookmarkAction, refreshBookmarks, notifySuccess, notifyError]);
+
+  /**
+   * Перемещает закладку в корзину
+   */  
   const moveToTrash = useCallback(async (id: string) => {
     try {
       await moveToTrashAction(id);
@@ -143,31 +175,35 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
   }, [deleteBookmark, moveToTrash]);
 
   /**
-   * Получает закладку по ID
-   * @param id - ID закладки
-   */
-  const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem> => {
+   * Переключает статус избранного для закладки (изменяет favorite на противоположное)
+   */  
+  const toggleBookmarkFavorite = useCallback(async (id: string) => {
     try {
-      return await getBookmarkByIdAction(id);
+      await toggleBookmarkFavoriteAction(id);
+      
+      notifySuccess({ description: 'Статус избранного изменен' });
+            
+      await refreshBookmarks();
     } catch (error) {
-      const errorMessage = getApiErrorMessage(error, 'Не удалось загрузить закладку');
-
+      const errorMessage = getApiErrorMessage(error, 'Не удалось обновить закладку');
+      
       notifyError({ description: errorMessage });
-      console.error('Ошибка загрузки закладки:', error);
+      console.error('Не удалось изменить статус избранного:', error);
 
       throw error;
     }
-  }, [getBookmarkByIdAction, notifyError]);
+  }, [toggleBookmarkFavoriteAction, refreshBookmarks, notifySuccess, notifyError]);
 
   const value = useMemo(() => ({
+    refreshBookmarks,
+    getBookmarkById,    
     createBookmark,
-    deleteBookmark,    
-    updateBookmark,
+    updateBookmark,    
+    deleteBookmark,
     moveToTrash,
     removeBookmark,
-    refreshBookmarks,
-    getBookmarkById,
-  }), [createBookmark, deleteBookmark, updateBookmark, moveToTrash, removeBookmark, refreshBookmarks, getBookmarkById]);
+    toggleBookmarkFavorite,
+  }), [refreshBookmarks, getBookmarkById, createBookmark, updateBookmark, deleteBookmark, , moveToTrash, removeBookmark, toggleBookmarkFavorite]);
   
   return (
     <BookmarksActionsContext.Provider value={value}>
