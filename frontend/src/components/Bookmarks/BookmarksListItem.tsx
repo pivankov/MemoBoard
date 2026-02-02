@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { Button, Flex, Tag } from 'antd';
-import { DeleteOutlined, EditOutlined, StarFilled,StarOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, StarFilled, StarOutlined } from "@ant-design/icons";
 
 import Icon from 'components/UI/Icon/Icon'
 import type { BookmarksItem, BookmarksTagWithSelected } from "types/bookmarks";
