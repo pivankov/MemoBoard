@@ -26,6 +26,9 @@
     .bookmarks-sidebar-list-item__amount {
       display: none;
     }
+    .bookmarks-sidebar-dropdown {
+      display: block;
+    }
   }    
 }
 

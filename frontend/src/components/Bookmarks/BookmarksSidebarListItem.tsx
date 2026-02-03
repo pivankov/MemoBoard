@@ -1,12 +1,26 @@
 import { Link } from "react-router";
 
 import Icon, { isIconName } from 'components/UI/Icon/Icon'
+import { BookmarksSidebarListType } from "types/bookmarks";
+
+import BookmarksSidebarDropdown from "./BookmarksSidebarDropdown";
+import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 
 import "./BookmarksSidebarListItem.css";
 
-const BookmarksSidebarListItem: React.FC<{ link: string, icon?: string | null, title: string, amount: number }> = ({ link, icon, title, amount }) => {
+interface BookmarksSidebarListItemProps {
+  type: BookmarksSidebarListType;
+  id: string;
+  link: string;
+  icon?: string | null;
+  title: string;
+  amount: number;
+};
+
+const BookmarksSidebarListItem: React.FC<BookmarksSidebarListItemProps> = ({ type, id, link, icon, title, amount }) => {
   const hasAmount = !!amount;
-  const iconName = icon && isIconName(icon) ? icon : null; 
+  const iconName = icon && isIconName(icon) ? icon : null;
+  const isDropdownAvailable = id !== SYSTEM_CATEGORIES.TRASH && id !== SYSTEM_CATEGORIES.UNSORTED;
   
   return (
     <Link to={link} className="bookmarks-sidebar-list-item">
@@ -22,7 +36,15 @@ const BookmarksSidebarListItem: React.FC<{ link: string, icon?: string | null, t
         <span className="bookmarks-sidebar-list-item__amount">
           {amount}
         </span>
-      )}      
+      )}
+
+      { isDropdownAvailable && (
+        <BookmarksSidebarDropdown
+          type={type}
+          id={id}
+          title={title}
+        />
+      ) }
     </Link>
   );
 };

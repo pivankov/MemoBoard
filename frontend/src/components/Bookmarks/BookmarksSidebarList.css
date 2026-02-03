@@ -3,11 +3,23 @@
 }
 
 .bookmarks-sidebar-list__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;  
   padding: 10px 16px;
+
+  &:hover {
+    .bookmarks-sidebar-dropdown {
+      display: block;
+    }
+  }   
+}
+
+.bookmarks-sidebar-list__title-label {
   font-size: 12px;
   line-height: 24px;
   font-weight: 600;
   letter-spacing: .05em;
   text-transform: uppercase;
-  color: var(--theme-text-color);    
+  color: var(--theme-text-color);  
 }

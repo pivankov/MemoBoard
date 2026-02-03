@@ -8,8 +8,10 @@
 export const SYSTEM_CATEGORIES = {
   /** ID коллекции "Системные" */
   SYSTEM: '0000',
+  /** ID коллекции "Теги" (виртуальная системная коллекция) */
+  TAGS: '0001',
   /** ID категории "Несортированные" */
-  UNSORTED: 'ktGDhX',  
+  UNSORTED: 'ktGDhX',
   /** ID категории "Корзина" */
   TRASH: 'wxiqnC',
 } as const;
