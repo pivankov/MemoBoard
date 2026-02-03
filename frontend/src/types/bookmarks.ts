@@ -83,3 +83,8 @@ export type BookmarksUpdateFormData = {
   preview: string;
   favorite: boolean;
 };
+
+/**
+ * Типы сущностей меню-списка в боковом меню
+ */
+export type BookmarksSidebarListType = 'collection' | 'tags-collection' | 'category' | 'tag';
