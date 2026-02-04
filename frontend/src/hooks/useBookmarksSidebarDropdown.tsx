@@ -5,6 +5,7 @@ import { BookmarksSidebarListType } from "types/bookmarks";
 
 import type { MenuProps } from 'antd';
 import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
+import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
 /**
  * Хук для работы с dropdown меню сайдбара закладок
@@ -22,6 +23,7 @@ export const useBookmarksSidebarDropdown = (
   title: string,
 ) => {
   const actions = useBookmarksActionsContext();
+  const { openModal } = useBookmarksModalContext();
 
   /**
    * Обработчик клика по пункту меню
@@ -33,6 +35,8 @@ export const useBookmarksSidebarDropdown = (
       case '0': // Создать категорию
         if (type === 'collection') {
           console.log(`actions.createCategoryInCollection(${id})`);
+
+          openModal({ type: 'create-category', collectionId: id });
         }
         if (type === 'tags-collection') {
           console.log(`actions.createTag(${id})`);
