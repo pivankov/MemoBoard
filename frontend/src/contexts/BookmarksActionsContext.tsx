@@ -30,6 +30,8 @@ interface BookmarksActionsContextValue {
   removeBookmark: (bookmarkId: string, bookmarkCategoryId: string) => void;
   /** Переключает статус избранного для закладки (изменяет favorite на противоположное) */
   toggleBookmarkFavorite: (id: string) => Promise<void>;  
+  /** Создает категорию закладки */
+  createCategory: (id: string, title: string) => Promise<void>;    
 }
 
 const BookmarksActionsContext = createContext<BookmarksActionsContextValue | null>(null);
@@ -194,6 +196,25 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     }
   }, [toggleBookmarkFavoriteAction, refreshBookmarks, notifySuccess, notifyError]);
 
+
+  const createCategory = useCallback(async (collectionId: string, name: string) => {
+    try {
+      // TODO: Вызов API для создания категории
+      // await apiClient.post('/categories', { 
+      //   parentId: collectionId, 
+      //   title: name 
+      // });
+      console.log(`createCategory from context`, collectionId, name);
+      
+      notifySuccess({ description: 'Категория создана' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось создать категорию');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [refreshBookmarks, notifySuccess, notifyError]);  
+
   const value = useMemo(() => ({
     refreshBookmarks,
     getBookmarkById,    
@@ -203,7 +224,8 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     moveToTrash,
     removeBookmark,
     toggleBookmarkFavorite,
-  }), [refreshBookmarks, getBookmarkById, createBookmark, updateBookmark, deleteBookmark, , moveToTrash, removeBookmark, toggleBookmarkFavorite]);
+    createCategory,
+  }), [refreshBookmarks, getBookmarkById, createBookmark, updateBookmark, deleteBookmark, , moveToTrash, removeBookmark, toggleBookmarkFavorite, createCategory]);
   
   return (
     <BookmarksActionsContext.Provider value={value}>
