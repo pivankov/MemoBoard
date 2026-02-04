@@ -12,12 +12,13 @@ import "./BookmarksList.css";
 interface BookmarksListProps {
   bookmarks: BookmarksItem[];
   tags: BookmarksTag[];
+  categoryId?: string;
   panelHeader: BookmarksListPanelHeader;
   /** Коллбэк открытия редактирования закладки */
   onEdit: (bookmarkId: string) => void;
 }
 
-const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, panelHeader, onEdit }) => {
+const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, categoryId, panelHeader, onEdit }) => {
   const { removeBookmark, toggleBookmarkFavorite } = useBookmarksActionsContext();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t] as const)), [tags]);
@@ -112,7 +113,11 @@ const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, panelHea
 
   return (
     <>
-      <BookmarksListPanel header={panelHeader} onResetFilters={selectedTags.length > 0 ? handleResetTags : undefined}>
+      <BookmarksListPanel
+        header={panelHeader}
+        categoryId={categoryId}
+        onResetFilters={selectedTags.length > 0 ? handleResetTags : undefined}
+      >
         {
           activeTagsWithCount.map((tag) => (
             <Tag 

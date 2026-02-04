@@ -4,12 +4,13 @@ import { Button, Space } from 'antd';
 import Icon, { isIconName } from 'components/UI/Icon/Icon'
 import { BookmarksListPanelHeader } from "types/bookmarks";
 
-import { useBookmarksUIContext } from 'contexts/BookmarksUIContext';
+import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
 import "./BookmarksListPanel.css";
 
 interface BookmarksListPanelProps {
   header: BookmarksListPanelHeader;
+  categoryId?: string;
   children: React.ReactNode;
   onResetFilters?: () => void;
 }
@@ -21,9 +22,16 @@ interface BookmarksListPanelProps {
  * @param children - содержимое панели (обычно теги для фильтрации)
  * @param onResetFilters - опциональный коллбек для сброса фильтров. Если не передан, кнопка сброса не отображается
  */
-const BookmarksListPanel: React.FC<BookmarksListPanelProps> = ({ header, children, onResetFilters }) => {
-  const { openAddModal } = useBookmarksUIContext();
+const BookmarksListPanel: React.FC<BookmarksListPanelProps> = ({ header, categoryId, children, onResetFilters }) => {
+  const { openModal } = useBookmarksModalContext();
   const iconName = header.icon && isIconName(header.icon) ? header.icon : null;
+
+  const handleAddBookmark = () => {
+    openModal({ 
+      type: 'add-bookmark',
+      categoryId,
+    });
+  };  
 
   return (
     <div className="bookmarks-list-panel">
@@ -57,7 +65,7 @@ const BookmarksListPanel: React.FC<BookmarksListPanelProps> = ({ header, childre
           <Button 
             type="primary" 
             shape="round"
-            onClick={openAddModal}
+            onClick={handleAddBookmark}
           >
             Добавить закладку
           </Button>

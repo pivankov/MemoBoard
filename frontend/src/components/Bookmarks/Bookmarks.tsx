@@ -7,11 +7,11 @@ import { BookmarksListPanelHeader } from "types/bookmarks";
 
 import BookmarksEdit from "./BookmarksEdit";
 import BookmarksList from "./BookmarksList";
-import BookmarksModalContainer from "./BookmarksModalContainer";
 import BookmarksSidebarCategoryList from "./BookmarksSidebarCategoryList";
 import BookmarksSidebarTagList from "./BookmarksSidebarTagList";
+import ModalManager from './modals/ModalManager';
 import { BookmarksActionsProvider } from 'contexts/BookmarksActionsContext';
-import { BookmarksUIProvider } from 'contexts/BookmarksUIContext';
+import { BookmarksModalProvider } from 'contexts/BookmarksModalContext';
 
 const Bookmarks: React.FC = () => {
   const { tagId, categoryId, bookmarkId } = useParams<{ tagId?: string; categoryId?: string; bookmarkId?: string }>();
@@ -75,20 +75,29 @@ const Bookmarks: React.FC = () => {
 
   return (
     <BookmarksActionsProvider refreshBookmarks={refreshBookmarks}>
-      <BookmarksUIProvider>
-        <TwoColumnLayout
-          sidebarHeader="Закладки"
-          sidebar={sidebar}
-          content={<BookmarksList bookmarks={bookmarks} tags={tags} panelHeader={panelHeader} onEdit={handleOpenEdit} />}
-        />
+        <BookmarksModalProvider>
+          <TwoColumnLayout
+            sidebarHeader="Закладки"
+            sidebar={sidebar}
+            content={
+              <BookmarksList
+                bookmarks={bookmarks}
+                tags={tags}
+                categoryId={categoryId}
+                panelHeader={panelHeader}
+                onEdit={handleOpenEdit}
+              />
+            }
+          />
 
-        <BookmarksEdit
-          bookmarkId={bookmarkId}
-          isOpen={isEditPanelOpen}
-          onClose={handleCloseEdit}
-        />
-        <BookmarksModalContainer categoryId={categoryId} />
-      </BookmarksUIProvider>
+          <BookmarksEdit
+            bookmarkId={bookmarkId}
+            isOpen={isEditPanelOpen}
+            onClose={handleCloseEdit}
+          />
+
+          <ModalManager />
+        </BookmarksModalProvider>
     </BookmarksActionsProvider>    
   );
 };
