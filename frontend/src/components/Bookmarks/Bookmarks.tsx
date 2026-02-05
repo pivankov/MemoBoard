@@ -8,6 +8,7 @@ import { BookmarksListPanelHeader } from "types/bookmarks";
 import BookmarksEdit from "./BookmarksEdit";
 import BookmarksList from "./BookmarksList";
 import BookmarksSidebarCategoryList from "./BookmarksSidebarCategoryList";
+import BookmarksSidebarHeader from "./BookmarksSidebarHeader"
 import BookmarksSidebarTagList from "./BookmarksSidebarTagList";
 import ModalManager from './modals/ModalManager';
 import { BookmarksActionsProvider } from 'contexts/BookmarksActionsContext';
@@ -68,6 +69,7 @@ const Bookmarks: React.FC = () => {
 
   const sidebar = (
     <>
+      <BookmarksSidebarHeader />
       <BookmarksSidebarCategoryList data={groupedCategories} />
       <BookmarksSidebarTagList data={tags} />
     </>
@@ -77,7 +79,6 @@ const Bookmarks: React.FC = () => {
     <BookmarksActionsProvider refreshBookmarks={refreshBookmarks}>
         <BookmarksModalProvider>
           <TwoColumnLayout
-            sidebarHeader="Закладки"
             sidebar={sidebar}
             content={
               <BookmarksList
