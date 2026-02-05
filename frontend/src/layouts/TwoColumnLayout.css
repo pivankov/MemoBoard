@@ -17,13 +17,6 @@
   border-right: solid 1px var(--border-color);
 }
 
-.two-column-layout__sidebar-header {
-  margin: 40px 24px 32px 24px;
-  font-size: 32px;
-  font-weight: 800;
-  line-height: 1;
-}
-
 .two-column-layout__content {
   flex: 1;  
   position: relative;
