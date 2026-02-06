@@ -30,8 +30,18 @@ interface BookmarksActionsContextValue {
   removeBookmark: (bookmarkId: string, bookmarkCategoryId: string) => void;
   /** Переключает статус избранного для закладки (изменяет favorite на противоположное) */
   toggleBookmarkFavorite: (id: string) => Promise<void>;  
+  /** Создает коллекцию для категорий закладок */
+  createCollection: (title: string) => Promise<void>;
   /** Создает категорию закладки */
-  createCategory: (id: string, title: string) => Promise<void>;    
+  createCategory: (id: string, title: string) => Promise<void>;
+  /** Создает тег */
+  createTag: (title: string) => Promise<void>;  
+  /** Переименовывает коллекцию */
+  renameCollection: (collectionId: string, title: string) => Promise<void>;  
+  /** Переименовывает категорию */
+  renameCategory: (categoryId: string, title: string) => Promise<void>;  
+  /** Переименовывает тег */
+  renameTag: (tagId: string, title: string) => Promise<void>;  
 }
 
 const BookmarksActionsContext = createContext<BookmarksActionsContextValue | null>(null);
@@ -197,19 +207,109 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
   }, [toggleBookmarkFavoriteAction, refreshBookmarks, notifySuccess, notifyError]);
 
 
-  const createCategory = useCallback(async (collectionId: string, name: string) => {
+  const createCollection = useCallback(async (title: string) => {
     try {
       // TODO: Вызов API для создания категории
       // await apiClient.post('/categories', { 
       //   parentId: collectionId, 
       //   title: name 
       // });
-      console.log(`createCategory from context`, collectionId, name);
+      console.log(`createCollection from context. title: ${title}`);
+      
+      notifySuccess({ description: 'Коллекция создана' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось создать коллекцию');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [refreshBookmarks, notifySuccess, notifyError]);
+
+  const createCategory = useCallback(async (collectionId: string, title: string) => {
+    try {
+      // TODO: Вызов API для создания категории
+      // await apiClient.post('/categories', { 
+      //   parentId: collectionId, 
+      //   title: name 
+      // });
+      console.log(`createCategory from context. collectionId: ${collectionId}, title: ${title}`);
       
       notifySuccess({ description: 'Категория создана' });
       await refreshBookmarks();
     } catch (error) {
       const errorMessage = getApiErrorMessage(error, 'Не удалось создать категорию');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [refreshBookmarks, notifySuccess, notifyError]);  
+
+  const createTag = useCallback(async (title: string) => {
+    try {
+      // TODO: Вызов API для создания категории
+      // await apiClient.post('/categories', { 
+      //   parentId: collectionId, 
+      //   title: name 
+      // });
+      console.log(`createTag from context. title: ${title}`);
+      
+      notifySuccess({ description: 'Тег создана' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось создать тег');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [refreshBookmarks, notifySuccess, notifyError]);  
+
+  const renameCollection = useCallback(async (collectionId: string, title: string) => {
+    try {
+      // TODO: Вызов API для создания категории
+      // await apiClient.post('/categories', { 
+      //   parentId: collectionId, 
+      //   title: name 
+      // });
+      console.log(`renameCollection from context. collectionId: ${collectionId}, title: ${title}`);
+      
+      notifySuccess({ description: 'Коллекция переименованна' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось переименовать коллекцию');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [refreshBookmarks, notifySuccess, notifyError]);  
+
+  const renameCategory = useCallback(async (categoryId: string, title: string) => {
+    try {
+      // TODO: Вызов API для создания категории
+      // await apiClient.post('/categories', { 
+      //   parentId: collectionId, 
+      //   title: name 
+      // });
+      console.log(`renameCategory from context. categoryId: ${categoryId}, title: ${title}`);
+      
+      notifySuccess({ description: 'Категория переименованна' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось переименовать категорию');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [refreshBookmarks, notifySuccess, notifyError]);  
+
+  const renameTag = useCallback(async (tagId: string, title: string) => {
+    try {
+      // TODO: Вызов API для создания категории
+      // await apiClient.post('/categories', { 
+      //   parentId: collectionId, 
+      //   title: name 
+      // });
+      console.log(`renameTag from context. tagId: ${tagId}, title: ${title}`);
+      
+      notifySuccess({ description: 'Тег переименованна' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось переименовать тег');
       notifyError({ description: errorMessage });
       throw error;
     }
@@ -224,8 +324,28 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     moveToTrash,
     removeBookmark,
     toggleBookmarkFavorite,
+    createCollection,
     createCategory,
-  }), [refreshBookmarks, getBookmarkById, createBookmark, updateBookmark, deleteBookmark, , moveToTrash, removeBookmark, toggleBookmarkFavorite, createCategory]);
+    createTag,
+    renameCollection,
+    renameCategory,
+    renameTag,
+  }), [
+    refreshBookmarks,
+    getBookmarkById,
+    createBookmark,
+    updateBookmark,
+    deleteBookmark,
+    moveToTrash,
+    removeBookmark,
+    toggleBookmarkFavorite,
+    createCollection,
+    createCategory,
+    createTag,
+    renameCollection,
+    renameCategory,
+    renameTag,
+  ]);
   
   return (
     <BookmarksActionsContext.Provider value={value}>
