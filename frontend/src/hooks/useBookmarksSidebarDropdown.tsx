@@ -34,23 +34,43 @@ export const useBookmarksSidebarDropdown = (
     switch (e.key) {
       case '0': // Создать категорию
         if (type === 'collection') {
-          console.log(`actions.createCategoryInCollection(${id})`);
-
-          openModal({ type: 'create-category', collectionId: id });
+          openModal({ 
+            type: 'create-entity', 
+            entityType: 'category',
+            collectionId: id,
+          });          
         }
         if (type === 'tags-collection') {
-          console.log(`actions.createTag(${id})`);
+          openModal({ 
+            type: 'create-entity', 
+            entityType: 'tag' 
+          });
         }
         break;
       case '1': // Переименовать
         if (type === 'collection') {
-          console.log(`actions.renameCollection(${id})`);
+          openModal({ 
+            type: 'rename-entity',
+            entityType: 'collection',
+            entityId: id,
+            currentTitle: title,
+          });          
         }
         if (type === 'category') {
-          console.log(`actions.renameCategory(${id})`);
+          openModal({ 
+            type: 'rename-entity',
+            entityType: 'category',
+            entityId: id,
+            currentTitle: title,
+          });          
         }
         if (type === 'tag') {
-          console.log(`actions.renameTag(${id})`);
+          openModal({ 
+            type: 'rename-entity',
+            entityType: 'tag',
+            entityId: id,
+            currentTitle: title,
+          });          
         }
         break;
       case '2': // Поднять

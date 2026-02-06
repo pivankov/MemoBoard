@@ -1,31 +1,16 @@
-/** Базовый тип модального окна */
-type BaseModalState = {
-  type: string;
+/** Создание сущности (коллекция, категория, тег) */
+type CreateEntityModalState = {
+  type: 'create-entity';
+  entityType: 'collection' | 'category' | 'tag';
+  collectionId?: string; // Только для создания категории
 };
 
-/** Создание категории */
-type CreateCategoryModalState = {
-  type: 'create-category';
-  collectionId: string;
-};
-
-/** Переименование категории */
-type RenameCategoryModalState = {
-  type: 'rename-category';
-  categoryId: string;
-  currentName: string;
-};
-
-/** Переименование тега */
-type RenameTagModalState = {
-  type: 'rename-tag';
-  tagId: string;
-  currentName: string;
-};
-
-/** Создание тега */
-type CreateTagModalState = {
-  type: 'create-tag';
+/** Переименование сущности (коллекция, категория, тег) */
+type RenameEntityModalState = {
+  type: 'rename-entity';
+  entityType: 'collection' | 'category' | 'tag';
+  entityId: string;
+  currentTitle: string;
 };
 
 /** Подтверждение удаления */
@@ -43,11 +28,9 @@ type AddBookmarkModalState = {
 };
 
 /** Все возможные состояния модалок */
-export type ModalState = 
-  | CreateCategoryModalState
-  | RenameCategoryModalState
-  | RenameTagModalState
-  | CreateTagModalState
+export type ModalState =
+  | CreateEntityModalState
+  | RenameEntityModalState
   | DeleteConfirmModalState
   | AddBookmarkModalState
-  | null;  // закрыто
+  | null; // закрыто

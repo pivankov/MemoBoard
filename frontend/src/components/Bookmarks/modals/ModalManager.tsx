@@ -1,5 +1,5 @@
 import AddBookmarkModal from './AddBookmarkModal';
-import CreateCategoryModal from './CreateCategoryModal';
+import EntityModal from './EntityModal';
 import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
 /**
@@ -17,8 +17,24 @@ const ModalManager: React.FC = () => {
     case 'add-bookmark':
       return <AddBookmarkModal categoryId={modalState.categoryId} />;
 
-    case 'create-category':
-      return <CreateCategoryModal collectionId={modalState.collectionId} />;
+    case 'create-entity':
+      return (
+        <EntityModal
+          mode="create"
+          entityType={modalState.entityType}
+          collectionId={modalState.collectionId}
+        />
+      );
+
+    case 'rename-entity':
+      return (
+        <EntityModal
+          mode="rename"
+          entityType={modalState.entityType}
+          entityId={modalState.entityId}
+          currentTitle={modalState.currentTitle}
+        />
+      );
     
     default:
       return null;

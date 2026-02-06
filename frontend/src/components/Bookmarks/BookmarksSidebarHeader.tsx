@@ -9,7 +9,10 @@ const BookmarksSidebarHeader: React.FC = () => {
   const { openModal } = useBookmarksModalContext();
 
   const handleAddClick = () => {
-    openModal({ type: 'create-collection' });
+    openModal({ 
+      type: 'create-entity', 
+      entityType: 'collection' 
+    });
   };
 
   return (
