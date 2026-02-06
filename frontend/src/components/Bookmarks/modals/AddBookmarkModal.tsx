@@ -9,10 +9,6 @@ import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
 import "./AddBookmarkModal.css";
 
-interface AddBookmarkModalProps {
-  categoryId?: string;
-}
-
 /**
  * Модальное окно добавления закладки
  * 
@@ -20,7 +16,7 @@ interface AddBookmarkModalProps {
  * Автоматически подставляет URL из буфера обмена при открытии.
  * При успешном создании автоматически закрывается.
  */
-const AddBookmarkModal: React.FC<AddBookmarkModalProps> = ({ categoryId }) => {
+const AddBookmarkModal: React.FC<{ categoryId?: string }> = ({ categoryId }) => {
   const { closeModal } = useBookmarksModalContext();
   const { createBookmark } = useBookmarksActionsContext();
   
