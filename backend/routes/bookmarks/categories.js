@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../../db/initdb.js';
+import { generateCategoryUid } from '../../utils/uid.js';
 
 const router = Router();
 
@@ -168,6 +169,129 @@ router.get('/:id', async (req, res) => {
     console.error(`Ошибка получения закладок для категории ${id}:`, error);
 
     return res.status(500).json({ error: 'Не удалось получить закладки для категории' });
+  }
+});
+
+/**
+ * Создает новую категорию или коллекцию
+ * 
+ * Универсальный метод для создания как коллекций (родительских категорий), так и вложенных категорий.
+ * Если parentId не передан или null - создается коллекция, иначе создается категория внутри коллекции.
+ * Позиция (position) вычисляется автоматически как MAX(position) + 1 среди категорий того же уровня.
+ * Иконка может быть установлена только для категорий, для коллекций игнорируется.
+ * 
+ * @route POST /api/bookmarks/categories
+ * @param {Object} req.body - Данные новой категории/коллекции
+ * @param {string} req.body.title - Название категории/коллекции
+ * @param {string} [req.body.icon] - Иконка (только для категорий)
+ * @param {string|null} [req.body.parentId] - UID родительской категории (null для коллекции)
+ * @returns {Object} 201 - JSON объект с результатом создания
+ * @returns {Object} 400 - Некорректные данные / родительская категория не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Создание коллекции:
+ * {
+ *   "title": "Разработка"
+ * }
+ * 
+ * @example
+ * // Создание категории внутри коллекции:
+ * {
+ *   "title": "Frontend",
+ *   "icon": "react",
+ *   "parentId": "abc1"
+ * }
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "success": true
+ * }
+ */
+router.post('/', async (req, res) => {
+  const { title, icon, parentId } = req.body ?? {};
+
+  try {
+    // Валидация title
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Название обязательно для заполнения' });
+    }
+
+    let parentIdInternal = null;
+    const isCollection = !parentId || parentId === null;
+
+    // Проверка существования родительской категории (если передан parentId)
+    if (!isCollection) {
+      if (typeof parentId !== 'string' || parentId.trim().length === 0) {
+        return res.status(400).json({ error: 'Некорректный идентификатор родительской категории' });
+      }
+
+      const parentRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(parentId);
+
+      if (!parentRow) {
+        return res.status(400).json({ error: 'Родительская категория не найдена' });
+      }
+
+      parentIdInternal = parentRow.id;
+    }
+
+    // Вычисление position: MAX(position) + 1 для категорий того же уровня
+    let position = 0;
+
+    if (isCollection) {
+      // Для коллекций (parentId = null)
+      const maxPositionRow = db.prepare(`
+        SELECT MAX(position) as max_position
+        FROM bookmark_categories
+        WHERE parent_id IS NULL
+      `).get();
+
+      if (maxPositionRow?.max_position !== null) {
+        position = Number(maxPositionRow.max_position) + 1;
+      }
+    } else {
+      // Для категорий (parentId != null)
+      const maxPositionRow = db.prepare(`
+        SELECT MAX(position) as max_position
+        FROM bookmark_categories
+        WHERE parent_id = ?
+      `).get(parentIdInternal);
+
+      if (maxPositionRow?.max_position !== null) {
+        position = Number(maxPositionRow.max_position) + 1;
+      }
+    }
+
+    // Генерация уникального UID
+    const uid = generateCategoryUid();
+
+    // Иконка только для категорий (не для коллекций)
+    const iconValue = !isCollection && icon && typeof icon === 'string' ? icon.trim() : null;
+
+    // Создание категории/коллекции
+    const insertCategory = db.prepare(`
+      INSERT INTO bookmark_categories (
+        uid, parent_id, title, icon, position, created_at, updated_at
+      )
+      VALUES (
+        @uid, @parent_id, @title, @icon, @position, datetime('now'), datetime('now')
+      )
+    `);
+
+    insertCategory.run({
+      uid,
+      parent_id: parentIdInternal,
+      title: title.trim(),
+      icon: iconValue,
+      position,
+    });
+
+    return res.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Ошибка создания категории:', error);
+
+    return res.status(500).json({ error: 'Не удалось создать категорию' });
   }
 });
 
