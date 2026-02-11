@@ -33,7 +33,7 @@ interface BookmarksActionsContextValue {
   /** Создает коллекцию для категорий закладок */
   createCollection: (title: string) => Promise<void>;
   /** Создает категорию закладки */
-  createCategory: (id: string, title: string) => Promise<void>;
+  createCategory: (id: string, title: string, icon?: string) => Promise<void>;
   /** Создает тег */
   createTag: (title: string) => Promise<void>;  
   /** Переименовывает коллекцию */
@@ -71,6 +71,8 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     deleteBookmark: deleteBookmarkAction,
     moveToTrash: moveToTrashAction,
     toggleBookmarkFavorite: toggleBookmarkFavoriteAction,
+    createCollection: createCollectionAction,
+    createCategory: createCategoryAction,
   } = useBookmarksActions();
   
   const { notifySuccess, notifyError } = useNotifications();
@@ -209,12 +211,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
   const createCollection = useCallback(async (title: string) => {
     try {
-      // TODO: Вызов API для создания категории
-      // await apiClient.post('/categories', { 
-      //   parentId: collectionId, 
-      //   title: name 
-      // });
-      console.log(`createCollection from context. title: ${title}`);
+      await createCollectionAction(title);
       
       notifySuccess({ description: 'Коллекция создана' });
       await refreshBookmarks();
@@ -223,16 +220,11 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);
+  }, [createCollectionAction, refreshBookmarks, notifySuccess, notifyError]);
 
-  const createCategory = useCallback(async (collectionId: string, title: string) => {
+  const createCategory = useCallback(async (collectionId: string, title: string, icon: string = 'Folder') => {
     try {
-      // TODO: Вызов API для создания категории
-      // await apiClient.post('/categories', { 
-      //   parentId: collectionId, 
-      //   title: name 
-      // });
-      console.log(`createCategory from context. collectionId: ${collectionId}, title: ${title}`);
+      await createCategoryAction(title, collectionId, icon);
       
       notifySuccess({ description: 'Категория создана' });
       await refreshBookmarks();
@@ -241,7 +233,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);  
+  }, [createCategoryAction, refreshBookmarks, notifySuccess, notifyError]);  
 
   const createTag = useCallback(async (title: string) => {
     try {

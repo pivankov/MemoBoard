@@ -22,6 +22,10 @@ interface UseBookmarksActionsReturn {
   moveToTrash: (id: string) => Promise<void>;
   /** Переключает статус избранного для закладки (изменяет favorite на противоположное) */
   toggleBookmarkFavorite: (id: string) => Promise<void>;  
+  /** Создает коллекцию для категорий закладок */
+  createCollection: (title: string) => Promise<void>;
+  /** Создает категорию закладки */
+  createCategory: (title: string, parentId: string, icon: string) => Promise<void>;
 }
 
 /**
@@ -117,7 +121,23 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     } catch (err) {
       throw err;
     }
-  }, [getBookmarkById, updateBookmark]);    
+  }, [getBookmarkById, updateBookmark]);
+
+  const createCollection = useCallback(async (title: string): Promise<void> => {
+    try {
+      await apiClient.post('/categories', { title });
+    } catch (err) {
+      throw err;
+    }
+  }, [apiClient]);
+
+  const createCategory = useCallback(async (title: string, parentId: string, icon: string): Promise<void> => {
+    try {
+      await apiClient.post('/categories', { title, parentId, icon });
+    } catch (err) {
+      throw err;
+    }
+  }, [apiClient]);
 
   return {
     getBookmarkById,    
@@ -126,5 +146,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     deleteBookmark,    
     moveToTrash,
     toggleBookmarkFavorite,
+    createCollection,
+    createCategory,
   };
 };
