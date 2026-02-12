@@ -295,4 +295,106 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * Удаляет категорию или коллекцию
+ * 
+ * Универсальный метод для удаления как коллекций, так и категорий.
+ * Перед удалением выполняются проверки:
+ * - Для коллекции (parent_id = null): нельзя удалить, если есть дочерние категории
+ * - Для категории (parent_id != null): нельзя удалить, если есть прикрепленные закладки
+ * 
+ * @route DELETE /api/bookmarks/categories/:id
+ * @param {string} req.params.id - UID категории/коллекции для удаления
+ * @returns {Object} 200 - JSON объект с результатом удаления
+ * @returns {Object} 400 - Некорректный ID / есть связанные данные
+ * @returns {Object} 404 - Категория/коллекция не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "success": true
+ * }
+ * 
+ * @example
+ * // Ошибка при удалении коллекции с категориями:
+ * {
+ *   "error": "Невозможно удалить коллекцию. Сначала удалите все категории внутри неё"
+ * }
+ * 
+ * @example
+ * // Ошибка при удалении категории с закладками:
+ * {
+ *   "error": "Невозможно удалить категорию. Сначала удалите все закладки из неё"
+ * }
+ */
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Валидация UID
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор категории' });
+    }
+
+    // Получение записи из БД
+    const categoryQuery = db.prepare(`
+      SELECT id, parent_id
+      FROM bookmark_categories
+      WHERE uid = ?
+      LIMIT 1
+    `);
+    const categoryRow = categoryQuery.get(id);
+
+    if (!categoryRow) {
+      return res.status(404).json({ error: 'Категория не найдена' });
+    }
+
+    const isCollection = categoryRow.parent_id === null;
+
+    if (isCollection) {
+      // Проверка: есть ли дочерние категории у коллекции
+      const childCategoriesQuery = db.prepare(`
+        SELECT COUNT(*) as count
+        FROM bookmark_categories
+        WHERE parent_id = ?
+      `);
+      const childCount = childCategoriesQuery.get(categoryRow.id);
+
+      if (childCount && childCount.count > 0) {
+        return res.status(400).json({ 
+          error: 'Невозможно удалить коллекцию. Сначала удалите все категории внутри неё' 
+        });
+      }
+    } else {
+      // Проверка: есть ли закладки в категории
+      const bookmarksQuery = db.prepare(`
+        SELECT COUNT(*) as count
+        FROM bookmarks
+        WHERE category_id = ?
+      `);
+      const bookmarksCount = bookmarksQuery.get(categoryRow.id);
+
+      if (bookmarksCount && bookmarksCount.count > 0) {
+        return res.status(400).json({ 
+          error: 'Невозможно удалить категорию. Сначала удалите все закладки из неё' 
+        });
+      }
+    }
+
+    // Удаление записи
+    const deleteQuery = db.prepare(`
+      DELETE FROM bookmark_categories
+      WHERE id = ?
+    `);
+    deleteQuery.run(categoryRow.id);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(`Ошибка удаления категории ${id}:`, error);
+
+    return res.status(500).json({ error: 'Не удалось удалить категорию' });
+  }
+});
+
 export default router;
