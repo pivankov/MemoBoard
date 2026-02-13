@@ -91,13 +91,28 @@ export const useBookmarksSidebarDropdown = (
         break;
       case '4': // Удалить
         if (type === 'collection') {
-          console.log(`actions.deleteCollection(${id})`);
+          openModal({ 
+            type: 'delete-confirm',
+            entityType: 'collection',
+            entityId: id,
+            entityName: title,
+          });    
         }
         if (type === 'category') {
-          console.log(`actions.deleteCategory(${id})`);
+          openModal({ 
+            type: 'delete-confirm',
+            entityType: 'category',
+            entityId: id,
+            entityName: title,
+          });          
         }
         if (type === 'tag') {
-          console.log(`actions.deleteTag(${id})`);
+          openModal({ 
+            type: 'delete-confirm',
+            entityType: 'tag',
+            entityId: id,
+            entityName: title,
+          });    
         }
         break;
     }
