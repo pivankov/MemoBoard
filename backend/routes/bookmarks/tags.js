@@ -160,4 +160,55 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+/**
+ * Удаляет тег по идентификатору
+ * 
+ * При удалении тега автоматически удаляются все связи с закладками (CASCADE).
+ * Сами закладки остаются нетронутыми, удаляется только тег и его связи.
+ * 
+ * @route DELETE /api/bookmarks/tags/:id
+ * @param {string} req.params.id - UID тега
+ * @returns {Object} 200 - JSON объект с полем success
+ * @returns {Object} 400 - Некорректный идентификатор тега
+ * @returns {Object} 404 - Тег не найден
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "success": true
+ * }
+ */
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор тега' });
+    }
+
+    // Проверяем существование тега
+    const tagQuery = db.prepare(`
+      SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1
+    `);
+    const tagRow = tagQuery.get(id);
+
+    if (!tagRow) {
+      return res.status(404).json({ error: 'Тег не найден' });
+    }
+
+    // Удаляем тег (связи в bookmark_tag_relations удалятся автоматически благодаря CASCADE)
+    const deleteQuery = db.prepare(`
+      DELETE FROM bookmark_tags WHERE id = ?
+    `);
+    deleteQuery.run(tagRow.id);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(`Ошибка удаления тега ${id}:`, error);
+
+    return res.status(500).json({ error: 'Не удалось удалить тег' });
+  }
+});
+
 export default router;
