@@ -4,6 +4,7 @@ import RootLayout from "layouts/RootLayout"
 import BookmarksPage from "pages/BookmarksPage";
 import EventsPage from "pages/EventsPage";
 import HomePage from "pages/HomePage";
+import NotFoundPage from "pages/NotFoundPage";
 
 import { NotificationsProvider } from 'providers/NotificationsProvider';
 
@@ -55,6 +56,10 @@ const router = createBrowserRouter([
           }
         ],
       },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },      
     ],
   }
 ]);
