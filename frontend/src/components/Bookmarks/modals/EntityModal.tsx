@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useRef,useState } from 'react';
 import { Button, Input, Modal } from 'antd';
 
+import type { InputRef } from 'antd';
 import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
 import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
@@ -69,6 +70,7 @@ const EntityModal: React.FC<EntityModalProps> = ({
 
   const [title, setTitle] = useState(currentTitle);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const inputRef = useRef<InputRef>(null);
 
   const config = ENTITY_CONFIG[entityType];
   const modalTitle = mode === 'create' ? config.createTitle : config.renameTitle;
@@ -121,11 +123,19 @@ const EntityModal: React.FC<EntityModalProps> = ({
     }
   };
 
+  const handleAfterOpenChange = (open: boolean) => {
+    if (open) {
+      // Устанавливаем фокус после завершения анимации открытия
+      inputRef.current?.focus();
+    }
+  };
+
   return (
     <Modal
       title={modalTitle}
       open={true}
       onCancel={closeModal}
+      afterOpenChange={handleAfterOpenChange}
       footer={[
         <Button key="cancel" onClick={closeModal}>
           Отмена
@@ -142,11 +152,11 @@ const EntityModal: React.FC<EntityModalProps> = ({
       ]}
     >
       <Input
+        ref={inputRef}
         placeholder={config.placeholder}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onPressEnter={handleSubmit}
-        autoFocus
       />
     </Modal>
   );
