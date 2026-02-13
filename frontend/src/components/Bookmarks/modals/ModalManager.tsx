@@ -1,4 +1,5 @@
 import AddBookmarkModal from './AddBookmarkModal';
+import DeleteConfirmModal from './DeleteConfirmModal';
 import EntityModal from './EntityModal';
 import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
@@ -35,6 +36,15 @@ const ModalManager: React.FC = () => {
           currentTitle={modalState.currentTitle}
         />
       );
+
+    case 'delete-confirm':
+      return (
+        <DeleteConfirmModal
+          entityType={modalState.entityType}
+          entityId={modalState.entityId}
+          entityName={modalState.entityName}
+        />
+      );      
     
     default:
       return null;
