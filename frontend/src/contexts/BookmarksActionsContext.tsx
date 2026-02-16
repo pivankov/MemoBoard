@@ -42,6 +42,12 @@ interface BookmarksActionsContextValue {
   renameCategory: (categoryId: string, title: string) => Promise<void>;  
   /** Переименовывает тег */
   renameTag: (tagId: string, title: string) => Promise<void>;  
+  /** Удаляет коллекцию */
+  deleteCollection: (collectionId: string) => Promise<void>;
+  /** Удаляет категорию */
+  deleteCategory: (categoryId: string) => Promise<void>;
+  /** Удаляет тег */
+  deleteTag: (tagId: string) => Promise<void>;
 }
 
 const BookmarksActionsContext = createContext<BookmarksActionsContextValue | null>(null);
@@ -73,6 +79,8 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     toggleBookmarkFavorite: toggleBookmarkFavoriteAction,
     createCollection: createCollectionAction,
     createCategory: createCategoryAction,
+    deleteCategoryEntity: deleteCategoryEntityAction,
+    deleteTag: deleteTagAction,
   } = useBookmarksActions();
   
   const { notifySuccess, notifyError } = useNotifications();
@@ -237,11 +245,6 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
   const createTag = useCallback(async (title: string) => {
     try {
-      // TODO: Вызов API для создания категории
-      // await apiClient.post('/categories', { 
-      //   parentId: collectionId, 
-      //   title: name 
-      // });
       console.log(`createTag from context. title: ${title}`);
       
       notifySuccess({ description: 'Тег создана' });
@@ -255,11 +258,6 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
   const renameCollection = useCallback(async (collectionId: string, title: string) => {
     try {
-      // TODO: Вызов API для создания категории
-      // await apiClient.post('/categories', { 
-      //   parentId: collectionId, 
-      //   title: name 
-      // });
       console.log(`renameCollection from context. collectionId: ${collectionId}, title: ${title}`);
       
       notifySuccess({ description: 'Коллекция переименованна' });
@@ -273,11 +271,6 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
   const renameCategory = useCallback(async (categoryId: string, title: string) => {
     try {
-      // TODO: Вызов API для создания категории
-      // await apiClient.post('/categories', { 
-      //   parentId: collectionId, 
-      //   title: name 
-      // });
       console.log(`renameCategory from context. categoryId: ${categoryId}, title: ${title}`);
       
       notifySuccess({ description: 'Категория переименованна' });
@@ -291,11 +284,6 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
   const renameTag = useCallback(async (tagId: string, title: string) => {
     try {
-      // TODO: Вызов API для создания категории
-      // await apiClient.post('/categories', { 
-      //   parentId: collectionId, 
-      //   title: name 
-      // });
       console.log(`renameTag from context. tagId: ${tagId}, title: ${title}`);
       
       notifySuccess({ description: 'Тег переименованна' });
@@ -306,6 +294,45 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       throw error;
     }
   }, [refreshBookmarks, notifySuccess, notifyError]);  
+
+  const deleteCollection = useCallback(async (collectionId: string) => {
+    try {
+      await deleteCategoryEntityAction(collectionId);
+      
+      notifySuccess({ description: 'Коллекция удалена' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось удалить коллекцию');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [refreshBookmarks, notifySuccess, notifyError]);  
+
+  const deleteCategory = useCallback(async (categoryId: string) => {
+    try {
+      await deleteCategoryEntityAction(categoryId);
+      
+      notifySuccess({ description: 'Категория удалена' });
+      // refreshBookmarks() убран - вызывается в хуке useBookmarksDeleteEntity  
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось удалить категорию');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [deleteCategoryEntityAction, notifySuccess, notifyError]);  
+
+  const deleteTag = useCallback(async (tagId: string) => {
+    try {
+      await deleteTagAction(tagId);
+      
+      notifySuccess({ description: 'Тег удален' });
+      // refreshBookmarks() убран - вызывается в хуке useBookmarksDeleteEntity  
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось удалить тег');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [deleteTagAction, notifySuccess, notifyError]);  
 
   const value = useMemo(() => ({
     refreshBookmarks,
@@ -322,6 +349,9 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     renameCollection,
     renameCategory,
     renameTag,
+    deleteCollection,
+    deleteCategory,
+    deleteTag,
   }), [
     refreshBookmarks,
     getBookmarkById,
@@ -337,6 +367,9 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     renameCollection,
     renameCategory,
     renameTag,
+    deleteCollection,
+    deleteCategory,
+    deleteTag,
   ]);
   
   return (
