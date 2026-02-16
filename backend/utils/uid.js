@@ -29,6 +29,14 @@ export const generateCategoryUid = () => {
 };
 
 /**
+ * Генерирует уникальный UID для тега
+ * @returns {string} Уникальный UID длиной 5 символов
+ */
+export const generateTagUid = () => {
+  return generateUniqueUid('bookmark_tags', UID_LENGTH.TAG);
+};
+
+/**
  * Универсальная функция генерации уникального UID
  * 
  * Проверяет уникальность в БД, делает до 10 попыток при коллизии.

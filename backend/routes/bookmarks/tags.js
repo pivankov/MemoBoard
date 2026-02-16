@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { db } from '../../db/initdb.js';
+import { generateTagUid } from '../../utils/uid.js';
 
 const router = Router();
 
@@ -157,6 +158,65 @@ router.get('/:id', async (req, res) => {
     console.error(`Ошибка получения закладок для тега ${id}:`, error);
 
     return res.status(500).json({ error: 'Не удалось получить закладки для тега' });
+  }
+});
+
+/**
+ * Создает новый тег
+ * 
+ * Принимает название тега и создает новую запись в базе данных.
+ * Автоматически генерирует уникальный UID и устанавливает временные метки.
+ * 
+ * @route POST /api/bookmarks/tags
+ * @param {string} req.body.title - Название тега (обязательное поле)
+ * @returns {Object} 201 - JSON объект с полем success
+ * @returns {Object} 400 - Некорректное или отсутствующее название тега
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Тело запроса:
+ * {
+ *   "title": "JavaScript"
+ * }
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "success": true
+ * }
+ */
+router.post('/', async (req, res) => {
+  const { title } = req.body ?? {};
+
+  try {
+    // Валидация title
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Название обязательно для заполнения' });
+    }
+
+    // Генерация уникального UID
+    const uid = generateTagUid();
+
+    // Создание тега
+    const insertTag = db.prepare(`
+      INSERT INTO bookmark_tags (
+        uid, title, created_at, updated_at
+      )
+      VALUES (
+        @uid, @title, datetime('now'), datetime('now')
+      )
+    `);
+
+    insertTag.run({
+      uid,
+      title: title.trim(),
+    });
+
+    return res.status(201).json({ success: true });
+  } catch (error) {
+    console.error('Ошибка создания тега:', error);
+
+    return res.status(500).json({ error: 'Не удалось создать тег' });
   }
 });
 

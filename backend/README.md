@@ -657,6 +657,36 @@ backend/
 
 ---
 
+#### POST /api/bookmarks/tags
+
+Создает новый тег.
+
+**Тело запроса:**
+```json
+{
+  "title": "JavaScript"
+}
+```
+
+**Поля:**
+- `title` (string, required) - Название тега
+
+**Ответ (201):**
+```json
+{
+  "success": true
+}
+```
+
+**Описание:**
+При создании тега автоматически генерируется уникальный UID и устанавливаются временные метки `created_at` и `updated_at`.
+
+**Ошибки:**
+- `400` - Название обязательно для заполнения
+- `500` - Не удалось создать тег
+
+---
+
 #### DELETE /api/bookmarks/tags/:id
 
 Удаляет тег по идентификатору.
@@ -708,6 +738,7 @@ normalizeInputDate('2024-06-13T15:30:00');
 **Функции:**
 - `generateBookmarkUid()` - Генерирует уникальный UID для закладки (8 символов)
 - `generateCategoryUid()` - Генерирует уникальный UID для категории (4 символа)
+- `generateTagUid()` - Генерирует уникальный UID для тега (5 символов)
 
 **Особенности:**
 - Использует библиотеку nanoid для генерации
@@ -716,10 +747,13 @@ normalizeInputDate('2024-06-13T15:30:00');
 
 **Пример:**
 ```javascript
-import { generateBookmarkUid } from './utils/uid.js';
+import { generateBookmarkUid, generateTagUid } from './utils/uid.js';
 
-const uid = generateBookmarkUid();
+const bookmarkUid = generateBookmarkUid();
 // => "xK9pLm2n"
+
+const tagUid = generateTagUid();
+// => "a3X7k"
 ```
 
 ---
