@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useCallback, useEffect, useMemo } from "react";
+import { useLocation, useMatch, useNavigate, useParams } from "react-router";
 
 import { useBookmarks } from 'hooks/useBookmarks';
 import TwoColumnLayout from "layouts/TwoColumnLayout";
@@ -7,17 +7,19 @@ import { BookmarksListPanelHeader } from "types/bookmarks";
 
 import BookmarksEdit from "./BookmarksEdit";
 import BookmarksList from "./BookmarksList";
+import BookmarksNotFound from './BookmarksNotFound';
 import BookmarksSidebarCategoryList from "./BookmarksSidebarCategoryList";
 import BookmarksSidebarHeader from "./BookmarksSidebarHeader"
 import BookmarksSidebarTagList from "./BookmarksSidebarTagList";
 import ModalManager from './modals/ModalManager';
+import { SYSTEM_ROUTES } from 'constants/bookmarks';
 import { BookmarksActionsProvider } from 'contexts/BookmarksActionsContext';
 import { BookmarksModalProvider } from 'contexts/BookmarksModalContext';
 
 const Bookmarks: React.FC = () => {
-  const { tagId, categoryId, bookmarkId } = useParams<{ tagId?: string; categoryId?: string; bookmarkId?: string }>();
   const navigate = useNavigate();
-  
+  const location = useLocation();
+  const { tagId, categoryId, bookmarkId } = useParams<{ tagId?: string; categoryId?: string; bookmarkId?: string }>();
   const { bookmarks, tags, categories, loading, error, refreshBookmarks } = useBookmarks({ tagId, categoryId });
 
   const panelHeader: BookmarksListPanelHeader = useMemo(() => {
@@ -29,6 +31,49 @@ const Bookmarks: React.FC = () => {
       icon: currentCategory?.icon || 'Tag',
     };
   }, [categories, tags, tagId, categoryId]);
+
+  const isNotFoundRoute = useMatch(`/bookmarks/${SYSTEM_ROUTES.NOT_FOUND}`);
+
+  const isEntityNotFound = useMemo(() => {
+    if (isNotFoundRoute) {
+      return true
+    };
+
+    if (loading) {
+      return false
+    };
+    
+    if (categoryId && categories.length > 0) {
+      return !categories.some(cat => cat.id === categoryId);
+    }
+    
+    if (tagId && tags.length > 0) {
+      return !tags.some(tag => tag.id === tagId);
+    }
+    
+    return false;
+  }, [isNotFoundRoute, loading, categoryId, tagId, categories, tags]);
+  
+  const notFoundType: 'category' | 'tag' | null = useMemo(() => {
+    if (!isEntityNotFound) return null;
+    
+    if (isNotFoundRoute) {
+      return (location.state as { entityType?: 'category' | 'tag' })?.entityType || 'category';
+    }
+    
+    return categoryId ? 'category' : 'tag';
+  }, [isEntityNotFound, isNotFoundRoute, location.state, categoryId]);  
+
+  useEffect(() => {
+    if (loading || isNotFoundRoute) return;
+
+    if (isEntityNotFound) {
+      navigate(`/bookmarks/${SYSTEM_ROUTES.NOT_FOUND}`, { 
+        replace: true,
+        state: { entityType: categoryId ? 'category' : 'tag' }
+      });
+    }
+  }, [loading, isNotFoundRoute, isEntityNotFound, categoryId, navigate]);
 
   const groupedCategories = useMemo(() => {
     const collections = categories
@@ -80,7 +125,9 @@ const Bookmarks: React.FC = () => {
         <BookmarksModalProvider>
           <TwoColumnLayout
             sidebar={sidebar}
-            content={
+            content={isEntityNotFound && notFoundType ? (
+              <BookmarksNotFound type={notFoundType} />
+            ) : (
               <BookmarksList
                 bookmarks={bookmarks}
                 tags={tags}
@@ -88,7 +135,7 @@ const Bookmarks: React.FC = () => {
                 panelHeader={panelHeader}
                 onEdit={handleOpenEdit}
               />
-            }
+            )}
           />
 
           <BookmarksEdit
