@@ -26,6 +26,8 @@ interface UseBookmarksActionsReturn {
   createCollection: (title: string) => Promise<void>;
   /** Создает категорию закладки */
   createCategory: (title: string, parentId: string, icon: string) => Promise<void>;
+  /** Создает тег для закладок */
+  createTag: (title: string) => Promise<void>;  
   /** Удаляет коллекцию/категорию */
   deleteCategoryEntity: (id: string) => Promise<void>;
   /** Удаляет тег */
@@ -143,6 +145,14 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     }
   }, [apiClient]);
 
+  const createTag = useCallback(async (title: string): Promise<void> => {
+    try {
+      await apiClient.post('/tags', { title });
+    } catch (err) {
+      throw err;
+    }
+  }, [apiClient]);
+
   const deleteCategoryEntity = useCallback(async (id: string): Promise<void> => {
     try {
       await apiClient.delete(`/categories/${id}`);
@@ -168,6 +178,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     toggleBookmarkFavorite,
     createCollection,
     createCategory,
+    createTag,
     deleteCategoryEntity,
     deleteTag,
   };

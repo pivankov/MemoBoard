@@ -79,6 +79,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     toggleBookmarkFavorite: toggleBookmarkFavoriteAction,
     createCollection: createCollectionAction,
     createCategory: createCategoryAction,
+    createTag: createTagAction,
     deleteCategoryEntity: deleteCategoryEntityAction,
     deleteTag: deleteTagAction,
   } = useBookmarksActions();
@@ -245,7 +246,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
   const createTag = useCallback(async (title: string) => {
     try {
-      console.log(`createTag from context. title: ${title}`);
+      await createTagAction(title);
       
       notifySuccess({ description: 'Тег создана' });
       await refreshBookmarks();
@@ -254,7 +255,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);  
+  }, [createTagAction, refreshBookmarks, notifySuccess, notifyError]);  
 
   const renameCollection = useCallback(async (collectionId: string, title: string) => {
     try {
