@@ -296,6 +296,90 @@ router.post('/', async (req, res) => {
 });
 
 /**
+ * Обновляет данные категории
+ * 
+ * Поддерживает частичное обновление — обновляются только переданные поля.
+ * Поле `icon` может быть строкой для установки иконки или `null` для её удаления.
+ * 
+ * @route PATCH /api/bookmarks/categories/:id
+ * @param {string} req.params.id - UID категории
+ * @param {Object} req.body - Обновляемые поля категории
+ * @param {string|null} [req.body.icon] - Иконка категории (null — удаляет иконку)
+ * @returns {Object} 200 - JSON объект с результатом обновления
+ * @returns {Object} 400 - Некорректные данные
+ * @returns {Object} 404 - Категория не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Установка иконки:
+ * { "icon": "react" }
+ * 
+ * @example
+ * // Удаление иконки:
+ * { "icon": null }
+ * 
+ * @example
+ * // Успешный ответ:
+ * { "success": true }
+ */
+router.patch('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { icon } = req.body ?? {};
+
+  try {
+    // Валидация UID
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор категории' });
+    }
+
+    // Валидация icon: допускается строка или null
+    if (icon !== undefined && icon !== null && (typeof icon !== 'string' || icon.trim().length === 0)) {
+      return res.status(400).json({ error: 'Некорректное значение иконки' });
+    }
+
+    // Получение записи из БД
+    const categoryRow = db.prepare(`
+      SELECT id
+      FROM bookmark_categories
+      WHERE uid = ?
+      LIMIT 1
+    `).get(id);
+
+    if (!categoryRow) {
+      return res.status(404).json({ error: 'Категория не найдена' });
+    }
+
+    // Формирование SET-полей для обновления
+    const fields = [];
+    const values = {};
+
+    if (icon !== undefined) {
+      fields.push('icon = @icon');
+      values.icon = icon !== null ? icon.trim() : null;
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'Не переданы поля для обновления' });
+    }
+
+    fields.push('updated_at = datetime(\'now\')');
+    values.id = categoryRow.id;
+
+    db.prepare(`
+      UPDATE bookmark_categories
+      SET ${fields.join(', ')}
+      WHERE id = @id
+    `).run(values);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(`Ошибка обновления категории ${id}:`, error);
+
+    return res.status(500).json({ error: 'Не удалось обновить категорию' });
+  }
+});
+
+/**
  * Удаляет категорию или коллекцию
  * 
  * Универсальный метод для удаления как коллекций, так и категорий.
