@@ -169,6 +169,20 @@ class ApiClient {
   }
 
   /**
+   * PATCH запрос
+   * 
+   * @param endpoint - путь к ресурсу
+   * @param data - данные для частичного обновления
+   * @returns данные ответа
+   */
+  public async patch<T>(endpoint: string, data: unknown): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
    * DELETE запрос
    * 
    * @param endpoint - путь к ресурсу

@@ -91,6 +91,29 @@ describe('ApiClient', () => {
       );
     });
 
+    test('PATCH запрос частично обновляет данные', async () => {
+      const patchData = { title: 'Partial Update' };
+      const mockResponse = { success: true };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => mockResponse,
+      } as Response);
+
+      const client = getApiClient({ baseURL: TEST_BASE_URL });
+      const result = await client.patch('/123', patchData);
+
+      expect(result).toEqual(mockResponse);
+      expect(mockFetch).toHaveBeenCalledWith(
+        TEST_BASE_URL + '/123',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify(patchData),
+        })
+      );
+    });
+
     test('DELETE запрос удаляет данные', async () => {
       const mockResponse = { success: true };
 
@@ -165,6 +188,28 @@ describe('ApiClient', () => {
         expect((error as ApiError).message).toBe('Закладка не найдена');
         expect((error as ApiError).statusCode).toBe(404);
         expect((error as ApiError).isBusinessError()).toBe(true);
+      }
+    });
+
+    test('PATCH: 400 с полем error создает бизнес-ошибку', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({ error: 'Недопустимое значение поля icon' }),
+      } as Response);
+
+      const client = getApiClient({ baseURL: TEST_BASE_URL });
+
+      try {
+        await client.patch('/123', { icon: null });
+        fail('Должна была быть выброшена ошибка');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).message).toBe('Недопустимое значение поля icon');
+        expect((error as ApiError).statusCode).toBe(400);
+        expect((error as ApiError).isBusinessError()).toBe(true);
+        expect((error as ApiError).isUserFriendly).toBe(true);
       }
     });
 
