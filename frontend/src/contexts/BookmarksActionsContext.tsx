@@ -85,6 +85,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     deleteCategoryEntity: deleteCategoryEntityAction,
     deleteTag: deleteTagAction,
     updateCategory: updateCategoryAction,
+    updateTag: updateTagAction,
   } = useBookmarksActions();
   
   const { notifySuccess, notifyError } = useNotifications();
@@ -271,7 +272,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);  
+  }, [updateCategoryAction, refreshBookmarks, notifySuccess, notifyError]);  
 
   const renameCategory = useCallback(async (categoryId: string, title: string) => {
     try {
@@ -284,11 +285,11 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);  
+  }, [updateCategoryAction, refreshBookmarks, notifySuccess, notifyError]);  
 
   const renameTag = useCallback(async (tagId: string, title: string) => {
     try {
-      console.log(`renameTag from context. tagId: ${tagId}, title: ${title}`);
+      await updateTagAction({ id: tagId, title });
       
       notifySuccess({ description: 'Тег переименованна' });
       await refreshBookmarks();
@@ -297,7 +298,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);
+  }, [updateTagAction, refreshBookmarks, notifySuccess, notifyError]);
 
   const changeCategoryIcon = useCallback(async (categoryId: string, icon: string) => {
     try {
@@ -310,7 +311,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);
+  }, [updateCategoryAction, refreshBookmarks, notifySuccess, notifyError]);
 
   const deleteCollection = useCallback(async (collectionId: string) => {
     try {
@@ -323,7 +324,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);  
+  }, [deleteCategoryEntityAction, refreshBookmarks, notifySuccess, notifyError]);  
 
   const deleteCategory = useCallback(async (categoryId: string) => {
     try {
