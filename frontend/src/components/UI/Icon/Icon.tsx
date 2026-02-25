@@ -2,6 +2,9 @@ import {
   ArchiveBoxIcon,
   ArrowsPointingOutIcon,
   BellIcon,
+  BookOpenIcon,
+  CakeIcon,
+  CameraIcon,
   CheckIcon,
   DocumentDuplicateIcon,
   DocumentIcon,
@@ -18,11 +21,16 @@ import {
   PhotoIcon,
   PlusIcon,
   QrCodeIcon,
+  RadioIcon,
   RocketLaunchIcon,
+  ShoppingBagIcon,
   StarIcon,
   TagIcon,
   TrashIcon,
+  TruckIcon,
   UserGroupIcon,
+  UserIcon,
+  WalletIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import {
@@ -62,6 +70,14 @@ const ICON_NAMES = {
   Rocket: RocketLaunchIcon,
   Film: FilmIcon,
   Photo: PhotoIcon,
+  Book: BookOpenIcon,
+  Cake: CakeIcon,
+  Camera: CameraIcon,
+  ShoppingBag: ShoppingBagIcon,
+  Truck: TruckIcon,
+  User: UserIcon,
+  Wallet: WalletIcon,
+  Radio: RadioIcon,
 } as const;
 
 type IconName = keyof typeof ICON_NAMES;
