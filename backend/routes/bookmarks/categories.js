@@ -300,15 +300,21 @@ router.post('/', async (req, res) => {
  * 
  * Поддерживает частичное обновление — обновляются только переданные поля.
  * Поле `icon` может быть строкой для установки иконки или `null` для её удаления.
+ * Поле `title` должно быть непустой строкой.
  * 
  * @route PATCH /api/bookmarks/categories/:id
  * @param {string} req.params.id - UID категории
  * @param {Object} req.body - Обновляемые поля категории
+ * @param {string} [req.body.title] - Название категории
  * @param {string|null} [req.body.icon] - Иконка категории (null — удаляет иконку)
  * @returns {Object} 200 - JSON объект с результатом обновления
  * @returns {Object} 400 - Некорректные данные
  * @returns {Object} 404 - Категория не найдена
  * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Обновление названия:
+ * { "title": "Frontend" }
  * 
  * @example
  * // Установка иконки:
@@ -324,12 +330,17 @@ router.post('/', async (req, res) => {
  */
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
-  const { icon } = req.body ?? {};
+  const { title, icon } = req.body ?? {};
 
   try {
     // Валидация UID
     if (!id || typeof id !== 'string' || id.trim().length === 0) {
       return res.status(400).json({ error: 'Некорректный идентификатор категории' });
+    }
+
+    // Валидация title: если передан — должен быть непустой строкой (null недопустим)
+    if (title !== undefined && (typeof title !== 'string' || title.trim().length === 0)) {
+      return res.status(400).json({ error: 'Название не может быть пустым' });
     }
 
     // Валидация icon: допускается строка или null
@@ -352,6 +363,11 @@ router.patch('/:id', async (req, res) => {
     // Формирование SET-полей для обновления
     const fields = [];
     const values = {};
+
+    if (title !== undefined) {
+      fields.push('title = @title');
+      values.title = title.trim();
+    }
 
     if (icon !== undefined) {
       fields.push('icon = @icon');
