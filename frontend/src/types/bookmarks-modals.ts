@@ -27,10 +27,18 @@ type AddBookmarkModalState = {
   categoryId?: string;
 };
 
+/** Изменение иконки категории */
+type ChangeCategoryIcon = {
+  type: 'change-category-icon',
+  categoryId: string;
+  currentIcon?: string | null;
+};
+
 /** Все возможные состояния модалок */
 export type ModalState =
   | CreateEntityModalState
   | RenameEntityModalState
   | DeleteConfirmModalState
   | AddBookmarkModalState
+  | ChangeCategoryIcon
   | null; // закрыто
