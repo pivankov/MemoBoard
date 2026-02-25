@@ -48,6 +48,8 @@ interface BookmarksActionsContextValue {
   deleteCategory: (categoryId: string) => Promise<void>;
   /** Удаляет тег */
   deleteTag: (tagId: string) => Promise<void>;
+  /** Изменяет иконку категории */
+  changeCategoryIcon: (categoryId: string, icon: string) => Promise<void>;
 }
 
 const BookmarksActionsContext = createContext<BookmarksActionsContextValue | null>(null);
@@ -82,6 +84,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     createTag: createTagAction,
     deleteCategoryEntity: deleteCategoryEntityAction,
     deleteTag: deleteTagAction,
+    updateCategory: updateCategoryAction,
   } = useBookmarksActions();
   
   const { notifySuccess, notifyError } = useNotifications();
@@ -259,7 +262,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
   const renameCollection = useCallback(async (collectionId: string, title: string) => {
     try {
-      console.log(`renameCollection from context. collectionId: ${collectionId}, title: ${title}`);
+      await updateCategoryAction({ id: collectionId, title });
       
       notifySuccess({ description: 'Коллекция переименованна' });
       await refreshBookmarks();
@@ -272,7 +275,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
 
   const renameCategory = useCallback(async (categoryId: string, title: string) => {
     try {
-      console.log(`renameCategory from context. categoryId: ${categoryId}, title: ${title}`);
+      await updateCategoryAction({ id: categoryId, title });
       
       notifySuccess({ description: 'Категория переименованна' });
       await refreshBookmarks();
@@ -294,7 +297,20 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [refreshBookmarks, notifySuccess, notifyError]);  
+  }, [refreshBookmarks, notifySuccess, notifyError]);
+
+  const changeCategoryIcon = useCallback(async (categoryId: string, icon: string) => {
+    try {
+      await updateCategoryAction({ id: categoryId, icon });
+      
+      notifySuccess({ description: 'Иконка изменена' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось изменить иконку');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [refreshBookmarks, notifySuccess, notifyError]);
 
   const deleteCollection = useCallback(async (collectionId: string) => {
     try {
@@ -353,6 +369,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     deleteCollection,
     deleteCategory,
     deleteTag,
+    changeCategoryIcon,
   }), [
     refreshBookmarks,
     getBookmarkById,
@@ -371,6 +388,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     deleteCollection,
     deleteCategory,
     deleteTag,
+    changeCategoryIcon,
   ]);
   
   return (
