@@ -1,11 +1,41 @@
-import { useCallback, useMemo } from "react";
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { useCallback } from "react";
+import { DeleteOutlined, EditOutlined, PartitionOutlined, PictureOutlined, PlusOutlined } from "@ant-design/icons";
 
 import { BookmarksSidebarListType } from "types/bookmarks";
 
 import type { MenuProps } from 'antd';
-import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
 import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
+
+type MenuItem = NonNullable<MenuProps['items']>[number];
+
+const RENAME_ITEM: MenuItem = { key: '1', label: "Переименовать", icon: <EditOutlined /> };
+const MOVE_ITEM: MenuItem = { key: '2', label: "Переместить", icon: <PartitionOutlined /> };
+const DELETE_ITEM: MenuItem = { key: '3', danger: true, label: 'Удалить', icon: <DeleteOutlined /> };
+const CHANGE_ITEM_ICON: MenuItem = { key: '4', label: 'Сменить иконку', icon: <PictureOutlined /> };
+
+/** Карта пунктов меню по типу сущности */
+const MENU_ITEMS: Record<BookmarksSidebarListType, MenuItem[]> = {
+  'tags-collection': [
+    { key: '0', label: "Создать тег", icon: <PlusOutlined /> },
+  ],
+  'collection': [
+    { key: '0', label: "Создать категорию", icon: <PlusOutlined /> },
+    { type: 'divider' },
+    RENAME_ITEM,
+    MOVE_ITEM,
+    DELETE_ITEM,
+  ],
+  'category': [
+    RENAME_ITEM,
+    CHANGE_ITEM_ICON,
+    MOVE_ITEM,
+    DELETE_ITEM,
+  ],
+  'tag': [
+    RENAME_ITEM,
+    DELETE_ITEM,
+  ],
+};
 
 /**
  * Хук для работы с dropdown меню сайдбара закладок
@@ -21,8 +51,8 @@ export const useBookmarksSidebarDropdown = (
   type: BookmarksSidebarListType,
   id: string,
   title: string,
+  icon?: string | null,
 ) => {
-  const actions = useBookmarksActionsContext();
   const { openModal } = useBookmarksModalContext();
 
   /**
@@ -73,23 +103,23 @@ export const useBookmarksSidebarDropdown = (
           });          
         }
         break;
-      case '2': // Поднять
+      case '2': // Переместить
         if (type === 'collection') {
-          console.log(`actions.moveCollectionUp(${id})`);
+          openModal({ 
+            type: 'move-entity',
+            entityType: 'collection',
+            entityId: id,
+          });
         }
         if (type === 'category') {
-          console.log(`actions.moveCategoryUp(${id})`);
+          openModal({ 
+            type: 'move-entity',
+            entityType: 'category',
+            entityId: id,
+          });          
         }
         break;
-      case '3': // Опустить
-        if (type === 'collection') {
-          console.log(`actions.moveCollectionDown(${id})`);
-        }
-        if (type === 'category') {
-          console.log(`actions.moveCategoryDown(${id})`);
-        }
-        break;
-      case '4': // Удалить
+      case '3': // Удалить
         if (type === 'collection') {
           openModal({ 
             type: 'delete-confirm',
@@ -115,51 +145,19 @@ export const useBookmarksSidebarDropdown = (
           });    
         }
         break;
+      case '4': // Сменить иконку
+      if (type === 'category') {
+        openModal({ 
+          type: 'change-category-icon',
+          categoryId: id,
+          currentIcon: icon,
+        });    
+      }
+        break;
     }
-  }, [type, id, actions]);
+  }, [type, id, title, icon]);
 
-  /**
-   * Формирует список пунктов меню в зависимости от типа сущности
-   */
-  const items: MenuProps['items'] = useMemo(() => {
-    const baseItems = [
-      { key: '1', label: "Переименовать", icon: <EditOutlined /> },
-    ];
-
-    if (type === 'tags-collection') {
-      return [
-        { key: '0', label: "Создать тег", icon: <PlusOutlined /> },
-      ];
-    }
-    
-    if (type === 'collection') {
-      return [
-        { key: '0', label: "Создать категорию", icon: <PlusOutlined /> },
-        {
-          type: 'divider',
-        },        
-        ...baseItems,
-        { key: '2', label: "Поднять", icon: <ArrowUpOutlined /> },
-        { key: '3', label: "Опустить", icon: <ArrowDownOutlined />, },
-        { key: '4', danger: true, label: 'Удалить', icon: <DeleteOutlined />, },
-      ];
-    }
-    
-    if (type === 'category') {
-      return [
-        ...baseItems,
-        { key: '2', label: "Поднять", icon: <ArrowUpOutlined /> },
-        { key: '3', label: "Опустить", icon: <ArrowDownOutlined />, },
-        { key: '4', danger: true, label: 'Удалить', icon: <DeleteOutlined />, },
-      ];
-    }
-    
-    // Для тегов - только переименовать и удалить
-    return [
-      ...baseItems,
-      { key: '4', danger: true, label: 'Удалить', icon: <DeleteOutlined />, },
-    ];
-  }, [type]);
+  const items: MenuProps['items'] = MENU_ITEMS[type];
 
   return {
     items,
