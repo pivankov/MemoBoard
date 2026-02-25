@@ -32,6 +32,8 @@ interface UseBookmarksActionsReturn {
   deleteCategoryEntity: (id: string) => Promise<void>;
   /** Удаляет тег */
   deleteTag: (id: string) => Promise<void>;
+  /** Обновляет категорию */
+  updateCategory: (data: { id: string, title?: string, icon?: string }) => Promise<void>;
 }
 
 /**
@@ -169,6 +171,14 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     }
   }, [apiClient]);
 
+  const updateCategory = useCallback(async (data: { id: string, title?: string, icon?: string }): Promise<void> => {
+    try {
+      await apiClient.patch(`/categories/${data.id}`, { title: data.title, icon: data.icon });
+    } catch (err) {
+      throw err;
+    }
+  }, [apiClient]);
+
   return {
     getBookmarkById,    
     createBookmark,
@@ -181,5 +191,6 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     createTag,
     deleteCategoryEntity,
     deleteTag,
+    updateCategory,
   };
 };
