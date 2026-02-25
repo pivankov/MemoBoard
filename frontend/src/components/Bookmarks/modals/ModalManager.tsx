@@ -1,4 +1,5 @@
 import AddBookmarkModal from './AddBookmarkModal';
+import ChangeCategoryIconModal from './ChangeCategoryIconModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import EntityModal from './EntityModal';
 import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
@@ -44,6 +45,11 @@ const ModalManager: React.FC = () => {
           entityId={modalState.entityId}
           entityName={modalState.entityName}
         />
+      );      
+
+    case 'change-category-icon':
+      return (
+        <ChangeCategoryIconModal categoryId={modalState.categoryId} currentIcon={modalState.currentIcon} />
       );      
     
     default:
