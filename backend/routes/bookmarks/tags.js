@@ -221,6 +221,66 @@ router.post('/', async (req, res) => {
 });
 
 /**
+ * Обновляет название тега по идентификатору
+ * 
+ * @route PATCH /api/bookmarks/tags/:id
+ * @param {string} req.params.id - UID тега
+ * @param {string} req.body.title - Новое название тега (обязательное поле)
+ * @returns {Object} 200 - JSON объект с полем success
+ * @returns {Object} 400 - Некорректный идентификатор или название тега
+ * @returns {Object} 404 - Тег не найден
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Тело запроса:
+ * {
+ *   "title": "TypeScript"
+ * }
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "success": true
+ * }
+ */
+router.patch('/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title } = req.body ?? {};
+
+  try {
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор тега' });
+    }
+
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({ error: 'Название обязательно для заполнения' });
+    }
+
+    // Проверяем существование тега
+    const tagQuery = db.prepare(`
+      SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1
+    `);
+    const tagRow = tagQuery.get(id);
+
+    if (!tagRow) {
+      return res.status(404).json({ error: 'Тег не найден' });
+    }
+
+    // Обновляем название тега
+    const updateQuery = db.prepare(`
+      UPDATE bookmark_tags SET title = ?, updated_at = datetime('now') WHERE id = ?
+    `);
+    updateQuery.run(title.trim(), tagRow.id);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(`Ошибка обновления тега ${id}:`, error);
+
+    return res.status(500).json({ error: 'Не удалось обновить тег' });
+  }
+});
+
+/**
  * Удаляет тег по идентификатору
  * 
  * При удалении тега автоматически удаляются все связи с закладками (CASCADE).
