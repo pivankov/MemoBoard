@@ -10,6 +10,7 @@ interface BookmarksSidebarDropdownProps {
   type: BookmarksSidebarListType;
   id: string;
   title: string;
+  icon?: string | null;
 }
 
 /**
@@ -18,8 +19,8 @@ interface BookmarksSidebarDropdownProps {
  * Отображает список доступных действий в зависимости от типа сущности.
  * Логика обработки действий вынесена в хук useBookmarksSidebarDropdown.
  */
-const BookmarksSidebarDropdown: React.FC<BookmarksSidebarDropdownProps> = ({ type, id, title }) => {
-  const { items, handleMenuClick } = useBookmarksSidebarDropdown(type, id, title);
+const BookmarksSidebarDropdown: React.FC<BookmarksSidebarDropdownProps> = ({ type, id, title, icon }) => {
+  const { items, handleMenuClick } = useBookmarksSidebarDropdown(type, id, title, icon);
 
   const menuProps = {
     items,

@@ -43,6 +43,7 @@ const BookmarksSidebarListItem: React.FC<BookmarksSidebarListItemProps> = ({ typ
           type={type}
           id={id}
           title={title}
+          icon={icon}
         />
       ) }
     </Link>
