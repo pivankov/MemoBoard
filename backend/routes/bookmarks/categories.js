@@ -296,6 +296,128 @@ router.post('/', async (req, res) => {
 });
 
 /**
+ * Batch-обновляет позиции и/или коллекцию у категорий/коллекций
+ *
+ * Все изменения выполняются в одной транзакции SQLite.
+ * Если хотя бы одна из переданных категорий не найдена — вся операция откатывается.
+ * Поле `parentId` передаётся только для категории, у которой меняется коллекция.
+ *
+ * @route PATCH /api/bookmarks/categories/reorder
+ * @param {Object} req.body
+ * @param {Array<{id: string, position: number, parentId?: string}>} req.body.items - Массив обновляемых элементов
+ * @returns {Object} 200 - { success: true }
+ * @returns {Object} 400 - Некорректные данные (items не массив / некорректные поля элементов)
+ * @returns {Object} 404 - Категория или коллекция не найдена
+ * @returns {Object} 500 - Ошибка сервера
+ *
+ * @example
+ * // Тело запроса:
+ * {
+ *   "items": [
+ *     { "id": "uuid-1", "position": 0 },
+ *     { "id": "uuid-2", "position": 1 },
+ *     { "id": "uuid-3", "position": 2, "parentId": "uuid-collection" }
+ *   ]
+ * }
+ *
+ * @example
+ * // Успешный ответ:
+ * { "success": true }
+ */
+router.patch('/reorder', (req, res) => {
+  const { items } = req.body ?? {};
+
+  try {
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items должен быть непустым массивом' });
+    }
+
+    // Валидация каждого элемента до обращения к БД
+    for (const item of items) {
+      if (!item.id || typeof item.id !== 'string' || item.id.trim().length === 0) {
+        return res.status(400).json({ error: 'Каждый элемент должен содержать корректный id' });
+      }
+
+      if (typeof item.position !== 'number' || !Number.isInteger(item.position) || item.position < 0) {
+        return res.status(400).json({ error: `Некорректная позиция для элемента с id "${item.id}"` });
+      }
+
+      if (item.parentId !== undefined && (typeof item.parentId !== 'string' || item.parentId.trim().length === 0)) {
+        return res.status(400).json({ error: `Некорректный parentId для элемента с id "${item.id}"` });
+      }
+    }
+
+    const findByUid = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1');
+    const updatePositionOnly = db.prepare(`
+      UPDATE bookmark_categories
+      SET position = @position, updated_at = datetime('now')
+      WHERE id = @id
+    `);
+    const updatePositionAndParent = db.prepare(`
+      UPDATE bookmark_categories
+      SET position = @position, parent_id = @parentId, updated_at = datetime('now')
+      WHERE id = @id
+    `);
+
+    // Резолвим UIDs во внутренние ID до транзакции, чтобы вернуть 404 при необходимости
+    const resolvedItems = [];
+
+    for (const item of items) {
+      const categoryRow = findByUid.get(item.id.trim());
+
+      if (!categoryRow) {
+        return res.status(404).json({ error: `Категория с id "${item.id}" не найдена` });
+      }
+
+      const resolved = {
+        id: categoryRow.id,
+        position: item.position,
+        hasParentChange: item.parentId !== undefined,
+        parentId: null,
+      };
+
+      if (resolved.hasParentChange) {
+        const parentRow = findByUid.get(item.parentId.trim());
+
+        if (!parentRow) {
+          return res.status(404).json({ error: `Коллекция с id "${item.parentId}" не найдена` });
+        }
+
+        resolved.parentId = parentRow.id;
+      }
+
+      resolvedItems.push(resolved);
+    }
+
+    // Все UPDATE-запросы в одной транзакции
+    const reorderInTransaction = db.transaction(() => {
+      for (const resolved of resolvedItems) {
+        if (resolved.hasParentChange) {
+          updatePositionAndParent.run({
+            id: resolved.id,
+            position: resolved.position,
+            parentId: resolved.parentId,
+          });
+        } else {
+          updatePositionOnly.run({
+            id: resolved.id,
+            position: resolved.position,
+          });
+        }
+      }
+    });
+
+    reorderInTransaction();
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Ошибка обновления порядка категорий:', error);
+
+    return res.status(500).json({ error: 'Не удалось обновить порядок категорий' });
+  }
+});
+
+/**
  * Обновляет данные категории
  * 
  * Поддерживает частичное обновление — обновляются только переданные поля.
