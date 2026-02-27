@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo } from 'react';
 
 import { useBookmarksActions } from 'hooks/useBookmarksActions';
-import { BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
+import { BookmarksCategoriesReorderItem,BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 import { getApiErrorMessage } from 'utils/errors';
 
 import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
@@ -50,6 +50,8 @@ interface BookmarksActionsContextValue {
   deleteTag: (tagId: string) => Promise<void>;
   /** Изменяет иконку категории */
   changeCategoryIcon: (categoryId: string, icon: string) => Promise<void>;
+  /** Обновляет позиции и/или коллекцию у категорий/коллекций */
+  reorderCategories: (items: BookmarksCategoriesReorderItem[]) => Promise<void>;
 }
 
 const BookmarksActionsContext = createContext<BookmarksActionsContextValue | null>(null);
@@ -86,6 +88,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     deleteTag: deleteTagAction,
     updateCategory: updateCategoryAction,
     updateTag: updateTagAction,
+    reorderCategories: reorderCategoriesAction,
   } = useBookmarksActions();
   
   const { notifySuccess, notifyError } = useNotifications();
@@ -350,7 +353,20 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
       notifyError({ description: errorMessage });
       throw error;
     }
-  }, [deleteTagAction, notifySuccess, notifyError]);  
+  }, [deleteTagAction, notifySuccess, notifyError]);
+
+  const reorderCategories = useCallback(async (items: BookmarksCategoriesReorderItem[]) => {
+    try {
+      await reorderCategoriesAction(items);
+
+      notifySuccess({ description: 'Порядок сохранён' });
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось сохранить порядок');
+      notifyError({ description: errorMessage });
+      throw error;
+    }
+  }, [reorderCategoriesAction, refreshBookmarks, notifySuccess, notifyError]);
 
   const value = useMemo(() => ({
     refreshBookmarks,
@@ -371,6 +387,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     deleteCategory,
     deleteTag,
     changeCategoryIcon,
+    reorderCategories,
   }), [
     refreshBookmarks,
     getBookmarkById,
@@ -390,6 +407,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     deleteCategory,
     deleteTag,
     changeCategoryIcon,
+    reorderCategories,
   ]);
   
   return (

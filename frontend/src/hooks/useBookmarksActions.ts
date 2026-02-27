@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
-import { BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
+import { BookmarksCategoriesReorderItem,BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 
 import { API_BOOKMARKS_BASE_URL } from 'constants/api';
 import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
@@ -36,6 +36,8 @@ interface UseBookmarksActionsReturn {
   updateCategory: (data: { id: string, title?: string, icon?: string }) => Promise<void>;
   /** Обновляет тег */
   updateTag: (data: { id: string, title: string }) => Promise<void>;
+  /** Обновляет позиции и/или коллекцию у категорий/коллекций */
+  reorderCategories: (items: BookmarksCategoriesReorderItem[]) => Promise<void>;
 }
 
 /**
@@ -189,6 +191,14 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     }
   }, [apiClient]);
 
+  const reorderCategories = useCallback(async (items: BookmarksCategoriesReorderItem[]): Promise<void> => {
+    try {
+      await apiClient.patch('/categories/reorder', { items });
+    } catch (err) {
+      throw err;
+    }
+  }, [apiClient]);
+
   return {
     getBookmarkById,    
     createBookmark,
@@ -203,5 +213,6 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     deleteTag,
     updateCategory,
     updateTag,
+    reorderCategories,
   };
 };
