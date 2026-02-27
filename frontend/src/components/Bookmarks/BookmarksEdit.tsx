@@ -163,15 +163,15 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
             layout="vertical"
             onFinish={handleFinish}
           >
-            <div className="edit-form__item">
-              <label className="edit-form__item-label" htmlFor="url">Адрес страницы</label>
+            <div className="form-field__item">
+              <label className="form-field__item-label" htmlFor="url">Адрес страницы</label>
               <Form.Item name="url">
                 <Input id="url" disabled />
               </Form.Item>
             </div>
 
-            <div className="edit-form__item">
-              <label className="edit-form__item-label" htmlFor="title">Заголовок страницы</label>
+            <div className="form-field__item">
+              <label className="form-field__item-label" htmlFor="title">Заголовок страницы</label>
               <Form.Item 
                 name="title"
                 rules={[
@@ -184,8 +184,8 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
               </Form.Item>
             </div>
 
-            <div className="edit-form__item">
-              <label className="edit-form__item-label" htmlFor="description">Описание страницы</label>
+            <div className="form-field__item">
+              <label className="form-field__item-label" htmlFor="description">Описание страницы</label>
               <Form.Item name="description"> 
                 <TextArea
                   id="description"
@@ -197,7 +197,7 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
               </Form.Item>
             </div>
 
-            <div className="edit-form__footer">
+            <div className="form-field__footer">
               <Popconfirm
                 title="Удаление закладки"
                 description="Вы действительно хотите удалить эту закладку?"

@@ -139,34 +139,34 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
         initialValues={formInitialValues}
         onFinish={handleFinish}
       >
-        <div className="edit-form__item">
-          <label className="edit-form__item-label" htmlFor="title">Название события</label>
+        <div className="form-field__item">
+          <label className="form-field__item-label" htmlFor="title">Название события</label>
           <Form.Item name="title">
             <Input id="title" placeholder="Пожалуйста введите название события" />
           </Form.Item>
         </div>
 
-        <div className="edit-form__item">
-          <label className="edit-form__item-label" htmlFor="originalDate">Дата начала события</label>
+        <div className="form-field__item">
+          <label className="form-field__item-label" htmlFor="originalDate">Дата начала события</label>
           <Form.Item name="originalDate"> 
             <DatePicker id="originalDate" placeholder="дата" onChange={handleChangeOriginalDate} />
           </Form.Item>
         </div>
 
-        <div className="edit-form__item">
-          <label className="edit-form__item-label" htmlFor="nextDate">Следующая дата события</label>
+        <div className="form-field__item">
+          <label className="form-field__item-label" htmlFor="nextDate">Следующая дата события</label>
           <DatePicker value={nextDate} id="nextDate" placeholder="дата" disabled />
         </div>          
 
-        <div className="edit-form__item">
-          <label className="edit-form__item-label" htmlFor="type">Тип события</label>
+        <div className="form-field__item">
+          <label className="form-field__item-label" htmlFor="type">Тип события</label>
           <Form.Item name="type">
             <Select options={eventTypesOptions}/>
           </Form.Item>
         </div>    
 
-        <div className="edit-form__item">
-          <label className="edit-form__item-label">Повторяемость события</label>
+        <div className="form-field__item">
+          <label className="form-field__item-label">Повторяемость события</label>
           <Form.Item name="recurrence" className="mb-0">
             <Radio.Group onChange={handleChangeRecurrence}>
               {recurrenceOptions.map((o) => (
@@ -176,8 +176,8 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
           </Form.Item>
         </div>
 
-        <div className="edit-form__item">
-          <label className="edit-form__item-label" htmlFor="description">Описание</label>
+        <div className="form-field__item">
+          <label className="form-field__item-label" htmlFor="description">Описание</label>
           <Form.Item name="description"> 
             <TextArea
               id="description"
@@ -189,7 +189,7 @@ const EventsEdit: React.FC<EventsEditProps> = ({ initialValues, onSubmit, onCanc
           </Form.Item>
         </div>
 
-        <div className="edit-form__footer">
+        <div className="form-field__footer">
           <Popconfirm
             title="Удаление события"
             description="Вы действительно хотите удалить это событие?"

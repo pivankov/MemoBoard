@@ -208,17 +208,17 @@ a {
   opacity: 0.4;  
 }
 
-.edit-form__item {
+.form-field__item {
   margin-bottom: 24px;
 }
 
-.edit-form__item-label {
+.form-field__item-label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
 }
 
-.edit-form__footer {
+.form-field__footer {
   display: flex;
   padding: 16px 48px;
   margin: 40px -48px 0;
