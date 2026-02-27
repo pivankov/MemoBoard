@@ -21,6 +21,13 @@ type DeleteConfirmModalState = {
   entityName: string;
 };
 
+/** Перемещение сущности (коллекция, категория) */
+type MoveEntityModalState = {
+  type: 'move-entity';
+  entityType: 'collection' | 'category';
+  entityId: string;
+};
+
 /** Добавление закладки */
 type AddBookmarkModalState = {
   type: 'add-bookmark';
@@ -38,6 +45,7 @@ type ChangeCategoryIcon = {
 export type ModalState =
   | CreateEntityModalState
   | RenameEntityModalState
+  | MoveEntityModalState
   | DeleteConfirmModalState
   | AddBookmarkModalState
   | ChangeCategoryIcon

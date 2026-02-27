@@ -2,6 +2,7 @@ import AddBookmarkModal from './AddBookmarkModal';
 import ChangeCategoryIconModal from './ChangeCategoryIconModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import EntityModal from './EntityModal';
+import MoveEntityModal from './MoveEntityModal';
 import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
 /**
@@ -35,6 +36,14 @@ const ModalManager: React.FC = () => {
           entityType={modalState.entityType}
           entityId={modalState.entityId}
           currentTitle={modalState.currentTitle}
+        />
+      );
+
+    case 'move-entity':
+      return (
+        <MoveEntityModal
+          entityType={modalState.entityType}
+          entityId={modalState.entityId}
         />
       );
 
