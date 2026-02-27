@@ -44,7 +44,9 @@ const MoveEntityModal: React.FC<MoveEntityModalProps> = ({ entityType, entityId 
   } = useMoveEntityModal(entityId, entityType);
 
   const collectionOptions = useMemo(
-    () => localCollections.map(c => ({ value: c.id, label: c.title })),
+    () => localCollections
+      .filter(c => c.id !== SYSTEM_CATEGORIES.SYSTEM)
+      .map(c => ({ value: c.id, label: c.title })),
     [localCollections],
   );
 
