@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Form, Input, Popconfirm, Spin } from 'antd';
+import { Alert, Button, Form, Input, Popconfirm, Select, Spin } from 'antd';
 
 import Panel from "components/UI/Panel/Panel"
-import type { BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
+import type { BookmarksCategoriesGrouped, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 
 import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
 
@@ -15,6 +15,8 @@ interface BookmarksEditProps {
   isOpen: boolean;
   /** Коллбэк закрытия панели */
   onClose: () => void;
+  /** Список категорий, сгруппированных по коллекциям */
+  groupedCategories: BookmarksCategoriesGrouped[];
 }
 
 /**
@@ -25,6 +27,7 @@ interface BookmarksEditFormValues {
   url: string;
   title: string;
   description: string;
+  categoryId: string;
 }
 
 /**
@@ -36,7 +39,8 @@ interface BookmarksEditFormValues {
 const BookmarksEdit: React.FC<BookmarksEditProps> = ({ 
   bookmarkId,
   isOpen, 
-  onClose 
+  onClose,
+  groupedCategories,
 }) => {
   const { getBookmarkById, updateBookmark, deleteBookmark } = useBookmarksActionsContext();
   
@@ -81,6 +85,7 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
         url: bookmark.url,
         title: bookmark.title,
         description: bookmark.description,
+        categoryId: bookmark.categoryId,
       });
     }
   }, [bookmark]);
@@ -119,7 +124,7 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
       url: values.url,
       title: values.title,
       description: values.description,
-      categoryId: bookmark.categoryId,
+      categoryId: values.categoryId,
       tags: bookmark.tags,
       preview: bookmark.preview,
       favorite: bookmark.favorite,
@@ -181,6 +186,26 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
                 ]}
               >
                 <Input id="title" placeholder="Укажите заголовок страницы" />
+              </Form.Item>
+            </div>
+
+            <div className="form-field__item">
+              <label className="form-field__item-label" htmlFor="categoryId">Категория</label>
+              <Form.Item
+                name="categoryId"
+                rules={[{ required: true, message: 'Выберите категорию' }]}
+              >
+                <Select id="categoryId" placeholder="Выберите категорию">
+                  {groupedCategories.map((collection) => (
+                    <Select.OptGroup key={collection.id} label={collection.title}>
+                      {collection.children.map((category) => (
+                        <Select.Option key={category.id} value={category.id}>
+                          {category.title}
+                        </Select.Option>
+                      ))}
+                    </Select.OptGroup>
+                  ))}
+                </Select>
               </Form.Item>
             </div>
 
