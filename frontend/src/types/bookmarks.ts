@@ -88,3 +88,16 @@ export type BookmarksUpdateFormData = {
  * Типы сущностей меню-списка в боковом меню
  */
 export type BookmarksSidebarListType = 'collection' | 'tags-collection' | 'category' | 'tag';
+
+/**
+ * Элемент для batch-обновления позиции категории/коллекции
+ * Используется в эндпоинте PATCH /categories/reorder
+ */
+export type BookmarksCategoriesReorderItem = {
+  /** UID категории или коллекции */
+  id: string;
+  /** Новая позиция среди одноуровневых сородичей */
+  position: number;
+  /** Новый parentId — передаётся только при смене коллекции у категории */
+  parentId?: string;
+};
