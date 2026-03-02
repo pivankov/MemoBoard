@@ -3,7 +3,7 @@ import { db } from '../../db/initdb.js';
 import tagsRouter from './tags.js';
 import categoriesRouter from './categories.js';
 import urlMetadata from 'url-metadata';
-import { generateBookmarkUid } from '../../utils/uid.js';
+import { generateBookmarkUid, generateTagUid } from '../../utils/uid.js';
 
 const router = Router();
 
@@ -285,8 +285,9 @@ router.post('/', async (req, res) => {
 /**
  * Обновляет существующую закладку
  * 
- * При обновлении тегов все старые связи удаляются и создаются новые.
- * Если тег из массива не найден в БД, выводится предупреждение в лог.
+ * Теги обновляются через два раздельных массива: existingTagIds — UID существующих тегов,
+ * newTagTitles — названия новых тегов, которые создаются и привязываются автоматически.
+ * Все старые связи с тегами удаляются и пересоздаются. Вся операция выполняется в единой транзакции.
  * 
  * @route PUT /api/bookmarks/:id
  * @param {string} req.params.id - UID закладки
@@ -295,11 +296,12 @@ router.post('/', async (req, res) => {
  * @param {string} req.body.title - Заголовок закладки
  * @param {string} [req.body.description] - Описание
  * @param {string} req.body.categoryId - UID категории
- * @param {string[]} [req.body.tags] - Массив UID тегов
+ * @param {string[]} [req.body.existingTagIds] - Массив UID существующих тегов для привязки
+ * @param {string[]} [req.body.newTagTitles] - Массив названий новых тегов для создания и привязки
  * @param {string} [req.body.preview] - URL превью изображения
  * @param {boolean} [req.body.favorite] - Избранное
  * @returns {Object} 200 - JSON объект с результатом обновления
- * @returns {Object} 400 - Некорректные данные / теги не массив / категория не найдена
+ * @returns {Object} 400 - Некорректные данные / теги не массивы / категория не найдена
  * @returns {Object} 404 - Закладка не найдена
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
@@ -310,7 +312,8 @@ router.post('/', async (req, res) => {
  *   "title": "Обновленный заголовок",
  *   "description": "Обновленное описание",
  *   "categoryId": "cat1",
- *   "tags": ["tag1", "tag2"],
+ *   "existingTagIds": ["abc12", "def34"],
+ *   "newTagTitles": ["новый тег"],
  *   "preview": "https://example.com/preview.jpg",
  *   "favorite": true
  * }
@@ -323,7 +326,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { url, title, description, categoryId, tags, preview, favorite } = req.body ?? {};
+  const { url, title, description, categoryId, existingTagIds, newTagTitles, preview, favorite } = req.body ?? {};
   
   try {
     if (!id || typeof id !== 'string' || id.trim().length === 0) {
@@ -341,77 +344,91 @@ router.put('/:id', async (req, res) => {
     if (!categoryId || typeof categoryId !== 'string' || categoryId.trim().length === 0) {
       return res.status(400).json({ error: 'Категория обязательна для заполнения' });
     }
-    
-    if (tags && !Array.isArray(tags)) {
-      return res.status(400).json({ error: 'Теги должны быть массивом' });
+
+    if (existingTagIds !== undefined && !Array.isArray(existingTagIds)) {
+      return res.status(400).json({ error: 'existingTagIds должен быть массивом' });
     }
-    
+
+    if (newTagTitles !== undefined && !Array.isArray(newTagTitles)) {
+      return res.status(400).json({ error: 'newTagTitles должен быть массивом' });
+    }
+
     const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
     
     if (!bookmarkRow) {
       return res.status(404).json({ error: 'Закладка не найдена' });
     }
-    
-    const bookmarkIdInternal = bookmarkRow.id;
 
     const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(categoryId);
     
     if (!categoryRow) {
       return res.status(400).json({ error: 'Категория не найдена' });
     }
-    
-    const categoryIdInternal = categoryRow.id;
-    
-    const updateBookmark = db.prepare(`
-      UPDATE bookmarks
-      SET 
-        url = @url,
-        title = @title,
-        description = @description,
-        category_id = @category_id,
-        preview = @preview,
-        favorite = @favorite
-      WHERE id = @id
-    `);
-    
-    updateBookmark.run({
-      id: bookmarkIdInternal,
-      url: url.trim(),
-      title: title.trim(),
-      description: description ? description.trim() : '',
-      category_id: categoryIdInternal,
-      preview: preview ? preview.trim() : '',
-      favorite: favorite ? 1 : 0,
-    });
-    
-    // Обрабатываем теги
-    if (tags && Array.isArray(tags)) {
-      // Удаляем все старые связи с тегами
-      const deleteTagRelations = db.prepare('DELETE FROM bookmark_tag_relations WHERE bookmark_id = ?');
-      deleteTagRelations.run(bookmarkIdInternal);
-      
-      // Создаем новые связи с тегами
-      if (tags.length > 0) {
+
+    const hasTags = Array.isArray(existingTagIds) || Array.isArray(newTagTitles);
+
+    const updateOperation = db.transaction(() => {
+      db.prepare(`
+        UPDATE bookmarks
+        SET 
+          url = @url,
+          title = @title,
+          description = @description,
+          category_id = @category_id,
+          preview = @preview,
+          favorite = @favorite
+        WHERE id = @id
+      `).run({
+        id: bookmarkRow.id,
+        url: url.trim(),
+        title: title.trim(),
+        description: description ? description.trim() : '',
+        category_id: categoryRow.id,
+        preview: preview ? preview.trim() : '',
+        favorite: favorite ? 1 : 0,
+      });
+
+      if (hasTags) {
+        db.prepare('DELETE FROM bookmark_tag_relations WHERE bookmark_id = ?').run(bookmarkRow.id);
+
         const insertTagRelation = db.prepare(`
           INSERT OR IGNORE INTO bookmark_tag_relations (bookmark_id, tag_id)
           VALUES (@bookmark_id, @tag_id)
         `);
-        
-        for (const tagUid of tags) {
-          // Получаем внутренний id тега по uid
-          const tagRow = db.prepare('SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1').get(tagUid);
-          
-          if (tagRow) {
-            insertTagRelation.run({
-              bookmark_id: bookmarkIdInternal,
-              tag_id: tagRow.id,
-            });
-          } else {
-            console.warn(`Предупреждение: тег с uid "${tagUid}" не найден при обновлении закладки "${title}" (uid: ${id})`);
+
+        // Привязываем существующие теги по UID
+        if (Array.isArray(existingTagIds)) {
+          const findTagByUid = db.prepare('SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1');
+
+          for (const tagUid of existingTagIds) {
+            const tagRow = findTagByUid.get(tagUid);
+
+            if (tagRow) {
+              insertTagRelation.run({ bookmark_id: bookmarkRow.id, tag_id: tagRow.id });
+            } else {
+              console.warn(`Тег с uid "${tagUid}" не найден при обновлении закладки (uid: ${id})`);
+            }
+          }
+        }
+
+        // Создаём новые теги и привязываем
+        if (Array.isArray(newTagTitles)) {
+          const insertNewTag = db.prepare(`
+            INSERT INTO bookmark_tags (uid, title, created_at, updated_at)
+            VALUES (@uid, @title, datetime('now'), datetime('now'))
+          `);
+
+          for (const tagTitle of newTagTitles) {
+            const uid = generateTagUid();
+            insertNewTag.run({ uid, title: tagTitle.trim() });
+            const newTagRow = db.prepare('SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1').get(uid);
+            insertTagRelation.run({ bookmark_id: bookmarkRow.id, tag_id: newTagRow.id });
           }
         }
       }
-    }
+    });
+
+    updateOperation();
     
     return res.status(200).json({ success: true });
     
