@@ -79,7 +79,10 @@ export type BookmarksUpdateFormData = {
   title: string;
   description: string;
   categoryId: string;
-  tags: string[];
+  /** ID существующих тегов, которые нужно сохранить */
+  existingTagIds: string[];
+  /** Названия новых тегов, которые нужно создать и привязать */
+  newTagTitles: string[];
   preview: string;
   favorite: boolean;
 };

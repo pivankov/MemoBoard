@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Form, Input, Popconfirm, Select, Spin } from 'antd';
 
 import Panel from "components/UI/Panel/Panel"
-import type { BookmarksCategoriesGrouped, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
+import type { BookmarksCategoriesGrouped, BookmarksItem, BookmarksTag, BookmarksUpdateFormData } from 'types/bookmarks';
 
 import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
 
@@ -17,6 +17,8 @@ interface BookmarksEditProps {
   onClose: () => void;
   /** Список категорий, сгруппированных по коллекциям */
   groupedCategories: BookmarksCategoriesGrouped[];
+  /** Список всех доступных тегов */
+  tags: BookmarksTag[];
 }
 
 /**
@@ -28,6 +30,7 @@ interface BookmarksEditFormValues {
   title: string;
   description: string;
   categoryId: string;
+  tagIds: string[];
 }
 
 /**
@@ -41,8 +44,14 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
   isOpen, 
   onClose,
   groupedCategories,
+  tags,
 }) => {
   const { getBookmarkById, updateBookmark, deleteBookmark } = useBookmarksActionsContext();
+
+  const tagOptions = useMemo(
+    () => tags.map(tag => ({ label: tag.title, value: tag.id })),
+    [tags]
+  );
   
   const [form] = Form.useForm<BookmarksEditFormValues>();
   const [bookmark, setBookmark] = useState<BookmarksItem | null>(null);
@@ -86,6 +95,7 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
         title: bookmark.title,
         description: bookmark.description,
         categoryId: bookmark.categoryId,
+        tagIds: bookmark.tags,
       });
     }
   }, [bookmark]);
@@ -120,12 +130,15 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
   const handleFinish = async (values: BookmarksEditFormValues) => {
     if (!bookmarkId || !bookmark) return;
 
+    const existingTagIds = new Set(tags.map(t => t.id));
+
     const updateData: BookmarksUpdateFormData = {
       url: values.url,
       title: values.title,
       description: values.description,
       categoryId: values.categoryId,
-      tags: bookmark.tags,
+      existingTagIds: values.tagIds.filter(v => existingTagIds.has(v)),
+      newTagTitles: values.tagIds.filter(v => !existingTagIds.has(v)),
       preview: bookmark.preview,
       favorite: bookmark.favorite,
     };
@@ -206,6 +219,18 @@ const BookmarksEdit: React.FC<BookmarksEditProps> = ({
                     </Select.OptGroup>
                   ))}
                 </Select>
+              </Form.Item>
+            </div>
+
+            <div className="form-field__item">
+              <label className="form-field__item-label" htmlFor="tagIds">Теги</label>
+              <Form.Item name="tagIds">
+                <Select
+                  id="tagIds"
+                  mode="tags"
+                  placeholder="Выберите или создайте теги"
+                  options={tagOptions}
+                />
               </Form.Item>
             </div>
 

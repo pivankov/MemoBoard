@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 
-import { BookmarksCategoriesReorderItem,BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
+import { BookmarksCategoriesReorderItem, BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 
 import { API_BOOKMARKS_BASE_URL } from 'constants/api';
 import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
@@ -107,9 +107,15 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   const moveToTrash = useCallback(async (id: string): Promise<void> => {
     try {
       const bookmark = await getBookmarkById(id);
-      const updatedBookmark = {
-        ...bookmark,
+      const updatedBookmark: BookmarksUpdateFormData = {
+        url: bookmark.url,
+        title: bookmark.title,
+        description: bookmark.description,
         categoryId: SYSTEM_CATEGORIES.TRASH,
+        existingTagIds: bookmark.tags,
+        newTagTitles: [],
+        preview: bookmark.preview,
+        favorite: bookmark.favorite,
       };
       
       await updateBookmark(id, updatedBookmark);
@@ -124,10 +130,16 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   const toggleBookmarkFavorite = useCallback(async (id: string): Promise<void> => {
     try {
       const bookmark = await getBookmarkById(id);
-      const updatedBookmark = {
-        ...bookmark,
+      const updatedBookmark: BookmarksUpdateFormData = {
+        url: bookmark.url,
+        title: bookmark.title,
+        description: bookmark.description,
+        categoryId: bookmark.categoryId,
+        existingTagIds: bookmark.tags,
+        newTagTitles: [],
+        preview: bookmark.preview,
         favorite: !bookmark.favorite,
-      };      
+      };
       
       await updateBookmark(id, updatedBookmark);
     } catch (err) {

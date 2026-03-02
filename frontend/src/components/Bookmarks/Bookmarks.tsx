@@ -143,6 +143,7 @@ const Bookmarks: React.FC = () => {
             isOpen={isEditPanelOpen}
             onClose={handleCloseEdit}
             groupedCategories={groupedCategories}
+            tags={tags}
           />
 
           <ModalManager />
