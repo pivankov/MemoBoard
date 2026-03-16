@@ -6,6 +6,12 @@ const API_PORT = 4000;
 const API_BASE_URL = `http://localhost:${API_PORT}/api`;
 
 /**
+ * Базовый URL для статических файлов бэкенда (превью, изображения и т.д.)
+ * @example 'http://localhost:4000'
+ */
+export const API_STATIC_BASE_URL = `http://localhost:${API_PORT}`;
+
+/**
  * Базовый URL для работы с API закладок
  * @example 'http://localhost:4000/api/bookmarks'
  */

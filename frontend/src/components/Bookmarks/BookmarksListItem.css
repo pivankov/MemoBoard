@@ -19,27 +19,30 @@
 
 .bookmarks-list-item__preview {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 66px;
-  height: 58px;
-  overflow: hidden;
-  margin: 4px 16px 0 0;
-}
+  height: 66px;
+  margin: 0 16px 0 0;
 
-.bookmarks-list-item__preview-blank svg {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  top: 50%;
-  left: 50%;
-  margin-top: -24px;
-  margin-left: -20px;
-  stroke-width: 2px;
-  color: var(--color-text-secondary);
-}
+  svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -24px;
+    margin-left: -20px;    
+    width: 40px;
+    height: 40px;    
+    stroke-width: 2px;
+    color: var(--color-text-secondary);
+  }
 
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin-top: 4px;    
+    object-fit: contain;    
+  }
+}
 
 .bookmarks-list-item__container {
   display: block;
