@@ -150,6 +150,9 @@ temp/
 *.sln
 *.sw?
 
+# User uploads (динамически генерируемые данные)
+/backend/uploads/
+
 # Database files
 *.sqlite
 *.db
