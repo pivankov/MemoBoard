@@ -91,7 +91,7 @@
 - `url` TEXT NOT NULL
 - `title` TEXT NOT NULL
 - `description` TEXT
-- `preview` TEXT
+- `preview` TEXT — относительный путь к файлу превью (например: `/previews/xK9pLm2n.webp`), пустая строка если превью отсутствует
 - `opened_at` TEXT
 - `transition_counter` INTEGER NOT NULL DEFAULT 0
 - `favorite` INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0,1))
