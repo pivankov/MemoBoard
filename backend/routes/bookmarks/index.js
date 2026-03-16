@@ -4,6 +4,7 @@ import tagsRouter from './tags.js';
 import categoriesRouter from './categories.js';
 import urlMetadata from 'url-metadata';
 import { generateBookmarkUid, generateTagUid } from '../../utils/uid.js';
+import { extractPreviewUrl, downloadPreview, getFaviconUrl, deletePreview } from '../../utils/preview.js';
 
 const router = Router();
 
@@ -226,11 +227,17 @@ router.post('/', async (req, res) => {
     
     let title = url;
     let description = '';
-    
+    let metadata = null;
+
     try {
-      const metadata = await urlMetadata(url, {
+      metadata = await urlMetadata(url, {
         timeout: 5000,
         ensureSecureImageRequest: false,
+        // Имитация браузерного запроса — часть сайтов (например npmjs.com) блокирует
+        // запросы с дефолтным Node.js User-Agent и не возвращает og:image в ответе
+        requestHeaders: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
       });
       
       // Приоритет: Open Graph > Twitter Cards > обычные meta теги
@@ -250,7 +257,27 @@ router.post('/', async (req, res) => {
     }
     
     const uid = generateBookmarkUid();
-    
+
+    let previewPath = '';
+
+    try {
+      const previewUrl = extractPreviewUrl(metadata);
+
+      if (previewUrl) {
+        previewPath = await downloadPreview(previewUrl, uid) || '';
+      }
+
+      if (!previewPath) {
+        const faviconUrl = getFaviconUrl(url);
+
+        if (faviconUrl) {
+          previewPath = await downloadPreview(faviconUrl, uid) || '';
+        }
+      }
+    } catch (previewError) {
+      console.warn('Не удалось получить превью:', url, previewError.message);
+    }
+
     const insertBookmark = db.prepare(`
       INSERT INTO bookmarks (
         uid, user_id, category_id, url, title, description, 
@@ -269,7 +296,7 @@ router.post('/', async (req, res) => {
       url: url.trim(),
       title: title.trim(),
       description: description.trim(),
-      preview: '',
+      preview: previewPath,
       transition_counter: 0,
       favorite: 0,
     });
@@ -464,10 +491,14 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный идентификатор закладки' });
     }
     
-    const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
+    const bookmarkRow = db.prepare('SELECT id, preview FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
     
     if (!bookmarkRow) {
       return res.status(404).json({ error: 'Закладка не найдена' });
+    }
+
+    if (bookmarkRow.preview) {
+      await deletePreview(bookmarkRow.preview);
     }
     
     const bookmarkIdInternal = bookmarkRow.id;
