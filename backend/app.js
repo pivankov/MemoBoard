@@ -37,6 +37,9 @@ app.get('/health', (req, res) => {
 // API маршруты
 app.use('/api/', routes);
 
+// Раздача пользовательских загрузок (превью закладок и др.)
+app.use('/previews', express.static(path.join(__dirname, 'uploads/previews')));
+
 // Раздача статических файлов из папки public
 app.use(express.static(path.join(__dirname, 'public')));
 
