@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
       SELECT bc.uid, bc.title, bc.icon, bc.position, bc.created_at, bc.updated_at, parent.uid AS parent_uid, COUNT(b.id) AS amount
       FROM bookmark_categories bc
       LEFT JOIN bookmark_categories parent ON bc.parent_id = parent.id
-      LEFT JOIN bookmarks b ON bc.id = b.category_id
+      LEFT JOIN bookmarks b ON bc.id = b.category_id AND b.in_trash = 0
       GROUP BY bc.id, bc.uid, bc.title, bc.icon, bc.position, bc.created_at, bc.updated_at, parent.uid
       ORDER BY bc.position ASC, bc.title ASC
     `);
@@ -119,7 +119,7 @@ router.get('/:id', async (req, res) => {
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       LEFT JOIN bookmark_categories bc ON b.category_id = bc.id
-      WHERE b.category_id = ?
+      WHERE b.category_id = ? AND b.in_trash = 0
       ORDER BY b.updated_at DESC
     `);
     const rows = bookmarksQuery.all(categoryRow.id);

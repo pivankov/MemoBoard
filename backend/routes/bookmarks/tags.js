@@ -29,9 +29,10 @@ const router = Router();
 router.get('/', async (req, res) => {
   try {
     const tagsQuery = db.prepare(`
-      SELECT bt.uid, bt.title, COUNT(btr.bookmark_id) AS amount
+      SELECT bt.uid, bt.title, COUNT(b.id) AS amount
       FROM bookmark_tags bt
       LEFT JOIN bookmark_tag_relations btr ON bt.id = btr.tag_id
+      LEFT JOIN bookmarks b ON btr.bookmark_id = b.id AND b.in_trash = 0
       GROUP BY bt.id, bt.uid, bt.title
       ORDER BY bt.title ASC
     `);
@@ -108,7 +109,7 @@ router.get('/:id', async (req, res) => {
       FROM bookmarks b
       INNER JOIN bookmark_tag_relations btr ON b.id = btr.bookmark_id
       LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
-      WHERE btr.tag_id = ?
+      WHERE btr.tag_id = ? AND b.in_trash = 0
     `);
     const rows = bookmarksQuery.all(tagRow.id);
 
