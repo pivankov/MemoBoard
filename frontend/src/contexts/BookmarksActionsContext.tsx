@@ -4,7 +4,6 @@ import { useBookmarksActions } from 'hooks/useBookmarksActions';
 import { BookmarksCategoriesReorderItem,BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 import { getApiErrorMessage } from 'utils/errors';
 
-import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 import { useNotifications } from 'providers/NotificationsProvider';
 
 /**
@@ -22,12 +21,14 @@ interface BookmarksActionsContextValue {
   /** Удаляет закладку окончательно */
   deleteBookmark: (id: string) => Promise<void>;
   /** Перемещает закладку в корзину */
-  moveToTrash: (id: string) => Promise<void>;  
+  moveToTrash: (id: string) => Promise<void>;
+  /** Восстанавливает закладку из корзины */
+  restoreFromTrash: (id: string) => Promise<void>;
   /** 
    * Убирает закладку из видимости
-   * Если закладка в корзине - удаляет окончательно, иначе - перемещает в корзину
+   * Если закладка уже в корзине - удаляет окончательно, иначе - перемещает в корзину
    */
-  removeBookmark: (bookmarkId: string, bookmarkCategoryId: string) => void;
+  removeBookmark: (bookmarkId: string, isInTrash: boolean) => void;
   /** Переключает статус избранного для закладки (изменяет favorite на противоположное) */
   toggleBookmarkFavorite: (id: string) => Promise<void>;  
   /** Создает коллекцию для категорий закладок */
@@ -80,6 +81,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     updateBookmark: updateBookmarkAction,
     deleteBookmark: deleteBookmarkAction,
     moveToTrash: moveToTrashAction,
+    restoreFromTrash: restoreFromTrashAction,
     toggleBookmarkFavorite: toggleBookmarkFavoriteAction,
     createCollection: createCollectionAction,
     createCategory: createCategoryAction,
@@ -191,13 +193,33 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
   }, [moveToTrashAction, refreshBookmarks, notifySuccess, notifyError]);
 
   /**
-   * Убирает закладку из видимости
-   * Если закладка в корзине - удаляет окончательно, иначе - перемещает в корзину
-   * @param bookmarkId - ID закладки
-   * @param bookmarkCategoryId - ID текущей категории закладки
+   * Восстанавливает закладку из корзины
    */
-  const removeBookmark = useCallback((bookmarkId: string, bookmarkCategoryId: string) => {
-    if (bookmarkCategoryId === SYSTEM_CATEGORIES.TRASH) {
+  const restoreFromTrash = useCallback(async (id: string) => {
+    try {
+      await restoreFromTrashAction(id);
+
+      notifySuccess({ description: 'Закладка восстановлена из корзины' });
+
+      await refreshBookmarks();
+    } catch (error) {
+      const errorMessage = getApiErrorMessage(error, 'Не удалось восстановить закладку из корзины');
+
+      notifyError({ description: errorMessage });
+      console.error('Ошибка восстановления закладки из корзины:', error);
+
+      throw error;
+    }
+  }, [restoreFromTrashAction, refreshBookmarks, notifySuccess, notifyError]);
+
+  /**
+   * Убирает закладку из видимости
+   * Если закладка уже в корзине - удаляет окончательно, иначе - перемещает в корзину
+   * @param bookmarkId - ID закладки
+   * @param isInTrash - находится ли закладка в корзине
+   */
+  const removeBookmark = useCallback((bookmarkId: string, isInTrash: boolean) => {
+    if (isInTrash) {
       deleteBookmark(bookmarkId);
     } else {
       moveToTrash(bookmarkId);
@@ -375,6 +397,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     updateBookmark,    
     deleteBookmark,
     moveToTrash,
+    restoreFromTrash,
     removeBookmark,
     toggleBookmarkFavorite,
     createCollection,
@@ -395,6 +418,7 @@ export const BookmarksActionsProvider: React.FC<BookmarksActionsProviderProps> =
     updateBookmark,
     deleteBookmark,
     moveToTrash,
+    restoreFromTrash,
     removeBookmark,
     toggleBookmarkFavorite,
     createCollection,
