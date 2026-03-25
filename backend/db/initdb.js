@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const db = new Database(path.join(__dirname, 'data.db'));
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const ARGON2_TIME_COST = 3;
 const ARGON2_MEMORY_COST = 65536; // 2^16
 const ARGON2_PARALLELISM = 1;
@@ -80,6 +80,7 @@ const BOOKMARKS_FIELDS = {
   opened_at: 'TEXT',
   transition_counter: "INTEGER NOT NULL DEFAULT 0",
   favorite: "INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0,1))",
+  in_trash: "INTEGER NOT NULL DEFAULT 0 CHECK (in_trash IN (0,1))",
   created_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
   updated_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
 };
@@ -201,6 +202,7 @@ async function initDb(options = {}) {
       opened_at ${BOOKMARKS_FIELDS.opened_at},
       transition_counter ${BOOKMARKS_FIELDS.transition_counter},
       favorite ${BOOKMARKS_FIELDS.favorite},
+      in_trash ${BOOKMARKS_FIELDS.in_trash},
       created_at ${BOOKMARKS_FIELDS.created_at},
       updated_at ${BOOKMARKS_FIELDS.updated_at}
     );
@@ -232,7 +234,7 @@ async function initDb(options = {}) {
 
   const createBookmarksUpdatedAtTrigger = `
     CREATE TRIGGER IF NOT EXISTS bookmarks_set_updated_at
-    AFTER UPDATE OF uid, user_id, category_id, url, title, description, preview, opened_at, transition_counter, favorite, created_at ON bookmarks
+    AFTER UPDATE OF uid, user_id, category_id, url, title, description, preview, opened_at, transition_counter, favorite, in_trash, created_at ON bookmarks
     FOR EACH ROW BEGIN
       UPDATE bookmarks SET updated_at = datetime('now') WHERE id = OLD.id;
     END;
@@ -467,8 +469,8 @@ async function initDb(options = {}) {
       
       // === Закладки ===
       const insertBookmark = db.prepare(`
-        INSERT OR IGNORE INTO bookmarks (uid, user_id, category_id, url, title, description, preview, transition_counter, favorite, created_at, updated_at)
-        VALUES (@uid, @user_id, @category_id, @url, @title, @description, @preview, @transition_counter, @favorite, @created_at, @updated_at)
+        INSERT OR IGNORE INTO bookmarks (uid, user_id, category_id, url, title, description, preview, transition_counter, favorite, in_trash, created_at, updated_at)
+        VALUES (@uid, @user_id, @category_id, @url, @title, @description, @preview, @transition_counter, @favorite, @in_trash, @created_at, @updated_at)
       `);
       
       const insertBookmarkTagRelation = db.prepare(`
@@ -505,6 +507,7 @@ async function initDb(options = {}) {
           preview: bm.preview || null,
           transition_counter: bm.transition_counter ?? 0,
           favorite: bm.favorite ? 1 : 0,
+          in_trash: bm.in_trash ? 1 : 0,
           created_at: createdAt,
           updated_at: updatedAt,
         });
@@ -531,6 +534,18 @@ async function initDb(options = {}) {
     }
   };
 
+  const migrateFrom2To3 = () => {
+    db.transaction(() => {
+      const columns = db.pragma('table_info(bookmarks)');
+      const hasInTrash = columns.some((col) => col.name === 'in_trash');
+      if (!hasInTrash) {
+        db.exec(`ALTER TABLE bookmarks ADD COLUMN in_trash INTEGER NOT NULL DEFAULT 0 CHECK (in_trash IN (0,1))`);
+      }
+      db.exec(`DROP TRIGGER IF EXISTS bookmarks_set_updated_at`);
+      db.exec(createBookmarksUpdatedAtTrigger);
+    })();
+  };
+
   let currentVersion = getUserVersion();
   while (currentVersion < SCHEMA_VERSION) {
     if (currentVersion === 0) {
@@ -543,6 +558,12 @@ async function initDb(options = {}) {
       await migrateFrom1To2();
       setUserVersion(2);
       currentVersion = 2;
+      continue;
+    }
+    if (currentVersion === 2) {
+      migrateFrom2To3();
+      setUserVersion(3);
+      currentVersion = 3;
       continue;
     }
     break;

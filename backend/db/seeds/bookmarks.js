@@ -3,10 +3,6 @@
  */
 
 export const DUMMY_BOOKMARK_CATEGORIES = [
-  { uid: "0000", parent_uid: "", title: "Системные", icon: "", position: 0 },  
-    { uid: "ktGDhX", parent_uid: "0000", title: "Несортированные", icon: "Inbox", position: 0 },   
-    { uid: "wxiqnC", parent_uid: "0000", title: "Корзина", icon: "Trash", position: 1 },
-
   { uid: "wTOx", parent_uid: "", title: "Работа", icon: "", position: 1 },
   { uid: "eH1u", parent_uid: "wTOx", title: "Поиск 2025", icon: "Folder", position: 0 },   
   { uid: "HWt3", parent_uid: "wTOx", title: "Letoile", icon: "UserGroup", position: 1 },       
@@ -66,6 +62,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-06-30 02:38:27",
     transition_counter: 1,
     favorite: true,
+    in_trash: false,
   },
   {
     uid: "dSMicJ",
@@ -79,6 +76,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-06-30 02:38:27",
     transition_counter: 1,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "UIje1I",
@@ -92,6 +90,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-06-30 02:38:00",
     transition_counter: 1,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "qRN4eu",
@@ -105,6 +104,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-05-04 21:52:00",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "NUjbfo",
@@ -118,6 +118,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-03-14 13:51:03",
     transition_counter: 2,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "MmD8cr",
@@ -131,6 +132,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-03-08 22:29:00",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "pIDIZR",
@@ -144,6 +146,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-03-07 19:02:10",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "W9QGHV",
@@ -157,6 +160,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-03-05 20:46:35",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "qczCGW",
@@ -170,6 +174,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-03-02 23:17:16",
     transition_counter: 2,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "tqGXiv",
@@ -183,6 +188,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2025-01-14 18:06:01",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "5kvx9r",
@@ -196,6 +202,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2024-12-15 16:50:49",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "arl0na",
@@ -209,6 +216,7 @@ export const DUMMY_BOOKMARKS = [
     updated_at: null,
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "hiqXlv",
@@ -222,10 +230,11 @@ export const DUMMY_BOOKMARKS = [
     updated_at: null,
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "WEhe8e",
-    category_uid: "ktGDhX",
+    category_uid: "",
     title: "Будущие работы: какие навыки будут востребованы - YouTube",
     url: "https://www.youtube.com/watch?v=3N-cOhvR5Ro",
     description: "Программа для тех, кто хочет стать востребованным программистом: https://bit.ly/3w46rv5Закрытое сообщество единомышленников: https://t.me/NextgenSocialBotМой...",
@@ -235,10 +244,11 @@ export const DUMMY_BOOKMARKS = [
     updated_at: null,
     transition_counter: 1,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "vdzTF8",
-    category_uid: "ktGDhX",
+    category_uid: "",
     title: "По ту сторону изгороди (мультсериал, 2014) – смотреть онлайн все 10 видео от По ту сторону изгороди (мультсериал, 2014) в хорошем качестве на RUTUBE",
     url: "https://rutube.ru/plst/328979/",
     description: "Смотреть видеоподборку По ту сторону изгороди (мультсериал, 2014) канала  в хорошем качестве без регистрации и совершенно бесплатно на RUTUBE пользователя По ту сторону изгороди (мультсериал, 2014) (328979).",
@@ -248,10 +258,11 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2024-11-05 12:24:07",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "GD7vMj",
-    category_uid: "ktGDhX",
+    category_uid: "",
     title: "РОСЛА В МОНАСТЫРЕ СЕРГИЯ РОМАНОВА И НЕ МОГЛА УЙТИ.ПОБОИ, МАНИПУЛЯЦИИ И ЛОЖЬ. ПОМОЛЧИМ В КАВЫЧКАХ #22 - YouTube",
     url: "https://www.youtube.com/watch?v=h4s2eGe7TKY",
     description: "Алиса Крыжановская, сегодня популярный блогер, а когда-то – простой подросток, живший в стенах Среднеуральского женского монастыря. Теперь многие забыли о то...",
@@ -261,10 +272,11 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2024-10-24 12:09:33",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "vhZ68X",
-    category_uid: "ktGDhX",
+    category_uid: "",
     title: "Амиран.ИИ Спасение Или Трагедия Для Человека_ Ольга Ускова. | ВКонтакте",
     url: "https://vk.com/video-227461322_456239326",
     description: "",
@@ -274,10 +286,11 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2024-10-18 13:04:20",
     transition_counter: 3,
     favorite: false,
+    in_trash: false,
   },
   {
     uid: "xA6Imd",
-    category_uid: "ktGDhX",
+    category_uid: "",
     title: "Дебаты:Ричард Докинз и Роуэн Уильямс",
     url: "https://www.youtube.com/watch?v=nGi6sBU-zRc",
     description: "",
@@ -287,5 +300,6 @@ export const DUMMY_BOOKMARKS = [
     updated_at: "2024-10-16 11:45:15",
     transition_counter: null,
     favorite: false,
+    in_trash: false,
   },
 ];

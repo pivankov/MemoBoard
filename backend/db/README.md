@@ -1,7 +1,7 @@
 ## База данных (SQLite + better-sqlite3)
 
 - Файл БД: `db/data.db`
-- Версия схемы: `PRAGMA user_version` (текущая — 2)
+- Версия схемы: `PRAGMA user_version` (текущая — 3)
 - Дата/время: TEXT в ISO‑8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
 - Булево: INTEGER 0/1, с `CHECK (field IN (0,1))`
 
@@ -95,6 +95,7 @@
 - `opened_at` TEXT
 - `transition_counter` INTEGER NOT NULL DEFAULT 0
 - `favorite` INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0,1))
+- `in_trash` INTEGER NOT NULL DEFAULT 0 CHECK (in_trash IN (0,1)) — флаг корзины: `1` = закладка в корзине, `0` = активна. При перемещении в корзину `category_id` не обнуляется — оригинальная категория сохраняется для последующего восстановления
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 
@@ -119,6 +120,8 @@
 - `bookmarks.js` — категории, теги и закладки
 
 Скрипт инициализации является идемпотентным: повторный запуск с сидами не создаёт дубликаты благодаря использованию `INSERT OR IGNORE` и проверкам существования записей.
+
+**Важно:** Файл `bookmarks.js` содержит только пользовательские категории и теги. Системные категории ("Несортированные", "Корзина") в базе данных **не хранятся** — они реализованы через отдельные API endpoints и флаг `in_trash` в таблице `bookmarks`. Закладки без категории (несортированные) имеют `category_id = NULL`.
 
 ### Примеры SQL
 
@@ -152,9 +155,10 @@ CREATE TABLE IF NOT EXISTS child (
 ### Миграции
 
 Миграции выполняются автоматически при инициализации БД. Текущие миграции:
-- `migrateFrom0To1`: создание таблиц users, event_types, events
-- `migrateFrom1To2`: создание таблиц bookmark_categories, bookmark_tags, bookmarks, bookmark_tag_relations
+- `migrateFrom0To1`: создание таблиц `users`, `event_types`, `events`
+- `migrateFrom1To2`: создание таблиц `bookmark_categories`, `bookmark_tags`, `bookmarks`, `bookmark_tag_relations`
+- `migrateFrom2To3`: добавление колонки `in_trash` в таблицу `bookmarks` (если ещё не существует), пересоздание триггера `bookmarks_set_updated_at` для включения `in_trash` в список отслеживаемых полей
 
-Все миграции являются идемпотентными и безопасными для повторного запуска.
+Все миграции являются идемпотентными и безопасными для повторного запуска. Миграция `migrateFrom2To3` перед выполнением `ALTER TABLE` проверяет наличие колонки через `PRAGMA table_info` — это позволяет корректно работать при полном сбросе БД (`db:reset`), когда таблица создаётся сразу с актуальной схемой.
 
 
