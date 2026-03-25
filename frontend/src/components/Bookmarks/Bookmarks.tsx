@@ -9,20 +9,38 @@ import BookmarksEdit from "./BookmarksEdit";
 import BookmarksList from "./BookmarksList";
 import BookmarksNotFound from './BookmarksNotFound';
 import BookmarksSidebarCategoryList from "./BookmarksSidebarCategoryList";
-import BookmarksSidebarHeader from "./BookmarksSidebarHeader"
+import BookmarksSidebarHeader from "./BookmarksSidebarHeader";
 import BookmarksSidebarTagList from "./BookmarksSidebarTagList";
 import ModalManager from './modals/ModalManager';
-import { SYSTEM_ROUTES } from 'constants/bookmarks';
+import { SYSTEM_ROUTE_CONFIG, SYSTEM_ROUTES } from 'constants/bookmarks';
 import { BookmarksActionsProvider } from 'contexts/BookmarksActionsContext';
 import { BookmarksModalProvider } from 'contexts/BookmarksModalContext';
+
+type SystemRoute = keyof typeof SYSTEM_ROUTE_CONFIG;
+
+const SYSTEM_ROUTES_LIST = Object.keys(SYSTEM_ROUTE_CONFIG) as SystemRoute[];
 
 const Bookmarks: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { tagId, categoryId, bookmarkId } = useParams<{ tagId?: string; categoryId?: string; bookmarkId?: string }>();
-  const { bookmarks, tags, categories, loading, error, refreshBookmarks } = useBookmarks({ tagId, categoryId });
+
+  const systemRoute = useMemo<SystemRoute | undefined>(() => {
+    if (location.pathname === SYSTEM_ROUTE_CONFIG[SYSTEM_ROUTES.ALL].link) {
+      return SYSTEM_ROUTES.ALL as SystemRoute;
+    }
+    return SYSTEM_ROUTES_LIST.find(
+      (route) => location.pathname === `/bookmarks/${route}` || location.pathname.startsWith(`/bookmarks/${route}/`)
+    );
+  }, [location.pathname]);
+
+  const { bookmarks, tags, categories, systemCounts, loading, error, refreshBookmarks } = useBookmarks({ tagId, categoryId, systemRoute });
 
   const panelHeader: BookmarksListPanelHeader = useMemo(() => {
+    if (systemRoute) {
+      return SYSTEM_ROUTE_CONFIG[systemRoute];
+    }
+
     const currentCategory = categories.find((category) => category.id === categoryId);
     const currentTag = tags.find((tag) => tag.id === tagId);
 
@@ -30,7 +48,7 @@ const Bookmarks: React.FC = () => {
       title: currentCategory?.title || currentTag?.title || '',
       icon: currentCategory?.icon || 'Tag',
     };
-  }, [categories, tags, tagId, categoryId]);
+  }, [systemRoute, categories, tags, tagId, categoryId]);
 
   const isNotFoundRoute = useMatch(`/bookmarks/${SYSTEM_ROUTES.NOT_FOUND}`);
 
@@ -115,7 +133,7 @@ const Bookmarks: React.FC = () => {
   const sidebar = (
     <>
       <BookmarksSidebarHeader />
-      <BookmarksSidebarCategoryList data={groupedCategories} />
+      <BookmarksSidebarCategoryList data={groupedCategories} systemCounts={systemCounts} />
       <BookmarksSidebarTagList data={tags} />
     </>
   );
