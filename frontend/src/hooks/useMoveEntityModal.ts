@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { BookmarksCategoriesReorderItem,BookmarksCategory } from 'types/bookmarks';
 
 import { API_BOOKMARKS_BASE_URL } from 'constants/api';
-import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 import { useBookmarksActionsContext } from 'contexts/BookmarksActionsContext';
 import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
@@ -188,9 +187,7 @@ export const useMoveEntityModal = (
         // Системная коллекция присутствует в localCollections для корректного
         // маппинга позиций (index = position), но в payload не включается —
         // её позиция не должна изменяться
-        payload = localCollections
-          .map((item, index) => ({ id: item.id, position: index }))
-          .filter(entry => entry.id !== SYSTEM_CATEGORIES.SYSTEM);
+        payload = localCollections.map((item, index) => ({ id: item.id, position: index }));
       } else {
         payload = localCategories.map((item, index) => {
           const entry: BookmarksCategoriesReorderItem = { id: item.id, position: index };
