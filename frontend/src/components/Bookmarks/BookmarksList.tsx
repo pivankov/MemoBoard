@@ -19,7 +19,7 @@ interface BookmarksListProps {
 }
 
 const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, categoryId, panelHeader, onEdit }) => {
-  const { removeBookmark, toggleBookmarkFavorite } = useBookmarksActionsContext();
+  const { removeBookmark, restoreFromTrash, toggleBookmarkFavorite } = useBookmarksActionsContext();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const tagById = useMemo(() => new Map(tags.map((t) => [t.id, t] as const)), [tags]);
   const selectedTagsSet = useMemo(() => new Set(selectedTags), [selectedTags]);
@@ -54,9 +54,13 @@ const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, category
     setSelectedTags([]);
   }, []);
 
-  const handleDelete = useCallback((bookmarkId: string, categoryId: string) => {
-    removeBookmark(bookmarkId, categoryId);
+  const handleDelete = useCallback((bookmarkId: string, isInTrash: boolean) => {
+    removeBookmark(bookmarkId, isInTrash);
   }, [removeBookmark]);
+
+  const handleRestore = useCallback((bookmarkId: string) => {
+    restoreFromTrash(bookmarkId);
+  }, [restoreFromTrash]);
 
   const handleEdit = useCallback((bookmarkId: string) => {
     onEdit(bookmarkId);
@@ -141,6 +145,7 @@ const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, tags, category
               tags={mapTagIdsToTags(bookmark.tags)}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onRestore={handleRestore}
               onToggleFavorite={handleToggleFavorite}              
             />
           ))
