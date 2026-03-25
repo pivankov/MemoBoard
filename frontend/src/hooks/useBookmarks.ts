@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { BookmarksCategory, BookmarksItem, BookmarksTag } from 'types/bookmarks';
+import { BookmarksCategory, BookmarksItem, BookmarksSystemCounts, BookmarksTag } from 'types/bookmarks';
 
 import { API_BOOKMARKS_BASE_URL } from 'constants/api';
+import { SYSTEM_ROUTES } from 'constants/bookmarks';
+
+const SYSTEM_ROUTE_API_PATHS: Record<string, string> = {
+  [SYSTEM_ROUTES.ALL]: API_BOOKMARKS_BASE_URL,
+  [SYSTEM_ROUTES.FAVORITES]: `${API_BOOKMARKS_BASE_URL}/favorites`,
+  [SYSTEM_ROUTES.UNSORTED]: `${API_BOOKMARKS_BASE_URL}/unsorted`,
+  [SYSTEM_ROUTES.TRASH]: `${API_BOOKMARKS_BASE_URL}/trash`,
+};
 
 /**
  * Возвращаемое значение хука useBookmarks
@@ -14,6 +22,8 @@ interface UseBookmarksReturn {
   tags: BookmarksTag[];
   /** Список всех категорий */
   categories: BookmarksCategory[];
+  /** Счётчики закладок для системных категорий */
+  systemCounts: BookmarksSystemCounts;
   /** Флаг загрузки данных */
   loading: boolean;
   /** Сообщение об ошибке или null */
@@ -30,6 +40,8 @@ interface UseBookmarksParams {
   tagId?: string;
   /** ID категории для фильтрации закладок */
   categoryId?: string;
+  /** Системный роут для фильтрации закладок (all/favorites/unsorted/trash) */
+  systemRoute?: string;
 }
 
 /**
@@ -40,24 +52,29 @@ interface UseBookmarksParams {
  * 
  * @returns объект с методами и состоянием для работы с закладками
  */
-export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): UseBookmarksReturn => {
+export const useBookmarks = ({ tagId, categoryId, systemRoute }: UseBookmarksParams = {}): UseBookmarksReturn => {
   const [bookmarks, setBookmarks] = useState<BookmarksItem[]>([]);
   const [tags, setTags] = useState<BookmarksTag[]>([]);
   const [categories, setCategories] = useState<BookmarksCategory[]>([]);
+  const [systemCounts, setSystemCounts] = useState<BookmarksSystemCounts>({ all: 0, favorites: 0, unsorted: 0, trash: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Загружает список всех закладок с сервера
+   * Загружает закладки по системному роуту (all/favorites/unsorted/trash)
    */
-  const fetchBookmarks = useCallback(async () => {
+  const fetchBookmarksBySystemRoute = useCallback(async (route: string) => {
+    const path = SYSTEM_ROUTE_API_PATHS[route];
+
+    if (!path) return;
+
     try {
-      const response = await fetch(API_BOOKMARKS_BASE_URL);
-      
+      const response = await fetch(path);
+
       if (!response.ok) {
         throw new Error(`Ошибка загрузки закладок: ${response.status} ${response.statusText}`);
       }
-      
+
       const payload = await response.json();
       const list: BookmarksItem[] = Array.isArray(payload?.data) ? payload.data : [];
 
@@ -69,7 +86,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
       console.error('Ошибка загрузки закладок:', err);
       throw err;
     }
-  }, []);
+  }, []);  
 
   /**
    * Загружает список закладок по указанному ID тега
@@ -168,9 +185,37 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
   }, []);
 
   /**
+   * Загружает счётчики закладок для системных категорий
+   */
+  const fetchSystemCounts = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BOOKMARKS_BASE_URL}/counts`);
+
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки счётчиков: ${response.status} ${response.statusText}`);
+      }
+
+      const payload = await response.json();
+      const counts: BookmarksSystemCounts = payload?.data ?? { all: 0, favorites: 0, unsorted: 0, trash: 0 };
+
+      setSystemCounts(counts);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка при загрузке счётчиков';
+      setError(errorMessage);
+      console.error('Ошибка загрузки счётчиков:', err);
+      throw err;
+    }
+  }, []);
+
+  /**
    * Загружает список закладок в зависимости от выбранных фильтров
    */
   const fetchFilteredBookmarks = useCallback(async () => {
+    if (systemRoute) {
+      await fetchBookmarksBySystemRoute(systemRoute);
+      return;
+    }
+
     if (categoryId) {
       await fetchBookmarksByCategory(categoryId);
       return;
@@ -180,9 +225,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
       await fetchBookmarksByTag(tagId);
       return;
     }
-
-    await fetchBookmarks();
-  }, [categoryId, tagId, fetchBookmarksByCategory, fetchBookmarksByTag, fetchBookmarks]);
+  }, [systemRoute, categoryId, tagId, fetchBookmarksBySystemRoute, fetchBookmarksByCategory, fetchBookmarksByTag]);
 
   /**
    * Загружает все данные: закладки, теги и категории
@@ -196,13 +239,14 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
         fetchFilteredBookmarks(),
         fetchTags(),
         fetchCategories(),
+        fetchSystemCounts(),
       ]);
     } catch (err) {
       console.error('Ошибка загрузки данных:', err);
     } finally {
       setLoading(false);
     }
-  }, [fetchFilteredBookmarks, fetchTags, fetchCategories]);
+  }, [fetchFilteredBookmarks, fetchTags, fetchCategories, fetchSystemCounts]);
 
   /**
    * Принудительно обновляет все списки с сервера
@@ -219,6 +263,7 @@ export const useBookmarks = ({ tagId, categoryId }: UseBookmarksParams = {}): Us
     bookmarks,
     tags,
     categories,
+    systemCounts,
     loading,
     error,
     refreshBookmarks
