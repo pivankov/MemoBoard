@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { NavLink } from "react-router";
 
 import Icon, { isIconName } from 'components/UI/Icon/Icon'
 import { BookmarksSidebarListType } from "types/bookmarks";
@@ -23,7 +23,7 @@ const BookmarksSidebarListItem: React.FC<BookmarksSidebarListItemProps> = ({ typ
   const isDropdownAvailable = showDropdown;
   
   return (
-    <Link to={link} className="bookmarks-sidebar-list-item">
+    <NavLink end to={link} className="bookmarks-sidebar-list-item">
       { iconName && (
         <span className="bookmarks-sidebar-list-item__icon">
           <Icon name={iconName} />
@@ -46,7 +46,7 @@ const BookmarksSidebarListItem: React.FC<BookmarksSidebarListItemProps> = ({ typ
           icon={icon}
         />
       ) }
-    </Link>
+    </NavLink>
   );
 };
 
