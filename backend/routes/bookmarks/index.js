@@ -44,6 +44,7 @@ router.get('/', async (req, res) => {
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
+      WHERE b.in_trash = 0
       ORDER BY b.updated_at DESC
     `);
     const rows = bookmarksQuery.all();
@@ -87,6 +88,216 @@ router.get('/', async (req, res) => {
     console.error('Ошибка получения закладок:', error);
 
     res.status(500).json({ error: 'Не удалось получить список закладок' });
+  }
+});
+
+/**
+ * Получает все несортированные закладки (без категории)
+ * 
+ * @route GET /api/bookmarks/unsorted
+ * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ */
+router.get('/unsorted', async (req, res) => {
+  try {
+    const bookmarksQuery = db.prepare(`
+      SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter
+      FROM bookmarks b
+      WHERE b.category_id IS NULL AND b.in_trash = 0
+      ORDER BY b.updated_at DESC
+    `);
+    const rows = bookmarksQuery.all();
+
+    const bookmarkIds = rows.map((row) => row.id);
+    const tagsMap = new Map();
+
+    if (bookmarkIds.length > 0) {
+      const placeholders = bookmarkIds.map(() => '?').join(',');
+      const tagsQuery = db.prepare(`
+        SELECT btr.bookmark_id, bt.uid AS tag_uid
+        FROM bookmark_tag_relations btr
+        JOIN bookmark_tags bt ON btr.tag_id = bt.id
+        WHERE btr.bookmark_id IN (${placeholders})
+      `);
+      tagsQuery.all(...bookmarkIds).forEach((tagRow) => {
+        if (!tagsMap.has(tagRow.bookmark_id)) tagsMap.set(tagRow.bookmark_id, []);
+        tagsMap.get(tagRow.bookmark_id).push(String(tagRow.tag_uid));
+      });
+    }
+
+    const data = rows.map((row) => ({
+      id: String(row.uid),
+      categoryId: '',
+      url: String(row.url ?? ''),
+      title: String(row.title ?? ''),
+      preview: String(row.preview ?? ''),
+      description: String(row.description ?? ''),
+      tags: tagsMap.get(row.id) || [],
+      createdAt: String(row.created_at ?? ''),
+      updatedAt: row.updated_at ? String(row.updated_at) : null,
+      transitionCounter: row.transition_counter !== null ? Number(row.transition_counter) : null,
+      favorite: Boolean(row.favorite ?? false),
+    }));
+
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error('Ошибка получения несортированных закладок:', error);
+    res.status(500).json({ error: 'Не удалось получить несортированные закладки' });
+  }
+});
+
+/**
+ * Получает все избранные закладки
+ * 
+ * @route GET /api/bookmarks/favorites
+ * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ */
+router.get('/favorites', async (req, res) => {
+  try {
+    const bookmarksQuery = db.prepare(`
+      SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
+      FROM bookmarks b
+      LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
+      WHERE b.favorite = 1 AND b.in_trash = 0
+      ORDER BY b.updated_at DESC
+    `);
+    const rows = bookmarksQuery.all();
+
+    const bookmarkIds = rows.map((row) => row.id);
+    const tagsMap = new Map();
+
+    if (bookmarkIds.length > 0) {
+      const placeholders = bookmarkIds.map(() => '?').join(',');
+      const tagsQuery = db.prepare(`
+        SELECT btr.bookmark_id, bt.uid AS tag_uid
+        FROM bookmark_tag_relations btr
+        JOIN bookmark_tags bt ON btr.tag_id = bt.id
+        WHERE btr.bookmark_id IN (${placeholders})
+      `);
+      tagsQuery.all(...bookmarkIds).forEach((tagRow) => {
+        if (!tagsMap.has(tagRow.bookmark_id)) tagsMap.set(tagRow.bookmark_id, []);
+        tagsMap.get(tagRow.bookmark_id).push(String(tagRow.tag_uid));
+      });
+    }
+
+    const data = rows.map((row) => ({
+      id: String(row.uid),
+      categoryId: row.category_uid ? String(row.category_uid) : '',
+      url: String(row.url ?? ''),
+      title: String(row.title ?? ''),
+      preview: String(row.preview ?? ''),
+      description: String(row.description ?? ''),
+      tags: tagsMap.get(row.id) || [],
+      createdAt: String(row.created_at ?? ''),
+      updatedAt: row.updated_at ? String(row.updated_at) : null,
+      transitionCounter: row.transition_counter !== null ? Number(row.transition_counter) : null,
+      favorite: Boolean(row.favorite ?? false),
+    }));
+
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error('Ошибка получения избранных закладок:', error);
+    res.status(500).json({ error: 'Не удалось получить избранные закладки' });
+  }
+});
+
+/**
+ * Получает все закладки в корзине
+ * 
+ * @route GET /api/bookmarks/trash
+ * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ */
+router.get('/trash', async (req, res) => {
+  try {
+    const bookmarksQuery = db.prepare(`
+      SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
+      FROM bookmarks b
+      LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
+      WHERE b.in_trash = 1
+      ORDER BY b.updated_at DESC
+    `);
+    const rows = bookmarksQuery.all();
+
+    const bookmarkIds = rows.map((row) => row.id);
+    const tagsMap = new Map();
+
+    if (bookmarkIds.length > 0) {
+      const placeholders = bookmarkIds.map(() => '?').join(',');
+      const tagsQuery = db.prepare(`
+        SELECT btr.bookmark_id, bt.uid AS tag_uid
+        FROM bookmark_tag_relations btr
+        JOIN bookmark_tags bt ON btr.tag_id = bt.id
+        WHERE btr.bookmark_id IN (${placeholders})
+      `);
+      tagsQuery.all(...bookmarkIds).forEach((tagRow) => {
+        if (!tagsMap.has(tagRow.bookmark_id)) tagsMap.set(tagRow.bookmark_id, []);
+        tagsMap.get(tagRow.bookmark_id).push(String(tagRow.tag_uid));
+      });
+    }
+
+    const data = rows.map((row) => ({
+      id: String(row.uid),
+      categoryId: row.category_uid ? String(row.category_uid) : '',
+      url: String(row.url ?? ''),
+      title: String(row.title ?? ''),
+      preview: String(row.preview ?? ''),
+      description: String(row.description ?? ''),
+      tags: tagsMap.get(row.id) || [],
+      createdAt: String(row.created_at ?? ''),
+      updatedAt: row.updated_at ? String(row.updated_at) : null,
+      transitionCounter: row.transition_counter !== null ? Number(row.transition_counter) : null,
+      favorite: Boolean(row.favorite ?? false),
+      inTrash: true,
+    }));
+
+    res.status(200).json({ data });
+  } catch (error) {
+    console.error('Ошибка получения закладок из корзины:', error);
+    res.status(500).json({ error: 'Не удалось получить закладки из корзины' });
+  }
+});
+
+/**
+ * Возвращает количество закладок для каждой системной категории
+ * 
+ * @route GET /api/bookmarks/counts
+ * @returns {Object} 200 - JSON объект с количествами в поле data
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ * 
+ * @example
+ * // Успешный ответ:
+ * {
+ *   "data": {
+ *     "all": 42,
+ *     "favorites": 8,
+ *     "unsorted": 5,
+ *     "trash": 3
+ *   }
+ * }
+ */
+router.get('/counts', (req, res) => {
+  try {
+    const row = db.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM bookmarks WHERE in_trash = 0) AS "all",
+        (SELECT COUNT(*) FROM bookmarks WHERE favorite = 1 AND in_trash = 0) AS favorites,
+        (SELECT COUNT(*) FROM bookmarks WHERE category_id IS NULL AND in_trash = 0) AS unsorted,
+        (SELECT COUNT(*) FROM bookmarks WHERE in_trash = 1) AS trash
+    `).get();
+
+    return res.status(200).json({
+      data: {
+        all: row.all,
+        favorites: row.favorites,
+        unsorted: row.unsorted,
+        trash: row.trash,
+      },
+    });
+  } catch (error) {
+    console.error('Ошибка получения счётчиков закладок:', error);
+    return res.status(500).json({ error: 'Не удалось получить счётчики закладок' });
   }
 });
 
@@ -207,23 +418,27 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'URL обязателен для заполнения' });
     }
     
-    if (!categoryId || typeof categoryId !== 'string' || categoryId.trim().length === 0) {
-      return res.status(400).json({ error: 'Категория обязательна для заполнения' });
-    }
-
     const userRow = db.prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
 
     if (!userRow?.id) {
       return res.status(500).json({ error: 'Не найден пользователь по умолчанию для привязки события' });
-    }    
-    
-    const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(categoryId);
-    
-    if (!categoryRow) {
-      return res.status(400).json({ error: 'Категория не найдена' });
     }
-    
-    const categoryIdInternal = categoryRow.id;
+
+    let categoryIdInternal = null;
+
+    if (categoryId) {
+      if (typeof categoryId !== 'string' || categoryId.trim().length === 0) {
+        return res.status(400).json({ error: 'Некорректный идентификатор категории' });
+      }
+
+      const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(categoryId);
+
+      if (!categoryRow) {
+        return res.status(400).json({ error: 'Категория не найдена' });
+      }
+
+      categoryIdInternal = categoryRow.id;
+    }
     
     let title = url;
     let description = '';
@@ -310,6 +525,45 @@ router.post('/', async (req, res) => {
 });
 
 /**
+ * Перемещает закладку в корзину или восстанавливает из неё
+ * 
+ * @route PATCH /api/bookmarks/:id/trash
+ * @param {string} req.params.id - UID закладки
+ * @param {boolean} req.body.inTrash - true = в корзину, false = восстановить
+ * @returns {Object} 200 - JSON объект с результатом операции
+ * @returns {Object} 400 - Некорректные данные
+ * @returns {Object} 404 - Закладка не найдена
+ * @returns {Object} 500 - JSON объект с описанием ошибки
+ */
+router.patch('/:id/trash', async (req, res) => {
+  const { id } = req.params;
+  const { inTrash } = req.body ?? {};
+
+  try {
+    if (!id || typeof id !== 'string' || id.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор закладки' });
+    }
+
+    if (typeof inTrash !== 'boolean') {
+      return res.status(400).json({ error: 'Поле inTrash обязательно и должно быть boolean' });
+    }
+
+    const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
+
+    if (!bookmarkRow) {
+      return res.status(404).json({ error: 'Закладка не найдена' });
+    }
+
+    db.prepare('UPDATE bookmarks SET in_trash = ? WHERE id = ?').run(inTrash ? 1 : 0, bookmarkRow.id);
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error(`Ошибка обновления статуса корзины закладки ${id}:`, error);
+    return res.status(500).json({ error: 'Не удалось обновить статус корзины закладки' });
+  }
+});
+
+/**
  * Обновляет существующую закладку
  * 
  * Теги обновляются через два раздельных массива: existingTagIds — UID существующих тегов,
@@ -327,6 +581,7 @@ router.post('/', async (req, res) => {
  * @param {string[]} [req.body.newTagTitles] - Массив названий новых тегов для создания и привязки
  * @param {string} [req.body.preview] - URL превью изображения
  * @param {boolean} [req.body.favorite] - Избранное
+ * @param {boolean} [req.body.inTrash] - В корзине
  * @returns {Object} 200 - JSON объект с результатом обновления
  * @returns {Object} 400 - Некорректные данные / теги не массивы / категория не найдена
  * @returns {Object} 404 - Закладка не найдена
@@ -342,7 +597,8 @@ router.post('/', async (req, res) => {
  *   "existingTagIds": ["abc12", "def34"],
  *   "newTagTitles": ["новый тег"],
  *   "preview": "https://example.com/preview.jpg",
- *   "favorite": true
+ *   "favorite": true,
+ *   "inTrash": false
  * }
  * 
  * @example
@@ -353,7 +609,7 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { url, title, description, categoryId, existingTagIds, newTagTitles, preview, favorite } = req.body ?? {};
+  const { url, title, description, categoryId, existingTagIds, newTagTitles, preview, favorite, inTrash } = req.body ?? {};
   
   try {
     if (!id || typeof id !== 'string' || id.trim().length === 0) {
@@ -403,7 +659,8 @@ router.put('/:id', async (req, res) => {
           description = @description,
           category_id = @category_id,
           preview = @preview,
-          favorite = @favorite
+          favorite = @favorite,
+          in_trash = @in_trash
         WHERE id = @id
       `).run({
         id: bookmarkRow.id,
@@ -413,6 +670,7 @@ router.put('/:id', async (req, res) => {
         category_id: categoryRow.id,
         preview: preview ? preview.trim() : '',
         favorite: favorite ? 1 : 0,
+        in_trash: inTrash ? 1 : 0,
       });
 
       if (hasTags) {
