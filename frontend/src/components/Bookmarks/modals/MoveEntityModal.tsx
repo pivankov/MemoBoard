@@ -4,7 +4,6 @@ import { Alert, Button, Modal, Select, Spin, Typography } from 'antd';
 import BookmarksCategoriesReorderList from 'components/Bookmarks/BookmarksCategoriesReorderList';
 import { useMoveEntityModal } from 'hooks/useMoveEntityModal';
 
-import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 import { useBookmarksModalContext } from 'contexts/BookmarksModalContext';
 
 interface MoveEntityModalProps {
@@ -44,9 +43,7 @@ const MoveEntityModal: React.FC<MoveEntityModalProps> = ({ entityType, entityId 
   } = useMoveEntityModal(entityId, entityType);
 
   const collectionOptions = useMemo(
-    () => localCollections
-      .filter(c => c.id !== SYSTEM_CATEGORIES.SYSTEM)
-      .map(c => ({ value: c.id, label: c.title })),
+    () => localCollections.map(c => ({ value: c.id, label: c.title })),
     [localCollections],
   );
 
@@ -80,7 +77,6 @@ const MoveEntityModal: React.FC<MoveEntityModalProps> = ({ entityType, entityId 
                 <BookmarksCategoriesReorderList
                   items={localCollections}
                   activeId={entityId}
-                  disabledIds={[SYSTEM_CATEGORIES.SYSTEM]}
                   onMove={(index, direction) => handleMoveItem('collections', index, direction)}
                 />
               )}
