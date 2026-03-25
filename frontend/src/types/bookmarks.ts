@@ -13,6 +13,7 @@ export type BookmarksItem = {
   updatedAt: string | null;
   transitionCounter: number | null;
   favorite: boolean;
+  inTrash?: boolean;
 };
 
 /**
@@ -54,6 +55,16 @@ export type BookmarksCategoriesGrouped = {
   title: string;
   children: BookmarksCategory[];
 }
+
+/**
+ * Счётчики закладок для системных категорий
+ */
+export type BookmarksSystemCounts = {
+  all: number;
+  favorites: number;
+  unsorted: number;
+  trash: number;
+};
 
 /**
  * Тип заголовка панели списка закладок
