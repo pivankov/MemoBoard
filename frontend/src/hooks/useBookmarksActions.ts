@@ -3,7 +3,6 @@ import { useCallback, useMemo } from 'react';
 import { BookmarksCategoriesReorderItem, BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 
 import { API_BOOKMARKS_BASE_URL } from 'constants/api';
-import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 import { getApiClient } from 'services/ApiClient';
 
 /**
@@ -20,6 +19,8 @@ interface UseBookmarksActionsReturn {
   deleteBookmark: (id: string) => Promise<void>;  
   /** Перемещает закладку в корзину */
   moveToTrash: (id: string) => Promise<void>;
+  /** Восстанавливает закладку из корзины */
+  restoreFromTrash: (id: string) => Promise<void>;
   /** Переключает статус избранного для закладки (изменяет favorite на противоположное) */
   toggleBookmarkFavorite: (id: string) => Promise<void>;  
   /** Создает коллекцию для категорий закладок */
@@ -102,27 +103,26 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   }, [apiClient]);  
 
   /**
-   * Перемещает закладку в корзину (изменяет категорию на "Корзина")
+   * Перемещает закладку в корзину
    */
   const moveToTrash = useCallback(async (id: string): Promise<void> => {
     try {
-      const bookmark = await getBookmarkById(id);
-      const updatedBookmark: BookmarksUpdateFormData = {
-        url: bookmark.url,
-        title: bookmark.title,
-        description: bookmark.description,
-        categoryId: SYSTEM_CATEGORIES.TRASH,
-        existingTagIds: bookmark.tags,
-        newTagTitles: [],
-        preview: bookmark.preview,
-        favorite: bookmark.favorite,
-      };
-      
-      await updateBookmark(id, updatedBookmark);
+      await apiClient.patch(`/${id}/trash`, { inTrash: true });
     } catch (err) {
       throw err;
     }
-  }, [getBookmarkById, updateBookmark]);
+  }, [apiClient]);
+
+  /**
+   * Восстанавливает закладку из корзины
+   */
+  const restoreFromTrash = useCallback(async (id: string): Promise<void> => {
+    try {
+      await apiClient.patch(`/${id}/trash`, { inTrash: false });
+    } catch (err) {
+      throw err;
+    }
+  }, [apiClient]);
 
   /**
    * Переключает статус избранного для закладки (изменяет favorite на противоположное)
@@ -217,6 +217,7 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
     updateBookmark,
     deleteBookmark,    
     moveToTrash,
+    restoreFromTrash,
     toggleBookmarkFavorite,
     createCollection,
     createCategory,
