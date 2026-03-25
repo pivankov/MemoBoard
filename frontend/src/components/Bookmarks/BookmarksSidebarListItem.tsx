@@ -4,7 +4,6 @@ import Icon, { isIconName } from 'components/UI/Icon/Icon'
 import { BookmarksSidebarListType } from "types/bookmarks";
 
 import BookmarksSidebarDropdown from "./BookmarksSidebarDropdown";
-import { SYSTEM_CATEGORIES } from 'constants/bookmarks';
 
 import "./BookmarksSidebarListItem.css";
 
@@ -15,12 +14,13 @@ interface BookmarksSidebarListItemProps {
   icon?: string | null;
   title: string;
   amount: number;
+  showDropdown?: boolean;
 };
 
-const BookmarksSidebarListItem: React.FC<BookmarksSidebarListItemProps> = ({ type, id, link, icon, title, amount }) => {
+const BookmarksSidebarListItem: React.FC<BookmarksSidebarListItemProps> = ({ type, id, link, icon, title, amount, showDropdown = true }) => {
   const hasAmount = !!amount;
   const iconName = icon && isIconName(icon) ? icon : null;
-  const isDropdownAvailable = id !== SYSTEM_CATEGORIES.TRASH && id !== SYSTEM_CATEGORIES.UNSORTED;
+  const isDropdownAvailable = showDropdown;
   
   return (
     <Link to={link} className="bookmarks-sidebar-list-item">
