@@ -10,22 +10,20 @@ interface ApiClientConfig {
 }
 
 /**
- * Singleton API клиент для HTTP запросов
- * 
+ * API клиент для HTTP запросов
+ *
  * Централизует логику работы с API: обработку ошибок, таймауты, заголовки.
+ * Создаётся явно через конструктор — по одному экземпляру на каждый API-сервис.
  * Поддерживает добавление заголовков авторизации и переключение baseURL.
  */
 class ApiClient {
-  /** Единственный экземпляр класса */
-  private static instance: ApiClient | null = null;
-
   /** Конфигурация клиента */
   private config: ApiClientConfig;
 
   /**
-   * Приватный конструктор — запрещает создание через new ApiClient()
+   * @param config - конфигурация клиента (baseURL обязателен)
    */
-  private constructor(config: ApiClientConfig) {
+  constructor(config: ApiClientConfig) {
     this.config = {
       timeout: 10000,
       headers: {
@@ -33,22 +31,6 @@ class ApiClient {
       },
       ...config,
     };
-  }
-
-  /**
-   * Получение единственного экземпляра API клиента
-   * 
-   * @param config - конфигурация (используется только при первом вызове)
-   * @returns единственный экземпляр ApiClient
-   */
-  public static getInstance(config?: ApiClientConfig): ApiClient {
-    if (!ApiClient.instance) {
-      if (!config) {
-        throw new Error('ApiClient не инициализирован. Передайте config при первом вызове.');
-      }
-      ApiClient.instance = new ApiClient(config);
-    }
-    return ApiClient.instance;
   }
 
   /**
@@ -228,16 +210,6 @@ class ApiClient {
     }
   }
 }
-
-/**
- * Функция доступа к единственному экземпляру API клиента
- * 
- * @param config - конфигурация (опционально, только при первой инициализации)
- * @returns единственный экземпляр ApiClient
- */
-export const getApiClient = (config?: ApiClientConfig): ApiClient => {
-  return ApiClient.getInstance(config);
-};
 
 export default ApiClient;
 
