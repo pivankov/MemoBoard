@@ -1,9 +1,8 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 
 import { BookmarksCategoriesReorderItem, BookmarksCreateFormData, BookmarksItem, BookmarksUpdateFormData } from 'types/bookmarks';
 
-import { API_BOOKMARKS_BASE_URL } from 'constants/api';
-import { getApiClient } from 'services/ApiClient';
+import { bookmarksApiClient } from 'services/apiClients';
 
 /**
  * Возвращаемое значение хука useBookmarksActions
@@ -51,53 +50,48 @@ interface UseBookmarksActionsReturn {
  * @returns объект с методами для работы с закладками
  */
 export const useBookmarksActions = (): UseBookmarksActionsReturn => {
-  // Инициализируем API клиент один раз
-  const apiClient = useMemo(() => {
-    return getApiClient({ baseURL: API_BOOKMARKS_BASE_URL });
-  }, []);
-
   /**
    * Получает одну закладку по ID
    */
   const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem> => {
-    const payload = await apiClient.get<{ data: BookmarksItem }>(`/${id}`);
+    const payload = await bookmarksApiClient.get<{ data: BookmarksItem }>(`/${id}`);
     return payload.data;
-  }, [apiClient]);
+  }, []);
 
   /**
    * Создает новую закладку
    */
   const createBookmark = useCallback(async (data: BookmarksCreateFormData): Promise<void> => {
-    await apiClient.post('/', data);
-  }, [apiClient]);
+    await bookmarksApiClient.post('/', data);
+  }, []);
 
   /**
    * Обновляет существующую закладку
    */
   const updateBookmark = useCallback(async (id: string, data: BookmarksUpdateFormData): Promise<void> => {
-    await apiClient.put(`/${id}`, data);
-  }, [apiClient]);
+    await bookmarksApiClient.put(`/${id}`, data);
+  }, []);
 
   /**
    * Удаляет закладку
    */
   const deleteBookmark = useCallback(async (id: string): Promise<void> => {
-    await apiClient.delete(`/${id}`);
-  }, [apiClient]);
+    await bookmarksApiClient.delete(`/${id}`);
+  }, []);
 
   /**
    * Перемещает закладку в корзину
    */
   const moveToTrash = useCallback(async (id: string): Promise<void> => {
-    await apiClient.patch(`/${id}/trash`, { inTrash: true });
-  }, [apiClient]);
+    await bookmarksApiClient.patch(`/${id}/trash`, { inTrash: true });
+  }, []);
 
   /**
    * Восстанавливает закладку из корзины
    */
   const restoreFromTrash = useCallback(async (id: string): Promise<void> => {
-    await apiClient.patch(`/${id}/trash`, { inTrash: false });
-  }, [apiClient]);
+    await bookmarksApiClient.patch(`/${id}/trash`, { inTrash: false });
+  }, []);
 
   /**
    * Переключает статус избранного для закладки (изменяет favorite на противоположное)
@@ -118,36 +112,36 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
   }, [getBookmarkById, updateBookmark]);
 
   const createCollection = useCallback(async (title: string): Promise<void> => {
-    await apiClient.post('/categories', { title });
-  }, [apiClient]);
+    await bookmarksApiClient.post('/categories', { title });
+  }, []);
 
   const createCategory = useCallback(async (title: string, parentId: string, icon: string): Promise<void> => {
-    await apiClient.post('/categories', { title, parentId, icon });
-  }, [apiClient]);
+    await bookmarksApiClient.post('/categories', { title, parentId, icon });
+  }, []);
 
   const createTag = useCallback(async (title: string): Promise<void> => {
-    await apiClient.post('/tags', { title });
-  }, [apiClient]);
+    await bookmarksApiClient.post('/tags', { title });
+  }, []);
 
   const deleteCategoryEntity = useCallback(async (id: string): Promise<void> => {
-    await apiClient.delete(`/categories/${id}`);
-  }, [apiClient]);
+    await bookmarksApiClient.delete(`/categories/${id}`);
+  }, []);
 
   const deleteTag = useCallback(async (id: string): Promise<void> => {
-    await apiClient.delete(`/tags/${id}`);
-  }, [apiClient]);
+    await bookmarksApiClient.delete(`/tags/${id}`);
+  }, []);
 
   const updateCategory = useCallback(async (data: { id: string, title?: string, icon?: string }): Promise<void> => {
-    await apiClient.patch(`/categories/${data.id}`, { title: data.title, icon: data.icon });
-  }, [apiClient]);
+    await bookmarksApiClient.patch(`/categories/${data.id}`, { title: data.title, icon: data.icon });
+  }, []);
 
   const updateTag = useCallback(async (data: { id: string, title: string }): Promise<void> => {
-    await apiClient.patch(`/tags/${data.id}`, { title: data.title });
-  }, [apiClient]);
+    await bookmarksApiClient.patch(`/tags/${data.id}`, { title: data.title });
+  }, []);
 
   const reorderCategories = useCallback(async (items: BookmarksCategoriesReorderItem[]): Promise<void> => {
-    await apiClient.patch('/categories/reorder', { items });
-  }, [apiClient]);
+    await bookmarksApiClient.patch('/categories/reorder', { items });
+  }, []);
 
   return {
     getBookmarkById,    

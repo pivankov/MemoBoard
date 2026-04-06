@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { BookmarksCategory, BookmarksItem, BookmarksSystemCounts, BookmarksTag } from 'types/bookmarks';
 import { getApiErrorMessage } from 'utils/errors';
 
-import { API_BOOKMARKS_BASE_URL } from 'constants/api';
 import { SYSTEM_ROUTES } from 'constants/bookmarks';
-import { getApiClient } from 'services/ApiClient';
+import { bookmarksApiClient } from 'services/apiClients';
 
 const SYSTEM_ROUTE_API_PATHS: Record<string, string> = {
   [SYSTEM_ROUTES.ALL]: '',
@@ -62,8 +61,6 @@ export const useBookmarks = ({ tagId, categoryId, systemRoute }: UseBookmarksPar
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const apiClient = useMemo(() => getApiClient({ baseURL: API_BOOKMARKS_BASE_URL }), []);
-
   /**
    * Загружает закладки по системному роуту (all/favorites/unsorted/trash)
    */
@@ -72,49 +69,49 @@ export const useBookmarks = ({ tagId, categoryId, systemRoute }: UseBookmarksPar
 
     if (path === undefined) return;
 
-    const payload = await apiClient.get<{ data: BookmarksItem[] }>(path);
+    const payload = await bookmarksApiClient.get<{ data: BookmarksItem[] }>(path);
     setBookmarks(Array.isArray(payload?.data) ? payload.data : []);
-  }, [apiClient]);
+  }, []);
 
   /**
    * Загружает список закладок по указанному ID тега
    */
   const fetchBookmarksByTag = useCallback(async (id: string) => {
-    const payload = await apiClient.get<{ data: BookmarksItem[] }>(`/tags/${id}`);
+    const payload = await bookmarksApiClient.get<{ data: BookmarksItem[] }>(`/tags/${id}`);
     setBookmarks(Array.isArray(payload?.data) ? payload.data : []);
-  }, [apiClient]);
+  }, []);
 
   /**
    * Загружает список закладок по указанному ID категории
    */
   const fetchBookmarksByCategory = useCallback(async (id: string) => {
-    const payload = await apiClient.get<{ data: BookmarksItem[] }>(`/categories/${id}`);
+    const payload = await bookmarksApiClient.get<{ data: BookmarksItem[] }>(`/categories/${id}`);
     setBookmarks(Array.isArray(payload?.data) ? payload.data : []);
-  }, [apiClient]);
+  }, []);
 
   /**
    * Загружает список всех тегов с сервера
    */
   const fetchTags = useCallback(async () => {
-    const payload = await apiClient.get<{ data: BookmarksTag[] }>('/tags');
+    const payload = await bookmarksApiClient.get<{ data: BookmarksTag[] }>('/tags');
     setTags(Array.isArray(payload?.data) ? payload.data : []);
-  }, [apiClient]);
+  }, []);
 
   /**
    * Загружает список всех категорий с сервера
    */
   const fetchCategories = useCallback(async () => {
-    const payload = await apiClient.get<{ data: BookmarksCategory[] }>('/categories');
+    const payload = await bookmarksApiClient.get<{ data: BookmarksCategory[] }>('/categories');
     setCategories(Array.isArray(payload?.data) ? payload.data : []);
-  }, [apiClient]);
+  }, []);
 
   /**
    * Загружает счётчики закладок для системных категорий
    */
   const fetchSystemCounts = useCallback(async () => {
-    const payload = await apiClient.get<{ data: BookmarksSystemCounts }>('/counts');
+    const payload = await bookmarksApiClient.get<{ data: BookmarksSystemCounts }>('/counts');
     setSystemCounts(payload?.data ?? { all: 0, favorites: 0, unsorted: 0, trash: 0 });
-  }, [apiClient]);
+  }, []);
 
   /**
    * Загружает список закладок в зависимости от выбранных фильтров
