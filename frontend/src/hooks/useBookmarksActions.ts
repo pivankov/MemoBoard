@@ -60,155 +60,93 @@ export const useBookmarksActions = (): UseBookmarksActionsReturn => {
    * Получает одну закладку по ID
    */
   const getBookmarkById = useCallback(async (id: string): Promise<BookmarksItem> => {
-    try {
-      const payload = await apiClient.get<{ data: BookmarksItem }>(`/${id}`);
-      
-      return payload.data;
-    } catch (err) {
-      throw err;
-    }
+    const payload = await apiClient.get<{ data: BookmarksItem }>(`/${id}`);
+    return payload.data;
   }, [apiClient]);
-    
+
   /**
    * Создает новую закладку
    */
   const createBookmark = useCallback(async (data: BookmarksCreateFormData): Promise<void> => {
-    try {
-      await apiClient.post('/', data);
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.post('/', data);
   }, [apiClient]);
 
   /**
    * Обновляет существующую закладку
    */
   const updateBookmark = useCallback(async (id: string, data: BookmarksUpdateFormData): Promise<void> => {
-    try {
-      await apiClient.put(`/${id}`, data);
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.put(`/${id}`, data);
   }, [apiClient]);
 
   /**
    * Удаляет закладку
    */
   const deleteBookmark = useCallback(async (id: string): Promise<void> => {
-    try {
-      await apiClient.delete(`/${id}`);
-    } catch (err) {
-      throw err;
-    }
-  }, [apiClient]);  
+    await apiClient.delete(`/${id}`);
+  }, [apiClient]);
 
   /**
    * Перемещает закладку в корзину
    */
   const moveToTrash = useCallback(async (id: string): Promise<void> => {
-    try {
-      await apiClient.patch(`/${id}/trash`, { inTrash: true });
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.patch(`/${id}/trash`, { inTrash: true });
   }, [apiClient]);
 
   /**
    * Восстанавливает закладку из корзины
    */
   const restoreFromTrash = useCallback(async (id: string): Promise<void> => {
-    try {
-      await apiClient.patch(`/${id}/trash`, { inTrash: false });
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.patch(`/${id}/trash`, { inTrash: false });
   }, [apiClient]);
 
   /**
    * Переключает статус избранного для закладки (изменяет favorite на противоположное)
    */
   const toggleBookmarkFavorite = useCallback(async (id: string): Promise<void> => {
-    try {
-      const bookmark = await getBookmarkById(id);
-      const updatedBookmark: BookmarksUpdateFormData = {
-        url: bookmark.url,
-        title: bookmark.title,
-        description: bookmark.description,
-        categoryId: bookmark.categoryId,
-        existingTagIds: bookmark.tags,
-        newTagTitles: [],
-        preview: bookmark.preview,
-        favorite: !bookmark.favorite,
-      };
-      
-      await updateBookmark(id, updatedBookmark);
-    } catch (err) {
-      throw err;
-    }
+    const bookmark = await getBookmarkById(id);
+    const updatedBookmark: BookmarksUpdateFormData = {
+      url: bookmark.url,
+      title: bookmark.title,
+      description: bookmark.description,
+      categoryId: bookmark.categoryId,
+      existingTagIds: bookmark.tags,
+      newTagTitles: [],
+      preview: bookmark.preview,
+      favorite: !bookmark.favorite,
+    };
+    await updateBookmark(id, updatedBookmark);
   }, [getBookmarkById, updateBookmark]);
 
   const createCollection = useCallback(async (title: string): Promise<void> => {
-    try {
-      await apiClient.post('/categories', { title });
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.post('/categories', { title });
   }, [apiClient]);
 
   const createCategory = useCallback(async (title: string, parentId: string, icon: string): Promise<void> => {
-    try {
-      await apiClient.post('/categories', { title, parentId, icon });
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.post('/categories', { title, parentId, icon });
   }, [apiClient]);
 
   const createTag = useCallback(async (title: string): Promise<void> => {
-    try {
-      await apiClient.post('/tags', { title });
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.post('/tags', { title });
   }, [apiClient]);
 
   const deleteCategoryEntity = useCallback(async (id: string): Promise<void> => {
-    try {
-      await apiClient.delete(`/categories/${id}`);
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.delete(`/categories/${id}`);
   }, [apiClient]);
 
   const deleteTag = useCallback(async (id: string): Promise<void> => {
-    try {
-      await apiClient.delete(`/tags/${id}`);
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.delete(`/tags/${id}`);
   }, [apiClient]);
 
   const updateCategory = useCallback(async (data: { id: string, title?: string, icon?: string }): Promise<void> => {
-    try {
-      await apiClient.patch(`/categories/${data.id}`, { title: data.title, icon: data.icon });
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.patch(`/categories/${data.id}`, { title: data.title, icon: data.icon });
   }, [apiClient]);
 
   const updateTag = useCallback(async (data: { id: string, title: string }): Promise<void> => {
-    try {
-      await apiClient.patch(`/tags/${data.id}`, { title: data.title });
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.patch(`/tags/${data.id}`, { title: data.title });
   }, [apiClient]);
 
   const reorderCategories = useCallback(async (items: BookmarksCategoriesReorderItem[]): Promise<void> => {
-    try {
-      await apiClient.patch('/categories/reorder', { items });
-    } catch (err) {
-      throw err;
-    }
+    await apiClient.patch('/categories/reorder', { items });
   }, [apiClient]);
 
   return {
