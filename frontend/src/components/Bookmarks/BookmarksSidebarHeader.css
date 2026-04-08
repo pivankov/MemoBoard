@@ -1,0 +1,16 @@
+.bookmarks-side-header {
+  position: relative;
+  margin: 40px 24px 32px 24px;
+}
+
+.bookmarks-side-header__title {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bookmarks-side-header__button {
+  position: absolute;
+  top: 0;
+  right: 0;
+}

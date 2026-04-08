@@ -13,7 +13,13 @@ const theme = {
     controlHeight: 34,
     borderRadius: 6,
     fontFamily: 'Inter',
-  },  
+  },
+  components: {
+    "Modal": {
+      "fontSizeHeading5": 18,
+      "fontWeightStrong": 400
+    }, 
+  },
 };
 
 const root = ReactDOM.createRoot(

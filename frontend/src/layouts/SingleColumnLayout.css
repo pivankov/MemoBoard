@@ -1,0 +1,10 @@
+.single-column-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.single-column-layout__content {
+  display: flex;
+  flex: 1 1 auto;
+}

@@ -1,0 +1,7 @@
+.bookmarks-list {
+  position: absolute;
+  top: 61px;
+  bottom: 0;
+  overflow: auto;
+  width: 100%;  
+}

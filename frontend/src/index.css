@@ -197,10 +197,48 @@ a {
   resize: none;
 }
 
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 3;
+  opacity: 0.4;  
+}
+
+.form-field__item {
+  margin-bottom: 24px;
+}
+
+.form-field__item-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-field__footer {
+  display: flex;
+  padding: 16px 48px;
+  margin: 40px -48px 0;
+  border-top: 1px solid var(--border-color);
+  background-color: #f8fafc;
+}
+
 /*  lib fix */
 .rs-picker-search-input>input {
   background: none;
   border: none;
   outline: none;
   width: 100%;  
+}
+
+
+.ant-tag:hover {
+  background-color: #ededed;
+}
+
+.ant-tag-blue:hover {
+  background-color: #cee9ff;
 }

@@ -4,6 +4,7 @@ import RootLayout from "layouts/RootLayout"
 import BookmarksPage from "pages/BookmarksPage";
 import EventsPage from "pages/EventsPage";
 import HomePage from "pages/HomePage";
+import NotFoundPage from "pages/NotFoundPage";
 
 import { NotificationsProvider } from 'providers/NotificationsProvider';
 
@@ -28,8 +29,65 @@ const router = createBrowserRouter([
       },
       {
         path: "bookmarks",
-        element: <BookmarksPage />,
+        children: [
+          {
+            index: true,
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'not-found',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'favorites',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'favorites/:bookmarkId/edit',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'unsorted',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'unsorted/:bookmarkId/edit',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'trash',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'trash/:bookmarkId/edit',
+            element: <BookmarksPage />,
+          },
+          {
+            path: ':bookmarkId/edit',
+            element: <BookmarksPage />,
+          },          
+          {
+            path: 'category/:categoryId',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'category/:categoryId/:bookmarkId/edit',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'tag/:tagId',
+            element: <BookmarksPage />,
+          },
+          {
+            path: 'tag/:tagId/:bookmarkId/edit',
+            element: <BookmarksPage />,
+          }
+        ],
       },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },      
     ],
   }
 ]);

@@ -1,0 +1,51 @@
+.bookmarks-sidebar-list-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  color: #1e293b;
+
+  &.active,
+  &:hover {
+    background-color: rgba(30, 41, 59, 0.05);
+
+    .bookmarks-sidebar-list-item__title,
+    .bookmarks-sidebar-list-item__icon {
+      color: initial;
+      opacity: 1;
+    }
+  }
+
+  &:hover {
+    .bookmarks-sidebar-list-item__amount {
+      display: none;
+    }
+    .bookmarks-sidebar-dropdown {
+      display: block;
+    }
+  }    
+}
+
+.bookmarks-sidebar-list-item__icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 16px;
+  opacity: .6;  
+}
+
+.bookmarks-sidebar-list-item__title {
+  margin-right: auto;
+  opacity: .8;
+}
+
+.bookmarks-sidebar-list-item__amount {
+  margin-right: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
