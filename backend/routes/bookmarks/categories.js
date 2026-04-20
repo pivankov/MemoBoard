@@ -2,16 +2,41 @@ import { Router } from 'express';
 import { db } from '../../db/initdb.js';
 import { generateCategoryUid } from '../../utils/uid.js';
 
+/**
+ * @fileoverview Роутер категорий/коллекций закладок.
+ *
+ * Все маршруты этого роутера монтируются в `backend/routes/index.js` под
+ * префиксом `/api/bookmarks/categories` и ЗАЩИЩЕНЫ middleware `requireAuth`:
+ *
+ *     router.use('/bookmarks', requireAuth, bookmarks)
+ *
+ * Поэтому в каждом обработчике гарантированно доступен `req.user`
+ * (typedef `AuthenticatedUser` определён в `backend/middleware/auth.js`),
+ * а все SQL-запросы фильтруют данные по `req.user.userId`, обеспечивая
+ * изоляцию данных между пользователями.
+ *
+ * Любой из роутов может вернуть 401 Unauthorized, если токен отсутствует,
+ * невалиден, истёк или пользователь удалён из БД. Это указано в JSDoc
+ * каждого роута через `@returns 401`.
+ */
+
 const router = Router();
 
 /**
- * Получает список всех категорий с подсчетом количества закладок
- * 
+ * Получает список категорий текущего пользователя с подсчетом количества закладок
+ *
  * Категории возвращаются отсортированными по позиции (position) и названию.
  * Для каждой категории подсчитывается количество закладок (amount).
- * 
+ * Выборка ограничена данными текущего пользователя (`req.user.userId`).
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/categories
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @returns {Object} 200 - JSON объект с массивом категорий в поле data
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -37,11 +62,12 @@ router.get('/', async (req, res) => {
       SELECT bc.uid, bc.title, bc.icon, bc.position, bc.created_at, bc.updated_at, parent.uid AS parent_uid, COUNT(b.id) AS amount
       FROM bookmark_categories bc
       LEFT JOIN bookmark_categories parent ON bc.parent_id = parent.id
-      LEFT JOIN bookmarks b ON bc.id = b.category_id AND b.in_trash = 0
+      LEFT JOIN bookmarks b ON bc.id = b.category_id AND b.in_trash = 0 AND b.user_id = ?
+      WHERE bc.user_id = ?
       GROUP BY bc.id, bc.uid, bc.title, bc.icon, bc.position, bc.created_at, bc.updated_at, parent.uid
       ORDER BY bc.position ASC, bc.title ASC
     `);
-    const rows = categoriesQuery.all();
+    const rows = categoriesQuery.all(req.user.userId, req.user.userId);
 
     const data = rows.map((row) => ({
       id: String(row.uid),
@@ -63,16 +89,24 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Получает все закладки в указанной категории
- * 
+ * Получает все закладки в указанной категории текущего пользователя
+ *
  * Возвращает список закладок, отсортированных по дате обновления (DESC).
  * Для каждой закладки также возвращаются связанные теги.
- * 
+ * Категория и её закладки должны принадлежать текущему пользователю
+ * (`req.user.userId`), иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/categories/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID категории
  * @returns {Object} 200 - JSON объект с массивом закладок в поле data
  * @returns {Object} 400 - Некорректный идентификатор категории
- * @returns {Object} 404 - Категория не найдена
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Категория не найдена (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -106,10 +140,10 @@ router.get('/:id', async (req, res) => {
     const categoryQuery = db.prepare(`
       SELECT id
       FROM bookmark_categories
-      WHERE uid = ?
+      WHERE uid = ? AND user_id = ?
       LIMIT 1
     `);
-    const categoryRow = categoryQuery.get(id);
+    const categoryRow = categoryQuery.get(id, req.user.userId);
 
     if (!categoryRow) {
       return res.status(404).json({ error: 'Категория не найдена' });
@@ -119,10 +153,10 @@ router.get('/:id', async (req, res) => {
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       LEFT JOIN bookmark_categories bc ON b.category_id = bc.id
-      WHERE b.category_id = ? AND b.in_trash = 0
+      WHERE b.category_id = ? AND b.in_trash = 0 AND b.user_id = ?
       ORDER BY b.updated_at DESC
     `);
-    const rows = bookmarksQuery.all(categoryRow.id);
+    const rows = bookmarksQuery.all(categoryRow.id, req.user.userId);
 
     const bookmarkIds = rows.map((row) => row.id);
     const tagsMap = new Map();
@@ -173,20 +207,28 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * Создает новую категорию или коллекцию
- * 
+ * Создает новую категорию или коллекцию у текущего пользователя
+ *
  * Универсальный метод для создания как коллекций (родительских категорий), так и вложенных категорий.
  * Если parentId не передан или null - создается коллекция, иначе создается категория внутри коллекции.
- * Позиция (position) вычисляется автоматически как MAX(position) + 1 среди категорий того же уровня.
+ * Позиция (position) вычисляется автоматически как MAX(position) + 1 среди категорий того же уровня
+ * в пределах текущего пользователя (`req.user.userId`).
  * Иконка может быть установлена только для категорий, для коллекций игнорируется.
- * 
+ * Родительская категория при её указании также должна принадлежать текущему пользователю.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route POST /api/bookmarks/categories
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {Object} req.body - Данные новой категории/коллекции
  * @param {string} req.body.title - Название категории/коллекции
  * @param {string} [req.body.icon] - Иконка (только для категорий)
  * @param {string|null} [req.body.parentId] - UID родительской категории (null для коллекции)
  * @returns {Object} 201 - JSON объект с результатом создания
  * @returns {Object} 400 - Некорректные данные / родительская категория не найдена
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -227,7 +269,7 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'Некорректный идентификатор родительской категории' });
       }
 
-      const parentRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(parentId);
+      const parentRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? AND user_id = ? LIMIT 1').get(parentId, req.user.userId);
 
       if (!parentRow) {
         return res.status(400).json({ error: 'Родительская категория не найдена' });
@@ -244,8 +286,8 @@ router.post('/', async (req, res) => {
       const maxPositionRow = db.prepare(`
         SELECT MAX(position) as max_position
         FROM bookmark_categories
-        WHERE parent_id IS NULL
-      `).get();
+        WHERE parent_id IS NULL AND user_id = ?
+      `).get(req.user.userId);
 
       if (maxPositionRow?.max_position !== null) {
         position = Number(maxPositionRow.max_position) + 1;
@@ -272,15 +314,16 @@ router.post('/', async (req, res) => {
     // Создание категории/коллекции
     const insertCategory = db.prepare(`
       INSERT INTO bookmark_categories (
-        uid, parent_id, title, icon, position, created_at, updated_at
+        uid, user_id, parent_id, title, icon, position, created_at, updated_at
       )
       VALUES (
-        @uid, @parent_id, @title, @icon, @position, datetime('now'), datetime('now')
+        @uid, @user_id, @parent_id, @title, @icon, @position, datetime('now'), datetime('now')
       )
     `);
 
     insertCategory.run({
       uid,
+      user_id: req.user.userId,
       parent_id: parentIdInternal,
       title: title.trim(),
       icon: iconValue,
@@ -296,18 +339,26 @@ router.post('/', async (req, res) => {
 });
 
 /**
- * Batch-обновляет позиции и/или коллекцию у категорий/коллекций
+ * Batch-обновляет позиции и/или коллекцию у категорий/коллекций текущего пользователя
  *
  * Все изменения выполняются в одной транзакции SQLite.
  * Если хотя бы одна из переданных категорий не найдена — вся операция откатывается.
  * Поле `parentId` передаётся только для категории, у которой меняется коллекция.
+ * Все переданные `id` и `parentId` резолвятся в контексте текущего пользователя
+ * (`req.user.userId`); категории/коллекции чужих пользователей считаются ненайденными.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
  *
  * @route PATCH /api/bookmarks/categories/reorder
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {Object} req.body
  * @param {Array<{id: string, position: number, parentId?: string}>} req.body.items - Массив обновляемых элементов
  * @returns {Object} 200 - { success: true }
  * @returns {Object} 400 - Некорректные данные (items не массив / некорректные поля элементов)
- * @returns {Object} 404 - Категория или коллекция не найдена
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Категория или коллекция не найдена (или принадлежит другому пользователю)
  * @returns {Object} 500 - Ошибка сервера
  *
  * @example
@@ -347,7 +398,7 @@ router.patch('/reorder', (req, res) => {
       }
     }
 
-    const findByUid = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1');
+    const findByUid = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? AND user_id = ? LIMIT 1');
     const updatePositionOnly = db.prepare(`
       UPDATE bookmark_categories
       SET position = @position, updated_at = datetime('now')
@@ -363,7 +414,7 @@ router.patch('/reorder', (req, res) => {
     const resolvedItems = [];
 
     for (const item of items) {
-      const categoryRow = findByUid.get(item.id.trim());
+      const categoryRow = findByUid.get(item.id.trim(), req.user.userId);
 
       if (!categoryRow) {
         return res.status(404).json({ error: `Категория с id "${item.id}" не найдена` });
@@ -377,7 +428,7 @@ router.patch('/reorder', (req, res) => {
       };
 
       if (resolved.hasParentChange) {
-        const parentRow = findByUid.get(item.parentId.trim());
+        const parentRow = findByUid.get(item.parentId.trim(), req.user.userId);
 
         if (!parentRow) {
           return res.status(404).json({ error: `Коллекция с id "${item.parentId}" не найдена` });
@@ -418,20 +469,28 @@ router.patch('/reorder', (req, res) => {
 });
 
 /**
- * Обновляет данные категории
- * 
+ * Обновляет данные категории текущего пользователя
+ *
  * Поддерживает частичное обновление — обновляются только переданные поля.
  * Поле `icon` может быть строкой для установки иконки или `null` для её удаления.
  * Поле `title` должно быть непустой строкой.
- * 
+ * Категория должна принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route PATCH /api/bookmarks/categories/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID категории
  * @param {Object} req.body - Обновляемые поля категории
  * @param {string} [req.body.title] - Название категории
  * @param {string|null} [req.body.icon] - Иконка категории (null — удаляет иконку)
  * @returns {Object} 200 - JSON объект с результатом обновления
  * @returns {Object} 400 - Некорректные данные
- * @returns {Object} 404 - Категория не найдена
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Категория не найдена (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -474,9 +533,9 @@ router.patch('/:id', async (req, res) => {
     const categoryRow = db.prepare(`
       SELECT id
       FROM bookmark_categories
-      WHERE uid = ?
+      WHERE uid = ? AND user_id = ?
       LIMIT 1
-    `).get(id);
+    `).get(id, req.user.userId);
 
     if (!categoryRow) {
       return res.status(404).json({ error: 'Категория не найдена' });
@@ -518,18 +577,27 @@ router.patch('/:id', async (req, res) => {
 });
 
 /**
- * Удаляет категорию или коллекцию
- * 
+ * Удаляет категорию или коллекцию текущего пользователя
+ *
  * Универсальный метод для удаления как коллекций, так и категорий.
  * Перед удалением выполняются проверки:
  * - Для коллекции (parent_id = null): нельзя удалить, если есть дочерние категории
  * - Для категории (parent_id != null): нельзя удалить, если есть прикрепленные закладки
- * 
+ *
+ * Категория/коллекция должна принадлежать текущему пользователю
+ * (`req.user.userId`), иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route DELETE /api/bookmarks/categories/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID категории/коллекции для удаления
  * @returns {Object} 200 - JSON объект с результатом удаления
  * @returns {Object} 400 - Некорректный ID / есть связанные данные
- * @returns {Object} 404 - Категория/коллекция не найдена
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Категория/коллекция не найдена (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -563,10 +631,10 @@ router.delete('/:id', async (req, res) => {
     const categoryQuery = db.prepare(`
       SELECT id, parent_id
       FROM bookmark_categories
-      WHERE uid = ?
+      WHERE uid = ? AND user_id = ?
       LIMIT 1
     `);
-    const categoryRow = categoryQuery.get(id);
+    const categoryRow = categoryQuery.get(id, req.user.userId);
 
     if (!categoryRow) {
       return res.status(404).json({ error: 'Категория не найдена' });

@@ -3,13 +3,39 @@ import { randomUUID } from 'crypto';
 import { db } from '../../db/initdb.js';
 import { normalizeInputDate } from "../../utils/date.js"
 
+/**
+ * @fileoverview Роутер событий (`/api/events`).
+ *
+ * Все маршруты этого роутера монтируются в `backend/routes/index.js` под
+ * префиксом `/api/events` и ЗАЩИЩЕНЫ middleware `requireAuth`:
+ *
+ *     router.use('/events', requireAuth, events)
+ *
+ * Поэтому в каждом обработчике гарантированно доступен `req.user`
+ * (typedef `AuthenticatedUser` определён в `backend/middleware/auth.js`),
+ * а все SQL-запросы фильтруют данные по `req.user.userId`, обеспечивая
+ * изоляцию данных между пользователями.
+ *
+ * Любой из роутов может вернуть 401 Unauthorized, если токен отсутствует,
+ * невалиден, истёк или пользователь удалён из БД. Это указано в JSDoc
+ * каждого роута через `@returns 401`.
+ */
+
 const router = Router();
 
 /**
- * Получает список всех событий
- * 
+ * Получает список событий текущего пользователя
+ *
+ * Выборка ограничена событиями текущего пользователя (`req.user.userId`).
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/events
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @returns {Object} 200 - JSON объект с массивом событий в поле data
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -34,8 +60,9 @@ router.get('/', async (req, res) => {
       SELECT e.uid, e.title, e.start_at, e.description, e.recurrence, t.slug as type
       FROM events e
       JOIN event_types t ON t.id = e.type_id
+      WHERE e.user_id = ?
     `);
-    const rows = eventsQuery.all();
+    const rows = eventsQuery.all(req.user.userId);
 
     const data = rows.map((row) => ({
       id: String(row.uid),
@@ -56,13 +83,22 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Получает событие по уникальному идентификатору
- * 
+ * Получает событие текущего пользователя по уникальному идентификатору
+ *
+ * Событие должно принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/events/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID события
  * @returns {Object} 200 - JSON объект с событием в поле data
  * @returns {Object} 400 - Некорректный идентификатор события
- * @returns {Object} 404 - Событие не найдено
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Событие не найдено (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -91,11 +127,11 @@ router.get('/:id', async (req, res) => {
       SELECT e.uid, e.title, e.start_at, e.description, e.recurrence, t.slug as type
       FROM events e
       JOIN event_types t ON t.id = e.type_id
-      WHERE e.uid = ?
+      WHERE e.uid = ? AND e.user_id = ?
       LIMIT 1
     `);
 
-    const row = eventQuery.get(id);
+    const row = eventQuery.get(id, req.user.userId);
 
     if (!row) {
       return res.status(404).json({ error: 'Событие не найдено' });
@@ -120,9 +156,16 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * Создает новое событие
- * 
+ * Создает новое событие у текущего пользователя
+ *
+ * Событие привязывается к текущему пользователю (`req.user.userId`).
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route POST /api/events
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {Object} req.body - Данные нового события
  * @param {string} req.body.title - Название события
  * @param {string} req.body.originalDate - Дата события (ISO 8601 или YYYY-MM-DD)
@@ -131,6 +174,7 @@ router.get('/:id', async (req, res) => {
  * @param {string} [req.body.recurrence=none] - Повторение (none, monthly, yearly)
  * @returns {Object} 201 - JSON объект с созданным событием в поле data
  * @returns {Object} 400 - Некорректные данные (заголовок, дата, тип или recurrence)
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -195,16 +239,11 @@ router.post('/', async (req, res) => {
       VALUES (@uid, @user_id, @title, @type_id, @start_at, @description, @recurrence)
     `);
 
-    const userRow = db.prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
-    if (!userRow?.id) {
-      return res.status(500).json({ error: 'Не найден пользователь по умолчанию для привязки события' });
-    }
-
     const uid = randomUUID();
 
     const payload = {
       uid,
-      user_id: Number(userRow.id),
+      user_id: req.user.userId,
       title: String(title),
       type_id: Number(typeRow.id),
       start_at: String(normalizedDate),
@@ -232,9 +271,17 @@ router.post('/', async (req, res) => {
 });
 
 /**
- * Обновляет существующее событие
- * 
+ * Обновляет существующее событие текущего пользователя
+ *
+ * Событие должно принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route PUT /api/events/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID события
  * @param {Object} req.body - Данные для обновления события
  * @param {string} req.body.title - Название события
@@ -244,7 +291,8 @@ router.post('/', async (req, res) => {
  * @param {string} req.body.recurrence - Повторение (none, monthly, yearly)
  * @returns {Object} 200 - JSON объект с обновленным событием в поле data
  * @returns {Object} 400 - Некорректные данные
- * @returns {Object} 404 - Событие не найдено
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Событие не найдено (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -297,7 +345,7 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный тип события' });
     }
 
-    const existed = db.prepare('SELECT id FROM events WHERE uid = ? LIMIT 1').get(id);
+    const existed = db.prepare('SELECT id FROM events WHERE uid = ? AND user_id = ? LIMIT 1').get(id, req.user.userId);
     if (!existed?.id) {
       return res.status(404).json({ error: 'Событие не найдено' });
     }
@@ -355,13 +403,22 @@ router.put('/:id', async (req, res) => {
 });
 
 /**
- * Удаляет событие по идентификатору
- * 
+ * Удаляет событие текущего пользователя по идентификатору
+ *
+ * Событие должно принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route DELETE /api/events/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID события
  * @returns {void} 204 - Успешное удаление (пустой ответ)
  * @returns {Object} 400 - Некорректный идентификатор события
- * @returns {Object} 404 - Событие не найдено
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Событие не найдено (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -375,8 +432,8 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный идентификатор события' });
     }
 
-    const deleteQuery = db.prepare('DELETE FROM events WHERE uid = ?');
-    const result = deleteQuery.run(id);
+    const deleteQuery = db.prepare('DELETE FROM events WHERE uid = ? AND user_id = ?');
+    const result = deleteQuery.run(id, req.user.userId);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Событие не найдено' });
