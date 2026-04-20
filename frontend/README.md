@@ -1,6 +1,7 @@
 # MemoBoard Frontend
 
-Frontend-часть MemoBoard (React + TypeScript) для двух доменов:
+Frontend-часть MemoBoard (React + TypeScript) для трёх доменов:
+- `Auth` (аутентификация: вход, регистрация, защита маршрутов)
 - `Events` (календарные события с повторениями)
 - `Bookmarks` (менеджмент закладок, категорий, тегов, корзины)
 
@@ -55,16 +56,27 @@ frontend/
 ├── src/
 │   ├── App.tsx                     # Router и верхнеуровневые провайдеры
 │   ├── index.tsx                   # Точка входа, ConfigProvider (antd)
-│   ├── pages/                      # Страницы (EventsPage, BookmarksPage, ...)
+│   ├── pages/                      # Страницы
+│   │   ├── LoginPage.tsx           # Форма входа (публичная)
+│   │   ├── RegisterPage.tsx        # Форма регистрации (публичная)
+│   │   ├── HomePage.tsx
+│   │   ├── EventsPage.tsx
+│   │   ├── BookmarksPage.tsx
+│   │   └── NotFoundPage.tsx
 │   ├── components/                 # UI и доменные компоненты
+│   │   ├── ProtectedRoute/         # Guard для защищённых маршрутов
 │   │   ├── Events/
 │   │   ├── Bookmarks/
 │   │   ├── Header/
 │   │   └── UI/
 │   ├── hooks/                      # Данные и бизнес-логика уровня UI
+│   │   └── useAuth.ts              # Доступ к AuthContext
 │   ├── contexts/                   # Actions-контексты (CRUD + notify + refresh)
+│   │   └── AuthContext.tsx         # Контекст аутентификации
 │   ├── services/                   # API-клиент и инстансы сервисов
-│   ├── providers/                  # Глобальные провайдеры (уведомления)
+│   │   └── authService.ts          # Вызовы auth API (login, register, me)
+│   ├── providers/                  # Глобальные провайдеры
+│   │   └── AuthProvider.tsx        # Провайдер состояния аутентификации
 │   ├── constants/                  # API и доменные константы
 │   ├── types/                      # Типы доменов и ошибок
 │   ├── enums/                      # Перечисления (EventType, Recurrence и др.)
@@ -75,15 +87,22 @@ frontend/
 
 ## 🧭 Роутинг (кратко)
 
-Роутинг описан в `src/App.tsx`.
+Роутинг описан в `src/App.tsx`. Маршруты делятся на **публичные** и **защищённые**.
 
-- `/` -> `HomePage`
-- `/events` -> `EventsPage`
-- `/bookmarks` -> `BookmarksPage`
+**Публичные маршруты** (доступны без авторизации):
+- `/login` → `LoginPage`
+- `/register` → `RegisterPage`
+
+**Защищённые маршруты** (требуют JWT-токен; при его отсутствии — редирект на `/login`):
+- `/` → `HomePage`
+- `/events` → `EventsPage`
+- `/bookmarks` → `BookmarksPage`
 - `/bookmarks/favorites`, `/bookmarks/unsorted`, `/bookmarks/trash`
 - `/bookmarks/category/:categoryId`
 - `/bookmarks/tag/:tagId`
 - edit-маршруты для bookmark-элементов (например, `:bookmarkId/edit`)
+
+Все защищённые маршруты обёрнуты в `ProtectedRoute` — компонент-guard, который проверяет наличие авторизации.
 
 Все неизвестные пути уходят в `NotFoundPage`.
 
@@ -95,15 +114,30 @@ frontend/
 - `API_EVENTS_BASE_URL = http://localhost:4000/api/events`
 
 HTTP-слой:
-- `src/services/ApiClient.ts` — общий клиент (`get/post/put/patch/delete`, timeout, нормализация ошибок).
+- `src/services/ApiClient.ts` — общий клиент (`get/post/put/patch/delete`, timeout, нормализация ошибок). Автоматически добавляет заголовок `Authorization: Bearer <token>` из localStorage ко всем запросам.
 - `src/services/apiClients.ts` — готовые клиенты `eventsApiClient` и `bookmarksApiClient`.
+- `src/services/authService.ts` — методы `login`, `register`, `me` для Auth API.
 
 Ожидаемый формат успешного ответа backend (основной контракт):  
 `{ data: ... }`
 
+**JWT и хранение токена:**
+- Токен хранится в `localStorage` под ключом `token`
+- При каждом запросе `ApiClient` читает токен из localStorage и добавляет заголовок `Authorization: Bearer <token>`
+- При получении `401` от backend — `ApiClient` автоматически удаляет токен и инициирует logout (редирект на `/login`)
+
 ## 🧠 Архитектура в 1 минуту
 
-Два самостоятельных потока:
+**Аутентификация:**
+```
+AuthProvider (state: user, token, isLoading)
+  └── AuthContext / useAuth()        # доступ к состоянию из любого компонента
+       └── authService               # login/register/me → API
+ProtectedRoute                       # guard: нет токена → redirect /login
+ApiClient                            # Bearer-токен в каждом запросе, 401 → logout
+```
+
+Два самостоятельных потока данных:
 
 **Read (чтение):**
 `page -> components -> useEvents/useBookmarks -> services(ApiClient) -> backend`
@@ -153,6 +187,12 @@ HTTP-слой:
 - Изменение UI страницы:
   - `src/pages/*`
   - `src/components/<Domain>/*`
+- Аутентификация и авторизация:
+  - `src/providers/AuthProvider.tsx` — state: user, token, login/logout/register
+  - `src/contexts/AuthContext.tsx` — React-контекст для AuthProvider
+  - `src/hooks/useAuth.ts` — хук для доступа к AuthContext
+  - `src/services/authService.ts` — API-вызовы (login, register, me)
+  - `src/components/ProtectedRoute/ProtectedRoute.tsx` — guard для защищённых маршрутов
 - Загрузка данных (read-only):
   - `src/hooks/useEvents.ts`
   - `src/hooks/useBookmarks.ts`
@@ -173,11 +213,13 @@ HTTP-слой:
 ### 2) Контракты и инварианты
 
 - Backend отвечает в форме `{ data: ... }`. Исключение: `DELETE` возвращает `204 No Content` с пустым телом — `ApiClient` обрабатывает это явно.
+- Auth endpoints (`/api/auth/*`) отвечают в форме `{ token, user }` или `{ user }` — не в форме `{ data }`.
 - Ошибки API нормализуются через `ApiError` и `getApiErrorMessage`.
 - После успешной мутации ожидается:
   - success notification;
   - `refresh...` для актуализации списков.
 - Actions hooks не должны зависеть от UI; UI-эффекты лучше держать в contexts.
+- JWT-токен хранится в `localStorage`. `ApiClient` автоматически читает его при каждом запросе. Получение `401` → logout (удаление токена + редирект на `/login`).
 
 ### 3) Правила безопасных изменений
 
@@ -198,6 +240,13 @@ HTTP-слой:
 - Обновлена документация, если изменены архитектурные договоренности.
 
 ### 5) Что читать в первую очередь (экономия токенов)
+
+Для задач по `Auth`:
+1. `src/providers/AuthProvider.tsx`
+2. `src/contexts/AuthContext.tsx`
+3. `src/services/authService.ts`
+4. `src/components/ProtectedRoute/ProtectedRoute.tsx`
+5. `src/pages/LoginPage.tsx`, `src/pages/RegisterPage.tsx`
 
 Для задач по `Events`:
 1. `src/pages/EventsPage.tsx`

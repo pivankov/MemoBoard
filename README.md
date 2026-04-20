@@ -21,13 +21,19 @@ MemoBoard — веб-сервис для управления событиями
 - Корзина с возможностью восстановления
 - Превью изображений для закладок
 
+### 🔐 Аутентификация
+- Регистрация и вход по email + пароль
+- JWT-токены (Bearer) для защиты всех API-маршрутов
+- Хеширование паролей через Argon2id
+- Каждый пользователь видит только свои данные
+
 ---
 
 ## 🛠 Технологический стек
 
 **Frontend:** React 19, TypeScript 4.9, Ant Design 5, React Router 7, Jest
 
-**Backend:** Node.js 18+, Express 5, SQLite 3, better-sqlite3, nanoid, sharp
+**Backend:** Node.js 18+, Express 5, SQLite 3, better-sqlite3, nanoid, sharp, jsonwebtoken, argon2
 
 ---
 
@@ -40,6 +46,7 @@ MemoBoard/
 │   └── docs/        # Документация фронтенда
 └── backend/         # Node.js REST API
     ├── routes/      # API маршруты
+    ├── middleware/  # Express middleware (requireAuth и др.)
     ├── db/          # БД и миграции
     ├── utils/       # Утилиты
     └── public/      # Сборка frontend (production)
@@ -61,6 +68,22 @@ cd backend && npm install
 
 # Зависимости frontend
 cd ../frontend && npm install
+```
+
+### Настройка переменных окружения
+
+```bash
+# Создать файл backend/.env на основе примера
+cp backend/.env.example backend/.env
+# Отредактировать JWT_SECRET перед деплоем в production
+```
+
+Минимальный `backend/.env`:
+```
+PORT=4000
+NODE_ENV=development
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRES_IN=7d
 ```
 
 ### Инициализация базы данных

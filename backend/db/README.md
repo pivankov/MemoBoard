@@ -1,7 +1,7 @@
 ## База данных (SQLite + better-sqlite3)
 
 - Файл БД: `db/data.db`
-- Версия схемы: `PRAGMA user_version` (текущая — 3)
+- Версия схемы: `PRAGMA user_version` (текущая — 4)
 - Дата/время: TEXT в ISO‑8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
 - Булево: INTEGER 0/1, с `CHECK (field IN (0,1))`
 
@@ -65,6 +65,7 @@
 #### bookmark_categories
 - `id` INTEGER PRIMARY KEY
 - `uid` TEXT UNIQUE NOT NULL
+- `user_id` INTEGER REFERENCES users(id) ON DELETE CASCADE — владелец категории
 - `parent_id` INTEGER REFERENCES bookmark_categories(id) ON DELETE SET NULL
 - `title` TEXT NOT NULL
 - `icon` TEXT
@@ -72,16 +73,21 @@
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 
-Индексы: UNIQUE по `uid` (уникальность покрывает индекс).
+Индексы:
+- UNIQUE по `uid` (уникальность покрывает индекс).
+- `idx_bookmark_categories_user_id` на `bookmark_categories(user_id)` — добавлен в миграции v3→v4
 
 #### bookmark_tags
 - `id` INTEGER PRIMARY KEY
 - `uid` TEXT UNIQUE NOT NULL
+- `user_id` INTEGER REFERENCES users(id) ON DELETE CASCADE — владелец тега
 - `title` TEXT NOT NULL
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 
-Индексы: UNIQUE по `uid` (уникальность покрывает индекс).
+Индексы:
+- UNIQUE по `uid` (уникальность покрывает индекс).
+- `idx_bookmark_tags_user_id` на `bookmark_tags(user_id)` — добавлен в миграции v3→v4
 
 #### bookmarks
 - `id` INTEGER PRIMARY KEY
@@ -158,7 +164,8 @@ CREATE TABLE IF NOT EXISTS child (
 - `migrateFrom0To1`: создание таблиц `users`, `event_types`, `events`
 - `migrateFrom1To2`: создание таблиц `bookmark_categories`, `bookmark_tags`, `bookmarks`, `bookmark_tag_relations`
 - `migrateFrom2To3`: добавление колонки `in_trash` в таблицу `bookmarks` (если ещё не существует), пересоздание триггера `bookmarks_set_updated_at` для включения `in_trash` в список отслеживаемых полей
+- `migrateFrom3To4`: добавление колонки `user_id` в таблицы `bookmark_categories` и `bookmark_tags` с привязкой к `users(id) ON DELETE CASCADE`; создание индексов `idx_bookmark_categories_user_id` и `idx_bookmark_tags_user_id`; существующие записи получают `user_id` первого пользователя в БД
 
-Все миграции являются идемпотентными и безопасными для повторного запуска. Миграция `migrateFrom2To3` перед выполнением `ALTER TABLE` проверяет наличие колонки через `PRAGMA table_info` — это позволяет корректно работать при полном сбросе БД (`db:reset`), когда таблица создаётся сразу с актуальной схемой.
+Все миграции являются идемпотентными и безопасными для повторного запуска. Миграции `migrateFrom2To3` и `migrateFrom3To4` перед выполнением `ALTER TABLE` проверяют наличие колонки через `PRAGMA table_info` — это позволяет корректно работать при полном сбросе БД (`db:reset`), когда таблица создаётся сразу с актуальной схемой.
 
 

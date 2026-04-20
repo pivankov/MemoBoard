@@ -11,7 +11,9 @@ Backend-часть приложения MemoBoard - система для упр
 - **nanoid** - генерация уникальных идентификаторов
 - **url-metadata** - парсинг метаданных URL
 - **sharp** - обработка и оптимизация изображений (превью закладок)
-- **argon2** - хеширование паролей
+- **argon2** - хеширование паролей (Argon2id)
+- **jsonwebtoken** - генерация и верификация JWT-токенов
+- **dotenv** - загрузка переменных окружения из `.env`
 
 ## 📦 Установка и запуск
 
@@ -80,8 +82,12 @@ backend/
 │   └── seeds/          # Тестовые данные
 │       ├── events.js
 │       └── bookmarks.js
+├── middleware/         # Express middleware
+│   └── auth.js         # requireAuth — проверка JWT-токена
 ├── routes/             # API маршруты
 │   ├── index.js        # Корневой роутер
+│   ├── auth/           # Аутентификация
+│   │   └── index.js
 │   ├── events/         # События
 │   │   └── index.js
 │   └── bookmarks/      # Закладки
@@ -92,6 +98,7 @@ backend/
 │   └── previews/       # Превью изображения закладок
 └── utils/              # Утилиты
     ├── date.js         # Работа с датами
+    ├── jwt.js          # Генерация и верификация JWT-токенов
     ├── preview.js      # Скачивание, обработка и удаление превью закладок
     └── uid.js          # Генерация уникальных ID
 ```
@@ -99,6 +106,113 @@ backend/
 ## 🔌 API Reference
 
 Базовый URL: `http://localhost:4000/api`
+
+> **Аутентификация:** все маршруты `/api/events/*` и `/api/bookmarks/*` требуют передачи JWT-токена в заголовке:
+> ```
+> Authorization: Bearer <token>
+> ```
+> При отсутствии или невалидности токена возвращается `401 Unauthorized`.
+
+---
+
+### Аутентификация (Auth)
+
+#### POST /api/auth/register
+
+Регистрирует нового пользователя. Возвращает JWT-токен для немедленного входа.
+
+**Тело запроса:**
+```json
+{
+  "email": "user@example.com",
+  "password": "secret123",
+  "name": "Иван"
+}
+```
+
+**Поля:**
+- `email` (string, required) - Email пользователя (уникальный)
+- `password` (string, required) - Пароль (минимум 6 символов)
+- `name` (string, optional) - Имя пользователя
+
+**Ответ (201):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "uid": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "user@example.com",
+    "name": "Иван"
+  }
+}
+```
+
+**Ошибки:**
+- `400` - Email или пароль не переданы / некорректный формат email / пароль менее 6 символов
+- `409` - Пользователь с таким email уже зарегистрирован
+- `500` - Не удалось зарегистрировать пользователя
+
+---
+
+#### POST /api/auth/login
+
+Выполняет вход по email и паролю. Возвращает JWT-токен.
+
+**Тело запроса:**
+```json
+{
+  "email": "user@example.com",
+  "password": "secret123"
+}
+```
+
+**Поля:**
+- `email` (string, required) - Email пользователя
+- `password` (string, required) - Пароль пользователя
+
+**Ответ (200):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "uid": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "user@example.com",
+    "name": "Иван"
+  }
+}
+```
+
+**Ошибки:**
+- `400` - Email или пароль не переданы
+- `401` - Неверный email или пароль
+- `500` - Не удалось выполнить вход
+
+---
+
+#### GET /api/auth/me
+
+Возвращает данные текущего авторизованного пользователя. Требует Bearer-токен.
+
+**Заголовки:**
+```
+Authorization: Bearer <token>
+```
+
+**Ответ (200):**
+```json
+{
+  "user": {
+    "uid": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "user@example.com",
+    "name": "Иван"
+  }
+}
+```
+
+**Ошибки:**
+- `401` - Токен не передан / невалидный / истёк
+
+---
 
 ### События (Events)
 
@@ -1078,6 +1192,31 @@ const faviconUrl = getFaviconUrl('https://github.com');
 
 ---
 
+### utils/jwt.js
+
+Утилиты для работы с JWT-токенами.
+
+**Функции:**
+- `generateToken(user)` - Создаёт подписанный JWT-токен. Принимает объект `{ id, uid, email }`, возвращает строку токена. Срок действия задаётся переменной `JWT_EXPIRES_IN`
+- `verifyToken(token)` - Верифицирует и декодирует токен. Возвращает payload. Бросает `TokenExpiredError` или `JsonWebTokenError` при ошибке
+
+**Конфигурация через переменные окружения:**
+- `JWT_SECRET` — секрет для подписи (по умолчанию: временный dev-ключ)
+- `JWT_EXPIRES_IN` — срок действия токена (по умолчанию: `7d`)
+
+**Пример:**
+```javascript
+import { generateToken, verifyToken } from './utils/jwt.js';
+
+const token = generateToken({ id: 1, uid: 'abc-123', email: 'user@example.com' });
+// => "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+const payload = verifyToken(token);
+// => { userId: 1, uid: 'abc-123', email: 'user@example.com', iat: ..., exp: ... }
+```
+
+---
+
 ### utils/date.js
 
 Утилиты для работы с датами.
@@ -1140,13 +1279,19 @@ const tagUid = generateTagUid();
 - `PORT` - Порт сервера (по умолчанию: `4000`)
 - `NODE_ENV` - Окружение (`development`, `production`)
 - `SEED` - Загружать ли тестовые данные при инициализации БД (`true`/`false`)
+- `JWT_SECRET` - Секретный ключ для подписи JWT-токенов (**обязательно поменять в production**)
+- `JWT_EXPIRES_IN` - Срок действия токена (по умолчанию: `7d`). Примеры: `1h`, `30d`, `365d`
 
 **Пример `.env` файла:**
 ```
 PORT=4000
 NODE_ENV=development
 SEED=true
+JWT_SECRET=your-secret-key-change-in-production
+JWT_EXPIRES_IN=7d
 ```
+
+> **Важно:** Файл `.env` не должен попадать в систему контроля версий. В репозитории хранится `.env.example` с описанием всех переменных без значений.
 
 ---
 
@@ -1160,6 +1305,7 @@ SEED=true
 - `cors()` - Включение CORS для всех источников
 - `express.static('/previews')` - Раздача превью закладок из папки `uploads/previews/`
 - `express.static()` - Раздача статических файлов сборки фронтенда из папки `public`
+- `requireAuth` (`middleware/auth.js`) - Проверка JWT-токена из заголовка `Authorization: Bearer <token>`. При успехе добавляет `req.user` со следующими полями: `userId` (internal DB id), `uid`, `email`, `name`. Применяется ко всем маршрутам `/api/events/*` и `/api/bookmarks/*`.
 
 ### Обработка ошибок
 
@@ -1184,4 +1330,4 @@ SEED=true
 
 ## 📄 Лицензия
 
-MemoBoard Backend v1.0.0
+MemoBoard Backend v2.0.0 (аутентификация)
