@@ -20,6 +20,9 @@ class ApiClient {
   /** Конфигурация клиента */
   private config: ApiClientConfig;
 
+  /** Callback, вызываемый при получении 401 ответа (истёкший или невалидный токен) */
+  private onUnauthorized: (() => void) | null = null;
+
   /**
    * @param config - конфигурация клиента (baseURL обязателен)
    */
@@ -61,6 +64,11 @@ class ApiClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        // При истёкшем или невалидном токене — уведомляем AuthProvider для автоматического logout
+        if (response.status === 401 && this.onUnauthorized) {
+          this.onUnauthorized();
+        }
+
         // Пытаемся получить детальное сообщение ошибки от бэкенда
         const defaultMessage = `HTTP ${response.status}: ${response.statusText}`;
         
@@ -208,6 +216,16 @@ class ApiClient {
       const { [key]: _, ...rest } = this.config.headers;
       this.config.headers = rest;
     }
+  }
+
+  /**
+   * Устанавливает callback, вызываемый при получении 401 ответа.
+   * Используется AuthProvider для автоматического logout при истечении токена.
+   *
+   * @param callback - функция, вызываемая при 401, или null для сброса
+   */
+  public setOnUnauthorized(callback: (() => void) | null): void {
+    this.onUnauthorized = callback;
   }
 }
 
