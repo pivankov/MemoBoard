@@ -1,0 +1,24 @@
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--background-color);
+}
+
+.login-page__card {
+  width: 100%;
+  max-width: 400px;
+  box-shadow: rgba(0, 0, 0, 0.25) 0px 25px 50px -12px;
+}
+
+.login-page__title {
+  text-align: center;
+  margin-bottom: 24px !important;
+}
+
+.login-page__error {
+  display: block;
+  margin-bottom: 16px;
+  text-align: center;
+}
