@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const db = new Database(path.join(__dirname, 'data.db'));
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const ARGON2_TIME_COST = 3;
 const ARGON2_MEMORY_COST = 65536; // 2^16
 const ARGON2_PARALLELISM = 1;
@@ -52,6 +52,7 @@ const EVENT_TYPES_FIELDS = {
 const BOOKMARK_CATEGORIES_FIELDS = {
   id: 'INTEGER PRIMARY KEY',
   uid: 'TEXT UNIQUE NOT NULL',
+  user_id: 'INTEGER',
   parent_id: 'INTEGER',
   title: 'TEXT NOT NULL',
   icon: 'TEXT',
@@ -63,6 +64,7 @@ const BOOKMARK_CATEGORIES_FIELDS = {
 const BOOKMARK_TAGS_FIELDS = {
   id: 'INTEGER PRIMARY KEY',
   uid: 'TEXT UNIQUE NOT NULL',
+  user_id: 'INTEGER',
   title: 'TEXT NOT NULL',
   created_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
   updated_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
@@ -170,6 +172,7 @@ async function initDb(options = {}) {
     CREATE TABLE IF NOT EXISTS bookmark_categories (
       id ${BOOKMARK_CATEGORIES_FIELDS.id},
       uid ${BOOKMARK_CATEGORIES_FIELDS.uid},
+      user_id ${BOOKMARK_CATEGORIES_FIELDS.user_id} REFERENCES users(id) ON DELETE CASCADE,
       parent_id ${BOOKMARK_CATEGORIES_FIELDS.parent_id} REFERENCES bookmark_categories(id) ON DELETE SET NULL,
       title ${BOOKMARK_CATEGORIES_FIELDS.title},
       icon ${BOOKMARK_CATEGORIES_FIELDS.icon},
@@ -183,6 +186,7 @@ async function initDb(options = {}) {
     CREATE TABLE IF NOT EXISTS bookmark_tags (
       id ${BOOKMARK_TAGS_FIELDS.id},
       uid ${BOOKMARK_TAGS_FIELDS.uid},
+      user_id ${BOOKMARK_TAGS_FIELDS.user_id} REFERENCES users(id) ON DELETE CASCADE,
       title ${BOOKMARK_TAGS_FIELDS.title},
       created_at ${BOOKMARK_TAGS_FIELDS.created_at},
       updated_at ${BOOKMARK_TAGS_FIELDS.updated_at}
@@ -218,7 +222,7 @@ async function initDb(options = {}) {
 
   const createBookmarkCategoriesUpdatedAtTrigger = `
     CREATE TRIGGER IF NOT EXISTS bookmark_categories_set_updated_at
-    AFTER UPDATE OF uid, parent_id, title, icon, position, created_at ON bookmark_categories
+    AFTER UPDATE OF uid, user_id, parent_id, title, icon, position, created_at ON bookmark_categories
     FOR EACH ROW BEGIN
       UPDATE bookmark_categories SET updated_at = datetime('now') WHERE id = OLD.id;
     END;
@@ -226,7 +230,7 @@ async function initDb(options = {}) {
 
   const createBookmarkTagsUpdatedAtTrigger = `
     CREATE TRIGGER IF NOT EXISTS bookmark_tags_set_updated_at
-    AFTER UPDATE OF uid, title, created_at ON bookmark_tags
+    AFTER UPDATE OF uid, user_id, title, created_at ON bookmark_tags
     FOR EACH ROW BEGIN
       UPDATE bookmark_tags SET updated_at = datetime('now') WHERE id = OLD.id;
     END;
@@ -344,8 +348,8 @@ async function initDb(options = {}) {
 
       // === Категории закладок ===
       const insertCategory = db.prepare(`
-        INSERT OR IGNORE INTO bookmark_categories (uid, parent_id, title, icon, position, created_at, updated_at)
-        VALUES (@uid, @parent_id, @title, @icon, @position, datetime('now'), datetime('now'))
+        INSERT OR IGNORE INTO bookmark_categories (uid, user_id, parent_id, title, icon, position, created_at, updated_at)
+        VALUES (@uid, @user_id, @parent_id, @title, @icon, @position, datetime('now'), datetime('now'))
       `);
       
       const selectCategoryUid = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1');
@@ -411,6 +415,7 @@ async function initDb(options = {}) {
           
           const result = insertCategory.run({
             uid: cat.uid,
+            user_id: adminId,
             parent_id: parentIdValue,
             title: cat.title,
             icon: cat.icon || null,
@@ -433,8 +438,8 @@ async function initDb(options = {}) {
 
       // === Теги закладок ===
       const insertTag = db.prepare(`
-        INSERT OR IGNORE INTO bookmark_tags (uid, title, created_at, updated_at)
-        VALUES (@uid, @title, datetime('now'), datetime('now'))
+        INSERT OR IGNORE INTO bookmark_tags (uid, user_id, title, created_at, updated_at)
+        VALUES (@uid, @user_id, @title, datetime('now'), datetime('now'))
       `);
       
       const selectTagUid = db.prepare('SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1');
@@ -455,6 +460,7 @@ async function initDb(options = {}) {
         }
         const result = insertTag.run({
           uid: tag.uid,
+          user_id: adminId,
           title: tag.title,
         });
         if (result.changes > 0) {
@@ -546,6 +552,38 @@ async function initDb(options = {}) {
     })();
   };
 
+  // Миграция v3 → v4: добавляет user_id в bookmark_categories и bookmark_tags
+  // Без NOT NULL — SQLite не позволяет ALTER TABLE ADD COLUMN NOT NULL без DEFAULT для таблиц с данными.
+  // Ограничение NOT NULL обеспечивается на уровне приложения (все INSERT всегда передают user_id).
+  const migrateFrom3To4 = () => {
+    db.transaction(() => {
+      const firstUser = db.prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
+      const defaultUserId = firstUser?.id ?? 1;
+
+      // bookmark_categories: добавить колонку user_id (если отсутствует)
+      const catColumns = db.pragma('table_info(bookmark_categories)');
+      const catHasUserId = catColumns.some(col => col.name === 'user_id');
+      if (!catHasUserId) {
+        db.exec(`ALTER TABLE bookmark_categories ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
+      }
+      // Заполняем user_id для записей без привязки (ВСЕГДА, не только после ALTER)
+      db.exec(`UPDATE bookmark_categories SET user_id = ${defaultUserId} WHERE user_id IS NULL`);
+
+      // bookmark_tags: добавить колонку user_id (если отсутствует)
+      const tagColumns = db.pragma('table_info(bookmark_tags)');
+      const tagHasUserId = tagColumns.some(col => col.name === 'user_id');
+      if (!tagHasUserId) {
+        db.exec(`ALTER TABLE bookmark_tags ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE`);
+      }
+      // Заполняем user_id для записей без привязки (ВСЕГДА, не только после ALTER)
+      db.exec(`UPDATE bookmark_tags SET user_id = ${defaultUserId} WHERE user_id IS NULL`);
+
+      // Индексы для быстрого поиска по user_id
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_bookmark_categories_user_id ON bookmark_categories(user_id)`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_bookmark_tags_user_id ON bookmark_tags(user_id)`);
+    })();
+  };
+
   let currentVersion = getUserVersion();
   while (currentVersion < SCHEMA_VERSION) {
     if (currentVersion === 0) {
@@ -564,6 +602,12 @@ async function initDb(options = {}) {
       migrateFrom2To3();
       setUserVersion(3);
       currentVersion = 3;
+      continue;
+    }
+    if (currentVersion === 3) {
+      migrateFrom3To4();
+      setUserVersion(4);
+      currentVersion = 4;
       continue;
     }
     break;
