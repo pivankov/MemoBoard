@@ -23,3 +23,9 @@ export const API_BOOKMARKS_BASE_URL = `${API_BASE_URL}/bookmarks`;
  */
 export const API_EVENTS_BASE_URL = `${API_BASE_URL}/events`;
 
+/**
+ * Базовый URL для работы с API аутентификации
+ * @example 'http://localhost:4000/api/auth'
+ */
+export const API_AUTH_BASE_URL = `${API_BASE_URL}/auth`;
+
