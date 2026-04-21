@@ -4,16 +4,11 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import routes from './routes/index.js';
-import { initDb, resetDemoData } from './db/initdb.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Ресет demo-данных при старте включён по умолчанию. Отключается переменной
-// окружения DEMO_RESET_ON_START=false (полезно в dev, когда активно тестируешь demo-аккаунт).
-const DEMO_RESET_ON_START = (process.env.DEMO_RESET_ON_START ?? 'true').toLowerCase() !== 'false';
 
 // Middleware для парсинга JSON и URL-encoded данных
 app.use(express.json());
@@ -60,21 +55,6 @@ app.use((req, res) => {
   });
 });
 
-(async () => {
-  try {
-    await initDb({ seed: true });
-    if (DEMO_RESET_ON_START) {
-      const result = await resetDemoData();
-      if (result.reset) {
-        console.log(`Demo data reset on startup. Deleted preview files: ${result.deletedPreviews}.`);
-      }
-    }
-  } catch (err) {
-    console.error('Startup DB init/reset error:', err);
-    process.exit(1);
-  }
-
-  app.listen(PORT, () => {
-    console.log(`server is listening on port ${PORT}`);
-  });
-})();
+app.listen(PORT, () => {
+  console.log(`server is listening on port ${PORT}`);
+});
