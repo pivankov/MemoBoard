@@ -12,6 +12,7 @@ import argon2 from 'argon2';
 import { db } from '../../db/initdb.js';
 import { generateToken } from '../../utils/jwt.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { authLimiter } from '../../middleware/rateLimit.js';
 
 const router = Router();
 
@@ -38,7 +39,7 @@ const ARGON2_OPTIONS = {
  * @returns {Object} 409 - Email уже зарегистрирован
  * @returns {Object} 500 - Ошибка сервера
  */
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { email, password, name } = req.body ?? {};
 
   try {
@@ -118,7 +119,7 @@ router.post('/register', async (req, res) => {
  * @returns {Object} 401 - Неверный email или пароль
  * @returns {Object} 500 - Ошибка сервера
  */
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body ?? {};
 
   try {

@@ -8,8 +8,37 @@
 
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'memoboard-dev-secret-key-change-in-production';
+/**
+ * Минимальная допустимая длина JWT_SECRET в символах.
+ *
+ * 32 символа — практичный порог: этого достаточно, чтобы отсечь
+ * заведомо слабые значения (короткие «test», «secret», «dev-key»),
+ * при этом не создавая неудобств для разработчика. Сгенерированная
+ * случайная строка (`crypto.randomBytes(32).toString('hex')` = 64 символа)
+ * с запасом проходит проверку.
+ */
+const MIN_SECRET_LENGTH = 32;
+
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+// Fail-fast: без валидного секрета сервер не должен стартовать.
+// Проверка выполняется на этапе импорта модуля — падение произойдёт
+// при старте приложения, а не при первом запросе пользователя.
+if (!JWT_SECRET || typeof JWT_SECRET !== 'string' || JWT_SECRET.trim().length === 0) {
+  throw new Error(
+    'JWT_SECRET не задан. Укажите переменную окружения JWT_SECRET в backend/.env. ' +
+    'Сгенерировать: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"'
+  );
+}
+
+if (JWT_SECRET.length < MIN_SECRET_LENGTH) {
+  throw new Error(
+    `JWT_SECRET слишком короткий (${JWT_SECRET.length} символов). ` +
+    `Минимальная длина — ${MIN_SECRET_LENGTH} символов. ` +
+    'Сгенерировать новый: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"'
+  );
+}
 
 /**
  * Создаёт JWT-токен для пользователя
