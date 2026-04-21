@@ -82,9 +82,15 @@ cp backend/.env.example backend/.env
 ```
 PORT=4000
 NODE_ENV=development
-JWT_SECRET=your-secret-key-change-in-production
+JWT_SECRET=<64-символьная случайная hex-строка>
 JWT_EXPIRES_IN=7d
 ```
+
+> **Важно:** `JWT_SECRET` обязателен и должен быть не короче 32 символов — иначе сервер упадёт при старте (fail-fast). Для генерации используйте:
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+> ```
+> Полный список переменных (включая настройки rate-limiter) — см. `backend/.env.example` и [`backend/README.md`](backend/README.md#️-переменные-окружения).
 
 ### Инициализация базы данных
 

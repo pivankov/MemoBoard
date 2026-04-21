@@ -13,6 +13,7 @@ Backend-часть приложения MemoBoard - система для упр
 - **sharp** - обработка и оптимизация изображений (превью закладок)
 - **argon2** - хеширование паролей (Argon2id)
 - **jsonwebtoken** - генерация и верификация JWT-токенов
+- **express-rate-limit** - ограничение частоты запросов на чувствительных auth-маршрутах
 - **dotenv** - загрузка переменных окружения из `.env`
 
 ## 📦 Установка и запуск
@@ -83,7 +84,8 @@ backend/
 │       ├── events.js
 │       └── bookmarks.js
 ├── middleware/         # Express middleware
-│   └── auth.js         # requireAuth — проверка JWT-токена
+│   ├── auth.js         # requireAuth — проверка JWT-токена
+│   └── rateLimit.js    # authLimiter — rate-limiting для /auth/login и /auth/register
 ├── routes/             # API маршруты
 │   ├── index.js        # Корневой роутер
 │   ├── auth/           # Аутентификация
@@ -1201,7 +1203,7 @@ const faviconUrl = getFaviconUrl('https://github.com');
 - `verifyToken(token)` - Верифицирует и декодирует токен. Возвращает payload. Бросает `TokenExpiredError` или `JsonWebTokenError` при ошибке
 
 **Конфигурация через переменные окружения:**
-- `JWT_SECRET` — секрет для подписи (по умолчанию: временный dev-ключ)
+- `JWT_SECRET` — секрет для подписи. **Обязателен**, минимум 32 символа. Сервер не стартует, если переменная не задана или слишком короткая (fail-fast). Сгенерировать: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
 - `JWT_EXPIRES_IN` — срок действия токена (по умолчанию: `7d`)
 
 **Пример:**
@@ -1279,16 +1281,20 @@ const tagUid = generateTagUid();
 - `PORT` - Порт сервера (по умолчанию: `4000`)
 - `NODE_ENV` - Окружение (`development`, `production`)
 - `SEED` - Загружать ли тестовые данные при инициализации БД (`true`/`false`)
-- `JWT_SECRET` - Секретный ключ для подписи JWT-токенов (**обязательно поменять в production**)
+- `JWT_SECRET` - Секретный ключ для подписи JWT-токенов. **Обязателен**, минимум 32 символа. Сервер не стартует, если переменная не задана или слишком короткая (fail-fast проверка при импорте `utils/jwt.js`). Сгенерировать: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
 - `JWT_EXPIRES_IN` - Срок действия токена (по умолчанию: `7d`). Примеры: `1h`, `30d`, `365d`
+- `AUTH_RATE_LIMIT_WINDOW_MS` - Окно rate-limiter для `/auth/login` и `/auth/register` в миллисекундах (по умолчанию: `900000`, т.е. 15 минут)
+- `AUTH_RATE_LIMIT_MAX` - Максимум запросов с одного IP в окне (по умолчанию: `10`)
 
 **Пример `.env` файла:**
 ```
 PORT=4000
 NODE_ENV=development
 SEED=true
-JWT_SECRET=your-secret-key-change-in-production
+JWT_SECRET=<64-значная случайная hex-строка, сгенерированная через crypto.randomBytes>
 JWT_EXPIRES_IN=7d
+AUTH_RATE_LIMIT_WINDOW_MS=900000
+AUTH_RATE_LIMIT_MAX=10
 ```
 
 > **Важно:** Файл `.env` не должен попадать в систему контроля версий. В репозитории хранится `.env.example` с описанием всех переменных без значений.
@@ -1306,6 +1312,7 @@ JWT_EXPIRES_IN=7d
 - `express.static('/previews')` - Раздача превью закладок из папки `uploads/previews/`
 - `express.static()` - Раздача статических файлов сборки фронтенда из папки `public`
 - `requireAuth` (`middleware/auth.js`) - Проверка JWT-токена из заголовка `Authorization: Bearer <token>`. При успехе добавляет `req.user` со следующими полями: `userId` (internal DB id), `uid`, `email`, `name`. Применяется ко всем маршрутам `/api/events/*` и `/api/bookmarks/*`.
+- `authLimiter` (`middleware/rateLimit.js`) - Rate-limiting для `/api/auth/login` и `/api/auth/register`. По умолчанию 10 запросов с одного IP за 15 минут. Защищает от перебора паролей и массовой регистрации. Параметры настраиваются через `AUTH_RATE_LIMIT_WINDOW_MS` и `AUTH_RATE_LIMIT_MAX`. При превышении лимита возвращает 429 Too Many Requests. Не применяется к `/api/auth/me` — там нечего перебирать, и он вызывается при каждой загрузке приложения.
 
 ### Обработка ошибок
 
