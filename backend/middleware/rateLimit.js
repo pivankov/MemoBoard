@@ -33,3 +33,23 @@ export const authLimiter = rateLimit({
     error: 'Слишком много попыток. Попробуйте через несколько минут.',
   },
 });
+
+/**
+ * Лимитер для POST /api/auth/refresh.
+ *
+ * По умолчанию: не более 120 запросов с одного IP в минуту.
+ * Это с огромным запасом покрывает нормальные сценарии
+ * (параллельные вкладки, всплески 401 после истечения access),
+ * но срезает флуд от ботов и защищает от DoS на транзакции.
+ *
+ * Параметры настраиваются через env (REFRESH_RATE_LIMIT_WINDOW_MS, REFRESH_RATE_LIMIT_MAX).
+ */
+export const refreshLimiter = rateLimit({
+  windowMs: Number(process.env.REFRESH_RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+  max: Number(process.env.REFRESH_RATE_LIMIT_MAX) || 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Слишком много запросов обновления токена. Повторите позже.',
+  },
+});

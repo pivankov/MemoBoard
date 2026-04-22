@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { User } from 'types/auth';
+import { ApiError } from 'types/errors';
 
 import { AuthContext, type AuthContextValue } from 'contexts/AuthContext';
 import { bookmarksApiClient, eventsApiClient } from 'services/apiClients';
@@ -107,12 +108,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         const userData = await authService.fetchCurrentUser(token);
         setUser(userData);
-      } catch {
-        // профиль не загрузился — считаем пользователя разлогиненным
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-        accessTokenRef.current = null;
-        clearAccessTokenOnClients();
-        setUser(null);
+      } catch (error) {
+        // Чистим сессию только если токен действительно невалиден (401).
+        // При транзиентных ошибках (сеть, 500) — оставляем refresh-токен:
+        // следующая попытка (перезагрузка страницы / запрос из UI) может пройти успешно.
+        const isUnauthorized = error instanceof ApiError && error.statusCode === 401;
+        if (isUnauthorized) {
+          localStorage.removeItem(REFRESH_TOKEN_KEY);
+          accessTokenRef.current = null;
+          clearAccessTokenOnClients();
+          setUser(null);
+        }
+        // В остальных случаях пользователь останется с isAuthenticated=false (user=null),
+        // но refresh-токен не потеряем — при следующей сетевой попытке session восстановится.
       } finally {
         setIsLoading(false);
       }

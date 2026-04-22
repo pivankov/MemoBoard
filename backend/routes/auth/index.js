@@ -14,7 +14,7 @@ import argon2 from 'argon2';
 import { db } from '../../db/initdb.js';
 import { generateAccessToken } from '../../utils/jwt.js';
 import { requireAuth } from '../../middleware/auth.js';
-import { authLimiter } from '../../middleware/rateLimit.js';
+import { authLimiter, refreshLimiter } from '../../middleware/rateLimit.js';
 import { createSession, rotateSession, revokeSessionByToken } from '../../services/sessionService.js';
 
 const router = Router();
@@ -198,7 +198,7 @@ router.post('/login', authLimiter, async (req, res) => {
  * @returns {Object} 401 - refresh отсутствует, истёк, отозван или обнаружено повторное использование
  * @returns {Object} 500 - ошибка сервера
  */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', refreshLimiter, async (req, res) => {
   // COOKIE-MIGRATION: когда перейдём на httpOnly-cookies, оставить
   // только req.cookies.refresh_token и удалить body-вариант.
   const rawRefreshToken = req.body?.refreshToken ?? req.cookies?.refresh_token;
