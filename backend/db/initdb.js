@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const db = new Database(path.join(__dirname, 'data.db'));
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const ARGON2_TIME_COST = 3;
 const ARGON2_MEMORY_COST = 65536; // 2^16
 const ARGON2_PARALLELISM = 1;
@@ -90,6 +90,21 @@ const BOOKMARKS_FIELDS = {
 const BOOKMARK_TAG_RELATIONS_FIELDS = {
   bookmark_id: 'INTEGER NOT NULL',
   tag_id: 'INTEGER NOT NULL',
+};
+
+const SESSIONS_FIELDS = {
+  id: 'INTEGER PRIMARY KEY',
+  uid: 'TEXT UNIQUE NOT NULL',
+  user_id: 'INTEGER NOT NULL',
+  family_id: 'TEXT NOT NULL',
+  token_hash: 'TEXT UNIQUE NOT NULL',
+  expires_at: 'TEXT NOT NULL',
+  revoked_at: 'TEXT',
+  replaced_by_id: 'INTEGER',
+  user_agent: 'TEXT',
+  ip_address: 'TEXT',
+  created_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
+  last_used_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
 };
 
 function getUserVersion() {
@@ -513,6 +528,30 @@ async function initDb(options = {}) {
     CREATE INDEX IF NOT EXISTS idx_bookmark_tag_relations_tag_id ON bookmark_tag_relations(tag_id);
   `;
 
+  const createSessionsSql = `
+    CREATE TABLE IF NOT EXISTS sessions (
+      id ${SESSIONS_FIELDS.id},
+      uid ${SESSIONS_FIELDS.uid},
+      user_id ${SESSIONS_FIELDS.user_id} REFERENCES users(id) ON DELETE CASCADE,
+      family_id ${SESSIONS_FIELDS.family_id},
+      token_hash ${SESSIONS_FIELDS.token_hash},
+      expires_at ${SESSIONS_FIELDS.expires_at},
+      revoked_at ${SESSIONS_FIELDS.revoked_at},
+      replaced_by_id ${SESSIONS_FIELDS.replaced_by_id} REFERENCES sessions(id) ON DELETE SET NULL,
+      user_agent ${SESSIONS_FIELDS.user_agent},
+      ip_address ${SESSIONS_FIELDS.ip_address},
+      created_at ${SESSIONS_FIELDS.created_at},
+      last_used_at ${SESSIONS_FIELDS.last_used_at}
+    );
+  `;
+
+  const createSessionsIndexesSql = `
+    CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_family_id ON sessions(family_id);
+    CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
+    CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
+  `;
+
   const createSchema = db.transaction(() => {
     db.exec(createUsersSql);
     db.exec(createEventTypesSql);
@@ -521,8 +560,10 @@ async function initDb(options = {}) {
     db.exec(createBookmarkTagsSql);
     db.exec(createBookmarksSql);
     db.exec(createBookmarkTagRelationsSql);
+    db.exec(createSessionsSql);              // ← НОВОЕ
     db.exec(createEventsIndexesSql);
     db.exec(createBookmarkIndexesSql);
+    db.exec(createSessionsIndexesSql);       // ← НОВОЕ
     db.exec(createUsersUpdatedAtTrigger);
     db.exec(createEventsUpdatedAtTrigger);
     db.exec(createBookmarkCategoriesUpdatedAtTrigger);
@@ -559,12 +600,25 @@ async function initDb(options = {}) {
     seedUserData(demoId);
   };
 
+  const migrateFrom1To2 = () => {
+    db.transaction(() => {
+      db.exec(createSessionsSql);
+      db.exec(createSessionsIndexesSql);
+    })();
+  };
+
   let currentVersion = getUserVersion();
   while (currentVersion < SCHEMA_VERSION) {
     if (currentVersion === 0) {
       await migrateFrom0To1();
       setUserVersion(1);
       currentVersion = 1;
+      continue;
+    }
+    if (currentVersion === 1) {
+      migrateFrom1To2();
+      setUserVersion(2);
+      currentVersion = 2;
       continue;
     }
     break;
@@ -578,6 +632,7 @@ export {
   BOOKMARK_CATEGORIES_FIELDS,
   BOOKMARK_TAGS_FIELDS,
   BOOKMARKS_FIELDS,
+  SESSIONS_FIELDS,
   DEMO_EMAIL,
   initDb,
   resetDemoData,

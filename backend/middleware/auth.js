@@ -14,7 +14,7 @@
  * - req.user.name — имя пользователя
  */
 
-import { verifyToken } from '../utils/jwt.js';
+import { verifyAccessToken } from '../utils/jwt.js';
 import { db } from '../db/initdb.js';
 
 /**
@@ -50,7 +50,7 @@ export function requireAuth(req, res, next) {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = verifyToken(token);
+    const decoded = verifyAccessToken(token);
 
     // Проверяем, что пользователь всё ещё существует в БД
     const user = db.prepare('SELECT id, uid, email, name FROM users WHERE id = ? LIMIT 1').get(decoded.userId);

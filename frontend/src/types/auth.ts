@@ -9,10 +9,9 @@ export interface User {
   name: string | null;
 }
 
-/** Состояние аутентификации */
+/** Публичное состояние аутентификации */
 export interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -30,8 +29,15 @@ export interface RegisterCredentials {
   name?: string;
 }
 
-/** Ответ API при аутентификации */
+/** Ответ API при логине / регистрации / refresh */
 export interface AuthResponse {
-  token: string;
+  accessToken: string;
+  refreshToken: string;
   user: User;
+}
+
+/** Ответ API при refresh (без user) */
+export interface RefreshResponse {
+  accessToken: string;
+  refreshToken: string;
 }

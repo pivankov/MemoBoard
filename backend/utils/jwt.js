@@ -1,9 +1,10 @@
 /**
- * Утилиты для работы с JWT-токенами
+ * Утилиты для работы с JWT access-токенами.
  *
  * JWT (JSON Web Token) — стандарт аутентификации для SPA.
- * Токен создаётся при логине и передаётся с каждым запросом
- * в заголовке Authorization: Bearer <token>
+ * Access-токен создаётся при логине/ротации и передаётся с каждым запросом
+ * в заголовке Authorization: Bearer <token>.
+ * Живёт только в памяти на клиенте (не в localStorage) — защита от XSS.
  */
 
 import jwt from 'jsonwebtoken';
@@ -20,7 +21,14 @@ import jwt from 'jsonwebtoken';
 const MIN_SECRET_LENGTH = 32;
 
 const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+// Новое имя переменной окружения. Старое JWT_EXPIRES_IN учитываем
+// для обратной совместимости — но печатаем предупреждение.
+const LEGACY_EXPIRES = process.env.JWT_EXPIRES_IN;
+if (LEGACY_EXPIRES) {
+  console.warn('JWT_EXPIRES_IN устарела, используйте ACCESS_TOKEN_EXPIRES_IN. Старое значение будет проигнорировано.');
+}
+const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
 
 // Fail-fast: без валидного секрета сервер не должен стартовать.
 // Проверка выполняется на этапе импорта модуля — падение произойдёт
@@ -41,7 +49,7 @@ if (JWT_SECRET.length < MIN_SECRET_LENGTH) {
 }
 
 /**
- * Создаёт JWT-токен для пользователя
+ * Создаёт короткоживущий access JWT-токен для пользователя.
  *
  * @param {Object} user - объект пользователя из БД
  * @param {number} user.id - внутренний ID пользователя
@@ -49,26 +57,22 @@ if (JWT_SECRET.length < MIN_SECRET_LENGTH) {
  * @param {string} user.email - email пользователя
  * @returns {string} подписанный JWT-токен
  */
-export function generateToken(user) {
+export function generateAccessToken(user) {
   return jwt.sign(
-    {
-      userId: user.id,
-      uid: user.uid,
-      email: user.email,
-    },
+    { userId: user.id, uid: user.uid, email: user.email },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
+    { expiresIn: ACCESS_TOKEN_EXPIRES_IN }
   );
 }
 
 /**
- * Проверяет и декодирует JWT-токен
+ * Проверяет и декодирует access JWT-токен.
  *
  * @param {string} token - JWT-токен для верификации
  * @returns {Object} декодированный payload токена
  * @throws {jwt.JsonWebTokenError} если токен невалидный
  * @throws {jwt.TokenExpiredError} если токен истёк
  */
-export function verifyToken(token) {
+export function verifyAccessToken(token) {
   return jwt.verify(token, JWT_SECRET);
 }
