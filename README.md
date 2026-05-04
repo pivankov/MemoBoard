@@ -134,7 +134,13 @@ cd backend && npm start
 | Документ | Описание |
 |---|---|
 | [`frontend/README.md`](frontend/README.md) | Архитектура фронтенда, роутинг, API-интеграция, команды, AI Task Context |
-| [`backend/README.md`](backend/README.md) | API reference, структура backend, переменные окружения |
+| [`backend/README.md`](backend/README.md) | Технологии, установка, запуск, оглавление backend-документации |
+| [`backend/docs/api-auth.md`](backend/docs/api-auth.md) | API аутентификации: register, login, me |
+| [`backend/docs/api-events.md`](backend/docs/api-events.md) | API событий: CRUD для `/api/events` |
+| [`backend/docs/api-bookmarks.md`](backend/docs/api-bookmarks.md) | API закладок, категорий и тегов |
+| [`backend/docs/architecture.md`](backend/docs/architecture.md) | Структура проекта, middleware, обработка ошибок |
+| [`backend/docs/env.md`](backend/docs/env.md) | Переменные окружения и пример `.env` |
+| [`backend/docs/utilities.md`](backend/docs/utilities.md) | Утилиты: preview, jwt, date, uid |
 | [`backend/db/README.md`](backend/db/README.md) | Схема БД, таблицы, инициализация |
 | [`frontend/docs/useGroupedEvents.md`](frontend/docs/useGroupedEvents.md) | Алгоритм группировки и классификации событий |
 
