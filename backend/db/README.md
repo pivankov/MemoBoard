@@ -1,7 +1,7 @@
 ## База данных (SQLite + better-sqlite3)
 
 - Файл БД: `db/data.db`
-- Версия схемы: `PRAGMA user_version` (текущая — 1)
+- Версия схемы: `PRAGMA user_version` (текущая — **2**)
 - Дата/время: TEXT в ISO‑8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
 - Булево: INTEGER 0/1, с `CHECK (field IN (0,1))`
 
@@ -110,6 +110,35 @@
 - `idx_bookmark_tag_relations_bookmark_id` на `bookmark_tag_relations(bookmark_id)`
 - `idx_bookmark_tag_relations_tag_id` на `bookmark_tag_relations(tag_id)`
 
+#### sessions
+
+Хранит refresh-сессии пользователей. Каждая запись соответствует одному refresh-токену. При ротации старая запись сохраняется (с `replaced_by_id` и `revoked_at` = NULL пока активна), новая создаётся.
+
+- `id` INTEGER PRIMARY KEY — внутренний ID
+- `uid` TEXT UNIQUE NOT NULL — публичный UUID (для будущего API `/api/auth/sessions/:uid`)
+- `user_id` INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE — владелец сессии
+- `family_id` TEXT NOT NULL — UUID цепочки ротаций одного логина (все токены одного входа имеют одинаковый `family_id`)
+- `token_hash` TEXT UNIQUE NOT NULL — SHA-256(refresh_token) в hex (64 символа); сам токен в БД не хранится
+- `expires_at` TEXT NOT NULL — ISO-timestamp истечения refresh-токена
+- `revoked_at` TEXT — NULL = сессия активна; иначе — момент аннулирования
+- `replaced_by_id` INTEGER REFERENCES sessions(id) ON DELETE SET NULL — ссылка на новую сессию после ротации
+- `user_agent` TEXT — User-Agent клиента (для будущего UI «Мои устройства»)
+- `ip_address` TEXT — IP-адрес клиента
+- `created_at` TEXT NOT NULL DEFAULT datetime('now')
+- `last_used_at` TEXT NOT NULL DEFAULT datetime('now')
+
+Индексы:
+- `idx_sessions_user_id` на `sessions(user_id)`
+- `idx_sessions_family_id` на `sessions(family_id)`
+- `idx_sessions_token_hash` на `sessions(token_hash)`
+- `idx_sessions_expires_at` на `sessions(expires_at)`
+
+**Концепция Session Family и Reuse Detection:**
+
+Каждый новый логин создаёт уникальный `family_id`. При каждом вызове `/auth/refresh` старая сессия помечается как использованная (`replaced_by_id`), создаётся новая с тем же `family_id`. Если отозванный (уже заменённый) токен предъявляется повторно — это признак кражи токена. Сервер аннулирует все сессии с данным `family_id`, пользователь разлогинивается.
+
+Поля `user_agent` и `ip_address` хранятся в сессиях, но при ротации не проверяются (token binding запланирован).
+
 ### Данные для посева (seeds)
 
 Данные для инициализации базы данных находятся в директории `db/seeds/`:
@@ -149,10 +178,15 @@ CREATE TABLE IF NOT EXISTS child (
 4. Добавьте сид‑данные (опционально) в соответствующий файл в `db/seeds/`.
 5. Обновите документацию в `db/README.md`.
 
+### Экспорты initdb.js
+
+`initdb.js` экспортирует константу `SESSIONS_FIELDS` — массив имён столбцов таблицы `sessions`. Используется в `services/sessionService.js` для безопасного формирования SELECT-запросов.
+
 ### Миграции
 
 Миграции выполняются автоматически при инициализации БД. Текущие миграции:
 - `migrateFrom0To1`: создание всех таблиц (`users`, `event_types`, `events`, `bookmark_categories`, `bookmark_tags`, `bookmarks`, `bookmark_tag_relations`), индексов и триггеров; посев демо-данных для пользователя `demo@example.com` (при включённых сидах).
+- `migrateFrom1To2`: создание таблицы `sessions` и её индексов.
 
 Все миграции идемпотентны и безопасны для повторного запуска: схема создаётся через `CREATE TABLE IF NOT EXISTS`, сиды проверяют наличие записей по `uid` перед вставкой.
 

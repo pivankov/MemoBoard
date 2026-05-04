@@ -23,7 +23,9 @@ MemoBoard — веб-сервис для управления событиями
 
 ### 🔐 Аутентификация
 - Регистрация и вход по email + пароль
-- JWT-токены (Bearer) для защиты всех API-маршрутов
+- Access + Refresh токены: короткоживущий JWT (15 мин) в памяти + долгоживущий refresh-токен (30 дней) в httpOnly-cookie
+- CSRF-защита через double-submit cookie pattern
+- Серверная ротация refresh-токенов с reuse detection
 - Хеширование паролей через Argon2id
 - Каждый пользователь видит только свои данные
 
@@ -33,7 +35,7 @@ MemoBoard — веб-сервис для управления событиями
 
 **Frontend:** React 19, TypeScript 4.9, Ant Design 5, React Router 7, Jest
 
-**Backend:** Node.js 18+, Express 5, SQLite 3, better-sqlite3, nanoid, sharp, jsonwebtoken, argon2
+**Backend:** Node.js 18+, Express 5, SQLite 3, better-sqlite3, nanoid, sharp, jsonwebtoken, cookie-parser, argon2
 
 ---
 
@@ -83,14 +85,15 @@ cp backend/.env.example backend/.env
 PORT=4000
 NODE_ENV=development
 JWT_SECRET=<64-символьная случайная hex-строка>
-JWT_EXPIRES_IN=7d
+ACCESS_TOKEN_EXPIRES_IN=15m
+REFRESH_TOKEN_EXPIRES_MS=2592000000
 ```
 
 > **Важно:** `JWT_SECRET` обязателен и должен быть не короче 32 символов — иначе сервер упадёт при старте (fail-fast). Для генерации используйте:
 > ```bash
 > node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 > ```
-> Полный список переменных (включая настройки rate-limiter) — см. `backend/.env.example` и [`backend/README.md`](backend/README.md#️-переменные-окружения).
+> Полный список переменных (включая настройки rate-limiter) — см. `backend/.env.example` и [`backend/docs/env.md`](backend/docs/env.md).
 
 ### Инициализация базы данных
 
@@ -135,12 +138,12 @@ cd backend && npm start
 |---|---|
 | [`frontend/README.md`](frontend/README.md) | Архитектура фронтенда, роутинг, API-интеграция, команды, AI Task Context |
 | [`backend/README.md`](backend/README.md) | Технологии, установка, запуск, оглавление backend-документации |
-| [`backend/docs/api-auth.md`](backend/docs/api-auth.md) | API аутентификации: register, login, me |
+| [`backend/docs/api-auth.md`](backend/docs/api-auth.md) | API аутентификации: register, login, refresh, logout, me |
 | [`backend/docs/api-events.md`](backend/docs/api-events.md) | API событий: CRUD для `/api/events` |
 | [`backend/docs/api-bookmarks.md`](backend/docs/api-bookmarks.md) | API закладок, категорий и тегов |
-| [`backend/docs/architecture.md`](backend/docs/architecture.md) | Структура проекта, middleware, обработка ошибок |
+| [`backend/docs/architecture.md`](backend/docs/architecture.md) | Структура проекта, система аутентификации, middleware |
 | [`backend/docs/env.md`](backend/docs/env.md) | Переменные окружения и пример `.env` |
-| [`backend/docs/utilities.md`](backend/docs/utilities.md) | Утилиты: preview, jwt, date, uid |
+| [`backend/docs/utilities.md`](backend/docs/utilities.md) | Утилиты: preview, jwt, refreshToken, cookieOptions, sessionService, csrf, date, uid |
 | [`backend/db/README.md`](backend/db/README.md) | Схема БД, таблицы, инициализация |
 | [`frontend/docs/useGroupedEvents.md`](frontend/docs/useGroupedEvents.md) | Алгоритм группировки и классификации событий |
 
@@ -152,4 +155,4 @@ MIT
 
 ---
 
-*Последнее обновление: Апрель 2026*
+*Последнее обновление: Май 2026*

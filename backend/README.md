@@ -12,7 +12,8 @@ Backend-часть приложения MemoBoard - система для упр
 - **url-metadata** - парсинг метаданных URL
 - **sharp** - обработка и оптимизация изображений (превью закладок)
 - **argon2** - хеширование паролей (Argon2id)
-- **jsonwebtoken** - генерация и верификация JWT-токенов
+- **jsonwebtoken** - генерация и верификация JWT access-токенов
+- **cookie-parser** - парсинг cookies (refresh-токен, CSRF)
 - **express-rate-limit** - ограничение частоты запросов на чувствительных auth-маршрутах
 - **dotenv** - загрузка переменных окружения из `.env`
 
@@ -85,10 +86,10 @@ curl http://localhost:4000/health
 
 | Документ | Описание |
 |---|---|
-| [`docs/api-auth.md`](./docs/api-auth.md) | API аутентификации: register, login, me |
+| [`docs/api-auth.md`](./docs/api-auth.md) | API аутентификации: register, login, refresh, logout, me |
 | [`docs/api-events.md`](./docs/api-events.md) | API событий: CRUD для `/api/events` |
 | [`docs/api-bookmarks.md`](./docs/api-bookmarks.md) | API закладок, категорий и тегов |
-| [`docs/architecture.md`](./docs/architecture.md) | Структура проекта, middleware, обработка ошибок |
+| [`docs/architecture.md`](./docs/architecture.md) | Структура проекта, система аутентификации, middleware |
 | [`docs/env.md`](./docs/env.md) | Переменные окружения и пример `.env` |
-| [`docs/utilities.md`](./docs/utilities.md) | Утилиты: preview, jwt, date, uid |
+| [`docs/utilities.md`](./docs/utilities.md) | Утилиты: preview, jwt, refreshToken, cookieOptions, sessionService, csrf, date, uid |
 | [`db/README.md`](./db/README.md) | Схема БД, таблицы, миграции |

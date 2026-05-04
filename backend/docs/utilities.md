@@ -40,26 +40,76 @@ const faviconUrl = getFaviconUrl('https://github.com');
 
 ### utils/jwt.js
 
-Утилиты для работы с JWT-токенами.
+Утилиты для работы с access-токенами (JWT).
 
 **Функции:**
-- `generateToken(user)` - Создаёт подписанный JWT-токен. Принимает объект `{ id, uid, email }`, возвращает строку токена. Срок действия задаётся переменной `JWT_EXPIRES_IN`
-- `verifyToken(token)` - Верифицирует и декодирует токен. Возвращает payload. Бросает `TokenExpiredError` или `JsonWebTokenError` при ошибке
+- `generateAccessToken(user)` - Создаёт подписанный JWT access-токен. Принимает объект `{ id, uid, email }`, возвращает строку токена. Срок действия задаётся переменной `ACCESS_TOKEN_EXPIRES_IN` (по умолчанию `15m`)
+- `verifyAccessToken(token)` - Верифицирует и декодирует токен. Возвращает payload. Бросает `TokenExpiredError` или `JsonWebTokenError` при ошибке
 
 **Конфигурация через переменные окружения:**
 - `JWT_SECRET` — секрет для подписи. **Обязателен**, минимум 32 символа. Сервер не стартует, если переменная не задана или слишком короткая (fail-fast). Сгенерировать: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
-- `JWT_EXPIRES_IN` — срок действия токена (по умолчанию: `7d`)
+- `ACCESS_TOKEN_EXPIRES_IN` — срок действия access-токена (по умолчанию: `15m`). Короткий срок принципиален для безопасности схемы access+refresh.
+
+> **Устаревшая переменная:** `JWT_EXPIRES_IN` — игнорируется с предупреждением в консоль. Используйте `ACCESS_TOKEN_EXPIRES_IN`.
 
 **Пример:**
 ```javascript
-import { generateToken, verifyToken } from './utils/jwt.js';
+import { generateAccessToken, verifyAccessToken } from './utils/jwt.js';
 
-const token = generateToken({ id: 1, uid: 'abc-123', email: 'user@example.com' });
+const token = generateAccessToken({ id: 1, uid: 'abc-123', email: 'user@example.com' });
 // => "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
-const payload = verifyToken(token);
+const payload = verifyAccessToken(token);
 // => { userId: 1, uid: 'abc-123', email: 'user@example.com', iat: ..., exp: ... }
 ```
+
+---
+
+### utils/refreshToken.js
+
+Утилиты для генерации и хеширования refresh-токенов.
+
+**Функции:**
+- `generateRefreshToken()` — генерирует 48 случайных байт → 96-символьная hex-строка. Используется как непрозрачный refresh-токен.
+- `hashRefreshToken(token)` — SHA-256(token) → 64-символьная hex-строка. Только хеш хранится в БД — сам токен не хранится.
+- `computeRefreshExpiresAt()` — вычисляет дату истечения refresh-токена: `Date.now() + REFRESH_TOKEN_EXPIRES_MS` → ISO-строка.
+
+**Конфигурация:**
+- `REFRESH_TOKEN_EXPIRES_MS` — срок действия refresh-токена в миллисекундах (по умолчанию: `2592000000`, т.е. 30 дней)
+
+**Пример:**
+```javascript
+import { generateRefreshToken, hashRefreshToken, computeRefreshExpiresAt } from './utils/refreshToken.js';
+
+const raw = generateRefreshToken();
+// => "a3f9e2...c4d1" (96 символов hex)
+
+const hash = hashRefreshToken(raw);
+// => "7b2a9f...e831" (64 символа hex, SHA-256)
+
+const expiresAt = computeRefreshExpiresAt();
+// => "2026-06-03T08:00:00.000Z"
+```
+
+---
+
+### utils/cookieOptions.js
+
+Константы и вспомогательные функции для работы с auth-cookies.
+
+**Константы:**
+- `REFRESH_COOKIE_NAME` = `'refresh_token'`
+- `CSRF_COOKIE_NAME` = `'csrf_token'`
+- `AUTH_COOKIE_PATH` = `'/api/auth'`
+
+**Функции:**
+- `refreshCookieOptions()` — опции для refresh-токена: `httpOnly: true`, `sameSite: 'lax'`, `secure: NODE_ENV === 'production'`, `path: '/api/auth'`, `maxAge` из `REFRESH_TOKEN_EXPIRES_MS`
+- `csrfCookieOptions()` — опции для CSRF-токена: `httpOnly: false` (читается JS на клиенте), остальное аналогично refresh
+- `clearAuthCookieOptions()` — опции для очистки refresh-cookie (`expires: new Date(0)`)
+- `clearCsrfCookieOptions()` — опции для очистки csrf-cookie
+- `generateCsrfToken()` — `randomBytes(32).toString('hex')` → 64-символьная случайная строка
+
+**Примечание:** `Secure` флаг выставляется только в `NODE_ENV === 'production'`, что позволяет cookies работать через `http://` в dev-окружении.
 
 ---
 
@@ -105,5 +155,79 @@ const bookmarkUid = generateBookmarkUid();
 const tagUid = generateTagUid();
 // => "a3X7k"
 ```
+
+---
+
+## 🔐 Сервисы
+
+### services/sessionService.js
+
+Сервис управления refresh-сессиями. Инкапсулирует всю логику работы с таблицей `sessions`.
+
+**Функции:**
+
+- `createSession({ userId, familyId?, userAgent?, ipAddress? })` → `{ refreshToken, session }`
+  Создаёт новую сессию. Если `familyId` не передан — генерируется новый (новый логин). Записывает хеш токена в БД.
+
+- `rotateSession(rawRefreshToken, { userAgent?, ipAddress? })` → один из статусов:
+  - `{ status: 'ok', refreshToken, oldSession, newSession }` — успешная ротация; новые cookies должны быть выставлены клиенту
+  - `{ status: 'reuse_detected', userId }` — токен уже был использован; вся цепочка `family_id` аннулирована
+  - `{ status: 'not_found' | 'expired' | 'revoked' }` — невалидный токен
+  Вся логика выполняется в `db.transaction()`.
+
+- `revokeSessionByToken(rawRefreshToken)` → `boolean`
+  Отзывает сессию по raw refresh-токену. Возвращает `true` если сессия найдена и отозвана.
+
+**Пример:**
+```javascript
+import { createSession, rotateSession, revokeSessionByToken } from './services/sessionService.js';
+
+// Создание сессии при логине
+const { refreshToken, session } = createSession({ userId: 1, userAgent: req.headers['user-agent'], ipAddress: req.ip });
+
+// Ротация при /refresh
+const result = await rotateSession(rawToken, { userAgent: req.headers['user-agent'], ipAddress: req.ip });
+if (result.status === 'ok') { /* выдать новые cookies */ }
+if (result.status === 'reuse_detected') { /* очистить cookies, warn */ }
+
+// Отзыв при /logout
+revokeSessionByToken(rawToken);
+```
+
+---
+
+## 🛡 Middleware
+
+### middleware/auth.js
+
+`requireAuth` — проверяет access-токен из заголовка `Authorization: Bearer <token>`. При успехе добавляет `req.user` (`userId`, `uid`, `email`, `name`). Вызывает `verifyAccessToken` из `utils/jwt.js`.
+
+### middleware/csrf.js
+
+`requireCsrf` — middleware CSRF-защиты. Реализует паттерн **double-submit cookie**.
+
+**Логика:**
+1. Читает `req.cookies.csrf_token`
+2. Читает `req.headers['x-csrf-token']`
+3. Сравнивает через `crypto.timingSafeEqual` (защита от timing-атак)
+4. При несовпадении или отсутствии любого из значений — `403 Forbidden`
+
+Применяется к эндпоинтам `POST /auth/refresh` и `POST /auth/logout`.
+
+### middleware/rateLimit.js
+
+- `authLimiter` — rate-limiting для `/auth/login` и `/auth/register`. По умолчанию 10 запросов с одного IP за 15 минут. Защищает от перебора паролей. Параметры: `AUTH_RATE_LIMIT_WINDOW_MS`, `AUTH_RATE_LIMIT_MAX`.
+- `refreshLimiter` — rate-limiting для `/auth/refresh`. По умолчанию 120 запросов с одного IP за 1 минуту. Мягкий лимит — защита от DoS, не от перебора. Параметры: `REFRESH_RATE_LIMIT_WINDOW_MS`, `REFRESH_RATE_LIMIT_MAX`.
+
+При превышении любого лимита возвращается `429 Too Many Requests`.
+
+---
+
+## ⚙️ app.js
+
+Помимо стандартных middleware (`express.json()`, `cors()`, `express.static()`), `app.js` настраивает:
+
+- `cookie-parser` — парсинг cookies из запроса (обязателен для работы refresh/CSRF). Подключается после `express.json()`, до роутов.
+- `app.set('trust proxy', 1)` — корректное определение `req.ip` за reverse proxy (nginx, Cloudflare). Необходимо для корректной работы rate limiter по IP.
 
 ---
