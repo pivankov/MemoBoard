@@ -7,13 +7,11 @@ import { AuthContext, type AuthContextValue } from 'contexts/AuthContext';
 import { bookmarksApiClient, eventsApiClient } from 'services/apiClients';
 import * as authService from 'services/authService';
 
-// COOKIE-MIGRATION: этот ключ удалить, когда refresh переедет в httpOnly-cookie.
-const REFRESH_TOKEN_KEY = 'memoboard_refresh_token';
-
 /**
- * Устанавливает access-токен на всех API-клиентах.
- * Access-токен живёт ТОЛЬКО в памяти (не в localStorage) —
- * это защита от XSS-кражи.
+ * Устанавливает access-токен во всех ApiClient-ах.
+ *
+ * Access-токен живёт ТОЛЬКО в памяти (useRef) — это защита от XSS.
+ * Refresh-токен фронту недоступен вовсе: он в httpOnly-cookie.
  */
 function setAccessTokenOnClients(accessToken: string) {
   eventsApiClient.setHeader('Authorization', `Bearer ${accessToken}`);
@@ -29,19 +27,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Access-токен НЕ храним в state — useRef, потому что его изменение не должно триггерить ре-рендер.
-  // Доступ — только изнутри провайдера, наружу не отдаётся.
+  // Access-токен — только в памяти, наружу не отдаётся.
   const accessTokenRef = useRef<string | null>(null);
 
   // 🔴 SECURITY-CRITICAL: общий promise для дедупликации одновременных refresh-вызовов.
-  // Если 5 параллельных запросов получили 401 — все пять вызовут refresh(),
-  // но ФАКТИЧЕСКИЙ /auth/refresh выполнится ОДИН раз, остальные дождутся результата.
+  // При параллельных 401 все должны ждать один общий /auth/refresh, иначе
+  // получим гонку: первый ротирует токен, остальные предъявят уже отозванный
+  // → reuse detection → семейство отозвано → ложное разлогинивание.
   const refreshPromiseRef = useRef<Promise<boolean> | null>(null);
 
   /**
-   * Обновляет пару токенов. Дедуплицирует одновременные вызовы.
-   * @returns true если обновление успешно (access-токен обновлён в клиентах),
-   *          false если refresh-токен отсутствует/невалиден.
+   * Пробует обновить access-токен.
+   * Refresh-токен берётся браузером из httpOnly-cookie автоматически;
+   * CSRF-токен подставляется внутри authService из document.cookie.
+   *
+   * @returns true — удалось обновить (access-токен живой, клиенты настроены).
+   *          false — cookie отсутствует/невалидна, пользователь не залогинен.
    */
   const refresh = useCallback(async (): Promise<boolean> => {
     if (refreshPromiseRef.current) {
@@ -49,19 +50,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const doRefresh = async (): Promise<boolean> => {
-      // COOKIE-MIGRATION: когда refresh переедет в cookie, читать его из localStorage не нужно.
-      const savedRefresh = localStorage.getItem(REFRESH_TOKEN_KEY);
-      if (!savedRefresh) return false;
-
       try {
-        const result = await authService.refreshTokens(savedRefresh);
+        const result = await authService.refreshTokens();
         accessTokenRef.current = result.accessToken;
         setAccessTokenOnClients(result.accessToken);
-        localStorage.setItem(REFRESH_TOKEN_KEY, result.refreshToken);
         return true;
       } catch {
-        // Refresh невалиден — чистим всё, компонент ProtectedRoute перенаправит на /login.
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
+        // Любая ошибка refresh (401/403/network) трактуется как "не залогинен".
+        // Cookies чистит сервер (при 401) либо они и так отсутствуют.
         accessTokenRef.current = null;
         clearAccessTokenOnClients();
         setUser(null);
@@ -75,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return refreshPromiseRef.current;
   }, []);
 
-  // Регистрация колбэка на ApiClient'ах: при 401 они будут звать refresh().
+  // При 401 в любом ApiClient — зовём refresh().
   useEffect(() => {
     eventsApiClient.setOnAuthRefreshNeeded(refresh);
     bookmarksApiClient.setOnAuthRefreshNeeded(refresh);
@@ -85,15 +81,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [refresh]);
 
-  // Начальная загрузка: если есть refresh — пробуем получить новый access и профиль.
+  // Начальная загрузка: всегда пробуем /auth/refresh.
+  // Если cookie есть и валидна → получаем access + загружаем профиль.
+  // Если нет → isLoading=false, user=null, ProtectedRoute отправит на /login.
   useEffect(() => {
     const init = async () => {
-      const savedRefresh = localStorage.getItem(REFRESH_TOKEN_KEY);
-      if (!savedRefresh) {
-        setIsLoading(false);
-        return;
-      }
-
       const refreshed = await refresh();
       if (!refreshed) {
         setIsLoading(false);
@@ -109,31 +101,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = await authService.fetchCurrentUser(token);
         setUser(userData);
       } catch (error) {
-        // Чистим сессию только если токен действительно невалиден (401).
-        // При транзиентных ошибках (сеть, 500) — оставляем refresh-токен:
-        // следующая попытка (перезагрузка страницы / запрос из UI) может пройти успешно.
+        // Чистим сессию только при явном 401 (сервер сказал "токен невалиден").
+        // При транзиентных ошибках (сеть/500) не трогаем — следующий рендер
+        // или действие пользователя может успешно повторить /me.
         const isUnauthorized = error instanceof ApiError && error.statusCode === 401;
         if (isUnauthorized) {
-          localStorage.removeItem(REFRESH_TOKEN_KEY);
           accessTokenRef.current = null;
           clearAccessTokenOnClients();
           setUser(null);
         }
-        // В остальных случаях пользователь останется с isAuthenticated=false (user=null),
-        // но refresh-токен не потеряем — при следующей сетевой попытке session восстановится.
       } finally {
         setIsLoading(false);
       }
     };
     init();
-    // refresh стабилен (useCallback без зависимостей), eslint может требовать его в deps — добавить.
   }, [refresh]);
 
   const login = useCallback(async (credentials: Parameters<AuthContextValue['login']>[0]) => {
     const result = await authService.login(credentials);
     accessTokenRef.current = result.accessToken;
     setAccessTokenOnClients(result.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, result.refreshToken);
     setUser(result.user);
   }, []);
 
@@ -141,19 +128,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await authService.register(credentials);
     accessTokenRef.current = result.accessToken;
     setAccessTokenOnClients(result.accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, result.refreshToken);
     setUser(result.user);
   }, []);
 
   const logout = useCallback(() => {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    // Сначала чистим клиент (мгновенный UX), потом best-effort на сервер.
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    // Сначала чистим клиент (мгновенный UX), потом — серверный logout.
+    // Серверный logout очистит cookies; если он упадёт (сеть), cookies
+    // останутся до истечения срока — access-токен всё равно мёртв, угрозы нет.
     accessTokenRef.current = null;
     clearAccessTokenOnClients();
     setUser(null);
-    // Серверный logout не ждём — ошибки сети игнорируются сервисом.
-    void authService.logoutServer(refreshToken);
+    void authService.logoutServer();
   }, []);
 
   const value = useMemo<AuthContextValue>(() => ({

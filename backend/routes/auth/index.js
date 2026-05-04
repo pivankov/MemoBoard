@@ -16,6 +16,40 @@ import { generateAccessToken } from '../../utils/jwt.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { authLimiter, refreshLimiter } from '../../middleware/rateLimit.js';
 import { createSession, rotateSession, revokeSessionByToken } from '../../services/sessionService.js';
+import {
+  REFRESH_COOKIE_NAME,
+  CSRF_COOKIE_NAME,
+  refreshCookieOptions,
+  csrfCookieOptions,
+  clearAuthCookieOptions,
+  clearCsrfCookieOptions,
+  generateCsrfToken,
+} from '../../utils/cookieOptions.js';
+import { requireCsrf } from '../../middleware/csrf.js';
+
+/**
+ * Ставит на response обе auth-cookie: refresh_token (httpOnly) и csrf_token.
+ * Используется после login/register/refresh — то есть везде, где
+ * выдаётся новая refresh-сессия.
+ *
+ * @param {import('express').Response} res
+ * @param {string} refreshToken - сырой refresh-токен (hex, 96 символов)
+ * @returns {string} сгенерированный CSRF-токен (для логирования/отладки; фронт берёт из cookie)
+ */
+function issueAuthCookies(res, refreshToken) {
+  const csrfToken = generateCsrfToken();
+  res.cookie(REFRESH_COOKIE_NAME, refreshToken, refreshCookieOptions());
+  res.cookie(CSRF_COOKIE_NAME, csrfToken, csrfCookieOptions());
+  return csrfToken;
+}
+
+/**
+ * Удаляет обе auth-cookie. Используется в logout и при 401 на refresh.
+ */
+function clearAuthCookies(res) {
+  res.clearCookie(REFRESH_COOKIE_NAME, clearAuthCookieOptions());
+  res.clearCookie(CSRF_COOKIE_NAME, clearCsrfCookieOptions());
+}
 
 const router = Router();
 
@@ -37,7 +71,7 @@ const ARGON2_OPTIONS = {
  * @param {string} req.body.email - Email пользователя (уникальный)
  * @param {string} req.body.password - Пароль (минимум 6 символов)
  * @param {string} [req.body.name] - Имя пользователя
- * @returns {Object} 201 - { accessToken, refreshToken, user: { uid, email, name } }
+ * @returns {Object} 201 - { accessToken, user: { uid, email, name } } + выставляет httpOnly cookie `refresh_token` и cookie `csrf_token`
  * @returns {Object} 400 - Некорректные данные
  * @returns {Object} 409 - Email уже зарегистрирован
  * @returns {Object} 500 - Ошибка сервера
@@ -98,9 +132,10 @@ router.post('/register', authLimiter, async (req, res) => {
       ipAddress: req.ip,
     });
 
+    issueAuthCookies(res, refreshToken);
+
     return res.status(201).json({
       accessToken,
-      refreshToken,
       user: {
         uid,
         email: email.trim().toLowerCase(),
@@ -124,7 +159,7 @@ router.post('/register', authLimiter, async (req, res) => {
  * @param {Object} req.body
  * @param {string} req.body.email - Email пользователя
  * @param {string} req.body.password - Пароль пользователя
- * @returns {Object} 200 - { accessToken, refreshToken, user: { uid, email, name } }
+ * @returns {Object} 200 - { accessToken, user: { uid, email, name } } + выставляет httpOnly cookie `refresh_token` и cookie `csrf_token`
  * @returns {Object} 400 - Некорректные данные
  * @returns {Object} 401 - Неверный email или пароль
  * @returns {Object} 500 - Ошибка сервера
@@ -166,9 +201,10 @@ router.post('/login', authLimiter, async (req, res) => {
       ipAddress: req.ip,
     });
 
+    issueAuthCookies(res, refreshToken);
+
     return res.status(200).json({
       accessToken,
-      refreshToken,
       user: {
         uid: user.uid,
         email: user.email,
@@ -184,24 +220,24 @@ router.post('/login', authLimiter, async (req, res) => {
 /**
  * Ротация access + refresh токенов.
  *
- * Принимает refresh-токен из body ИЛИ из cookie (задел под httpOnly-cookies —
- * когда будет реализовано, body-вариант можно удалить).
+ * Принимает refresh-токен из cookie `refresh_token` (httpOnly) и
+ * CSRF-заголовок `X-CSRF-Token` (значение должно совпадать с cookie `csrf_token`).
  *
- * Возвращает новую пару токенов. Старый refresh-токен становится невалидным.
+ * Выставляет новую пару cookies: refresh_token и csrf_token.
+ * Старый refresh-токен становится невалидным.
  *
  * 🔴 SECURITY-CRITICAL: при обнаружении повторного использования
  * уже отротированного refresh-токена возвращает 401 И аннулирует
  * всё семейство сессий (см. sessionService.rotateSession).
  *
  * @route POST /api/auth/refresh
- * @returns {Object} 200 - { accessToken, refreshToken }
+ * @returns {Object} 200 - { accessToken } + новые cookies
  * @returns {Object} 401 - refresh отсутствует, истёк, отозван или обнаружено повторное использование
+ * @returns {Object} 403 - CSRF-токен отсутствует или неверен
  * @returns {Object} 500 - ошибка сервера
  */
-router.post('/refresh', refreshLimiter, async (req, res) => {
-  // COOKIE-MIGRATION: когда перейдём на httpOnly-cookies, оставить
-  // только req.cookies.refresh_token и удалить body-вариант.
-  const rawRefreshToken = req.body?.refreshToken ?? req.cookies?.refresh_token;
+router.post('/refresh', refreshLimiter, requireCsrf, async (req, res) => {
+  const rawRefreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
 
   if (!rawRefreshToken || typeof rawRefreshToken !== 'string') {
     return res.status(401).json({ error: 'Refresh-токен не предоставлен' });
@@ -214,26 +250,27 @@ router.post('/refresh', refreshLimiter, async (req, res) => {
     });
 
     if (result.status === 'not_found' || result.status === 'expired' || result.status === 'revoked') {
+      clearAuthCookies(res);
       return res.status(401).json({ error: 'Refresh-токен недействителен' });
     }
 
     if (result.status === 'reuse_detected') {
       console.warn(`[SECURITY] Обнаружено повторное использование refresh-токена для user_id=${result.userId}. Всё семейство сессий отозвано.`);
+      clearAuthCookies(res);
       return res.status(401).json({ error: 'Сессия скомпрометирована, авторизуйтесь заново' });
     }
 
     // result.status === 'ok'
     const user = db.prepare('SELECT id, uid, email FROM users WHERE id = ? LIMIT 1').get(result.newSession.user_id);
     if (!user) {
+      clearAuthCookies(res);
       return res.status(401).json({ error: 'Пользователь не найден' });
     }
 
     const accessToken = generateAccessToken(user);
+    issueAuthCookies(res, result.refreshToken);
 
-    return res.status(200).json({
-      accessToken,
-      refreshToken: result.refreshToken,
-    });
+    return res.status(200).json({ accessToken });
   } catch (error) {
     console.error('Ошибка ротации токена:', error);
     return res.status(500).json({ error: 'Не удалось обновить токен' });
@@ -243,19 +280,19 @@ router.post('/refresh', refreshLimiter, async (req, res) => {
 /**
  * Logout: отзывает refresh-сессию на сервере.
  *
- * Принимает refresh-токен из body или cookie (задел под cookies).
- * Сам endpoint публичный (не требует requireAuth), потому что
- * access-токен может уже истечь, но refresh — ещё валиден.
+ * Принимает refresh-токен из cookie `refresh_token` (httpOnly) и
+ * CSRF-заголовок `X-CSRF-Token`. Сам endpoint публичный (не требует requireAuth),
+ * потому что access-токен может уже истечь, но refresh — ещё валиден.
  *
  * Отзывает ТОЛЬКО предъявленную сессию, не всё семейство.
- * Если токен не найден — возвращает 204 (не раскрываем существование сессий).
+ * Всегда очищает обе auth-cookie в ответе.
  *
  * @route POST /api/auth/logout
  * @returns {void} 204 - Всегда, даже если токен не найден
+ * @returns {Object} 403 - CSRF-токен отсутствует или неверен
  */
-router.post('/logout', (req, res) => {
-  // COOKIE-MIGRATION: когда перейдём на httpOnly-cookies, оставить только cookie-вариант.
-  const rawRefreshToken = req.body?.refreshToken ?? req.cookies?.refresh_token;
+router.post('/logout', requireCsrf, (req, res) => {
+  const rawRefreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
 
   if (rawRefreshToken && typeof rawRefreshToken === 'string') {
     try {
@@ -266,6 +303,7 @@ router.post('/logout', (req, res) => {
     }
   }
 
+  clearAuthCookies(res);
   return res.status(204).end();
 });
 

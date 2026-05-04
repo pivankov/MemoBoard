@@ -29,15 +29,13 @@ export interface RegisterCredentials {
   name?: string;
 }
 
-/** Ответ API при логине / регистрации / refresh */
+/** Ответ API при логине / регистрации */
 export interface AuthResponse {
   accessToken: string;
-  refreshToken: string;
   user: User;
 }
 
 /** Ответ API при refresh (без user) */
 export interface RefreshResponse {
   accessToken: string;
-  refreshToken: string;
 }
