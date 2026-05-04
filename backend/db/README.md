@@ -1,7 +1,7 @@
 ## База данных (SQLite + better-sqlite3)
 
 - Файл БД: `db/data.db`
-- Версия схемы: `PRAGMA user_version` (текущая — **2**)
+- Версия схемы: `PRAGMA user_version` (текущая — **3**)
 - Дата/время: TEXT в ISO‑8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
 - Булево: INTEGER 0/1, с `CHECK (field IN (0,1))`
 
@@ -23,6 +23,8 @@
 - `password_hash` TEXT NOT NULL
 - `password_algo` TEXT NOT NULL DEFAULT 'argon2id'
 - `password_updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
+- `role` TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')) — роль пользователя
+- `status` TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'blocked')) — состояние аккаунта
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 
@@ -187,6 +189,7 @@ CREATE TABLE IF NOT EXISTS child (
 Миграции выполняются автоматически при инициализации БД. Текущие миграции:
 - `migrateFrom0To1`: создание всех таблиц (`users`, `event_types`, `events`, `bookmark_categories`, `bookmark_tags`, `bookmarks`, `bookmark_tag_relations`), индексов и триггеров; посев демо-данных для пользователя `demo@example.com` (при включённых сидах).
 - `migrateFrom1To2`: создание таблицы `sessions` и её индексов.
+- `migrateFrom2To3`: добавление полей `role` и `status` в таблицу `users`; пересоздание триггера `users_set_updated_at` с учётом новых полей.
 
 Все миграции идемпотентны и безопасны для повторного запуска: схема создаётся через `CREATE TABLE IF NOT EXISTS`, сиды проверяют наличие записей по `uid` перед вставкой.
 

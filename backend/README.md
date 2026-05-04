@@ -80,6 +80,14 @@ curl http://localhost:4000/health
 - `npm run db:reset` - Полный сброс БД с тестовыми данными
 - `npm run db:reset:noseed` - Полный сброс БД без тестовых данных
 
+### Изменение роли и статуса пользователя
+
+```bash
+node scripts/set-role.js <email> <field> <value>
+```
+
+[`/scripts/set-role.js`](./scripts/set-role.js)
+
 ---
 
 ## 📚 Документация

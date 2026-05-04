@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const db = new Database(path.join(__dirname, 'data.db'));
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const ARGON2_TIME_COST = 3;
 const ARGON2_MEMORY_COST = 65536; // 2^16
 const ARGON2_PARALLELISM = 1;
@@ -26,6 +26,8 @@ const USERS_FIELDS = {
    password_hash: 'TEXT NOT NULL',
    password_algo: "TEXT NOT NULL DEFAULT 'argon2id'",
    password_updated_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
+   role: "TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin'))",
+   status: "TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'blocked'))",
    created_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
    updated_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
 };
@@ -392,6 +394,8 @@ async function initDb(options = {}) {
       password_hash ${USERS_FIELDS.password_hash},
       password_algo ${USERS_FIELDS.password_algo},
       password_updated_at ${USERS_FIELDS.password_updated_at},
+      role ${USERS_FIELDS.role},
+      status ${USERS_FIELDS.status},
       created_at ${USERS_FIELDS.created_at},
       updated_at ${USERS_FIELDS.updated_at}
     );
@@ -407,7 +411,7 @@ async function initDb(options = {}) {
 
   const createUsersUpdatedAtTrigger = `
     CREATE TRIGGER IF NOT EXISTS users_set_updated_at
-    AFTER UPDATE OF uid, email, name, password_hash, password_algo, password_updated_at, created_at ON users
+    AFTER UPDATE OF uid, email, name, password_hash, password_algo, password_updated_at, role, status, created_at ON users
     FOR EACH ROW BEGIN
       UPDATE users SET updated_at = datetime('now') WHERE id = OLD.id;
     END;
@@ -607,6 +611,20 @@ async function initDb(options = {}) {
     })();
   };
 
+  const migrateFrom2To3 = () => {
+    const existingColumns = db.pragma('table_info(users)').map(c => c.name);
+    db.transaction(() => {
+      if (!existingColumns.includes('role')) {
+        db.exec(`ALTER TABLE users ADD COLUMN role ${USERS_FIELDS.role};`);
+      }
+      if (!existingColumns.includes('status')) {
+        db.exec(`ALTER TABLE users ADD COLUMN status ${USERS_FIELDS.status};`);
+      }
+      db.exec('DROP TRIGGER IF EXISTS users_set_updated_at;');
+      db.exec(createUsersUpdatedAtTrigger);
+    })();
+  };
+
   let currentVersion = getUserVersion();
   while (currentVersion < SCHEMA_VERSION) {
     if (currentVersion === 0) {
@@ -619,6 +637,12 @@ async function initDb(options = {}) {
       migrateFrom1To2();
       setUserVersion(2);
       currentVersion = 2;
+      continue;
+    }
+    if (currentVersion === 2) {
+      migrateFrom2To3();
+      setUserVersion(3);
+      currentVersion = 3;
       continue;
     }
     break;
