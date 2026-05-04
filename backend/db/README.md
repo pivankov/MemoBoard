@@ -1,26 +1,17 @@
 ## База данных (SQLite + better-sqlite3)
 
 - Файл БД: `db/data.db`
-- Версия схемы: `PRAGMA user_version` (текущая — 3)
+- Версия схемы: `PRAGMA user_version` (текущая — **2**)
 - Дата/время: TEXT в ISO‑8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
 - Булево: INTEGER 0/1, с `CHECK (field IN (0,1))`
 
 ### Инициализация и сиды
-- Команда (с сидами): `npm run db:init`
-- Создаёт таблицы, включает внешние ключи, добавляет базовые данные (пользователи, типы событий, события, категории закладок, теги, закладки).
 
-- Команда (без сидов): `npm run db:init:noseed`
-  - Создаёт только схему БД, без вставки данных.
+- **`npm run db:init`** — создаёт схему и сеет demo-пользователя с DUMMY-данными, если `data.db` ещё не инициализирована. Если уже инициализирована (`user_version` совпадает со `SCHEMA_VERSION`) — ничего не делает.
 
-- Сброс БД: `npm run db:reset`
-  - Удаляет файл `db/data.db` и запускает полную инициализацию с сидами.
+- **`npm run db:reset`** — полный снос: удаляет `data.db` и запускает `db:init` заново. Используется в dev при изменении схемы.
 
-- Сброс БД без сидов: `npm run db:reset:noseed`
-  - Удаляет файл `db/data.db` и запускает инициализацию без сидов.
-
-Опции запуска CLI:
-- Флаг `--no-seed` (или `--noseed`) отключает сиды: `node ./db/cli-init.js --no-seed`
-- Переменная окружения `SEED=false` также отключает сиды: `SEED=false npm run db:init`
+- **`npm run db:reset:demo`** — не трогает БД целиком. Удаляет все события, закладки, категории и теги, принадлежащие `demo@example.com`, а также связанные файлы превью в `uploads/previews/`. Затем заново засевает DUMMY-данные для demo-пользователя. Данные других пользователей **не затрагиваются**.
 
 ### Таблицы
 
@@ -65,6 +56,7 @@
 #### bookmark_categories
 - `id` INTEGER PRIMARY KEY
 - `uid` TEXT UNIQUE NOT NULL
+- `user_id` INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE — владелец категории
 - `parent_id` INTEGER REFERENCES bookmark_categories(id) ON DELETE SET NULL
 - `title` TEXT NOT NULL
 - `icon` TEXT
@@ -72,16 +64,21 @@
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 
-Индексы: UNIQUE по `uid` (уникальность покрывает индекс).
+Индексы:
+- UNIQUE по `uid` (уникальность покрывает индекс).
+- `idx_bookmark_categories_user_id` на `bookmark_categories(user_id)`
 
 #### bookmark_tags
 - `id` INTEGER PRIMARY KEY
 - `uid` TEXT UNIQUE NOT NULL
+- `user_id` INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE — владелец тега
 - `title` TEXT NOT NULL
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 
-Индексы: UNIQUE по `uid` (уникальность покрывает индекс).
+Индексы:
+- UNIQUE по `uid` (уникальность покрывает индекс).
+- `idx_bookmark_tags_user_id` на `bookmark_tags(user_id)`
 
 #### bookmarks
 - `id` INTEGER PRIMARY KEY
@@ -112,6 +109,35 @@
 Индексы:
 - `idx_bookmark_tag_relations_bookmark_id` на `bookmark_tag_relations(bookmark_id)`
 - `idx_bookmark_tag_relations_tag_id` на `bookmark_tag_relations(tag_id)`
+
+#### sessions
+
+Хранит refresh-сессии пользователей. Каждая запись соответствует одному refresh-токену. При ротации старая запись сохраняется (с `replaced_by_id` и `revoked_at` = NULL пока активна), новая создаётся.
+
+- `id` INTEGER PRIMARY KEY — внутренний ID
+- `uid` TEXT UNIQUE NOT NULL — публичный UUID (для будущего API `/api/auth/sessions/:uid`)
+- `user_id` INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE — владелец сессии
+- `family_id` TEXT NOT NULL — UUID цепочки ротаций одного логина (все токены одного входа имеют одинаковый `family_id`)
+- `token_hash` TEXT UNIQUE NOT NULL — SHA-256(refresh_token) в hex (64 символа); сам токен в БД не хранится
+- `expires_at` TEXT NOT NULL — ISO-timestamp истечения refresh-токена
+- `revoked_at` TEXT — NULL = сессия активна; иначе — момент аннулирования
+- `replaced_by_id` INTEGER REFERENCES sessions(id) ON DELETE SET NULL — ссылка на новую сессию после ротации
+- `user_agent` TEXT — User-Agent клиента (для будущего UI «Мои устройства»)
+- `ip_address` TEXT — IP-адрес клиента
+- `created_at` TEXT NOT NULL DEFAULT datetime('now')
+- `last_used_at` TEXT NOT NULL DEFAULT datetime('now')
+
+Индексы:
+- `idx_sessions_user_id` на `sessions(user_id)`
+- `idx_sessions_family_id` на `sessions(family_id)`
+- `idx_sessions_token_hash` на `sessions(token_hash)`
+- `idx_sessions_expires_at` на `sessions(expires_at)`
+
+**Концепция Session Family и Reuse Detection:**
+
+Каждый новый логин создаёт уникальный `family_id`. При каждом вызове `/auth/refresh` старая сессия помечается как использованная (`replaced_by_id`), создаётся новая с тем же `family_id`. Если отозванный (уже заменённый) токен предъявляется повторно — это признак кражи токена. Сервер аннулирует все сессии с данным `family_id`, пользователь разлогинивается.
+
+Поля `user_agent` и `ip_address` хранятся в сессиях, но при ротации не проверяются (token binding запланирован).
 
 ### Данные для посева (seeds)
 
@@ -152,13 +178,20 @@ CREATE TABLE IF NOT EXISTS child (
 4. Добавьте сид‑данные (опционально) в соответствующий файл в `db/seeds/`.
 5. Обновите документацию в `db/README.md`.
 
+### Экспорты initdb.js
+
+`initdb.js` экспортирует константу `SESSIONS_FIELDS` — массив имён столбцов таблицы `sessions`. Используется в `services/sessionService.js` для безопасного формирования SELECT-запросов.
+
 ### Миграции
 
 Миграции выполняются автоматически при инициализации БД. Текущие миграции:
-- `migrateFrom0To1`: создание таблиц `users`, `event_types`, `events`
-- `migrateFrom1To2`: создание таблиц `bookmark_categories`, `bookmark_tags`, `bookmarks`, `bookmark_tag_relations`
-- `migrateFrom2To3`: добавление колонки `in_trash` в таблицу `bookmarks` (если ещё не существует), пересоздание триггера `bookmarks_set_updated_at` для включения `in_trash` в список отслеживаемых полей
+- `migrateFrom0To1`: создание всех таблиц (`users`, `event_types`, `events`, `bookmark_categories`, `bookmark_tags`, `bookmarks`, `bookmark_tag_relations`), индексов и триггеров; посев демо-данных для пользователя `demo@example.com` (при включённых сидах).
+- `migrateFrom1To2`: создание таблицы `sessions` и её индексов.
 
-Все миграции являются идемпотентными и безопасными для повторного запуска. Миграция `migrateFrom2To3` перед выполнением `ALTER TABLE` проверяет наличие колонки через `PRAGMA table_info` — это позволяет корректно работать при полном сбросе БД (`db:reset`), когда таблица создаётся сразу с актуальной схемой.
+Все миграции идемпотентны и безопасны для повторного запуска: схема создаётся через `CREATE TABLE IF NOT EXISTS`, сиды проверяют наличие записей по `uid` перед вставкой.
+
+### Посев данных
+
+При первом запуске `initDb()` с включёнными сидами создаётся один демо-пользователь (`demo@example.com` / пароль `demo`), к которому прикрепляются все dummy-данные из `db/seeds/`. Регистрация новых пользователей — через стандартный API-роут, новые пользователи стартуют с пустым набором данных.
 
 

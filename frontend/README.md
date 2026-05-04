@@ -1,6 +1,7 @@
 # MemoBoard Frontend
 
-Frontend-часть MemoBoard (React + TypeScript) для двух доменов:
+Frontend-часть MemoBoard (React + TypeScript) для трёх доменов:
+- `Auth` (аутентификация: вход, регистрация, защита маршрутов)
 - `Events` (календарные события с повторениями)
 - `Bookmarks` (менеджмент закладок, категорий, тегов, корзины)
 
@@ -19,7 +20,7 @@ npm start
 
 Frontend запускается на `http://localhost:3000`.
 
-Важно: для полной работы должен быть запущен backend на `http://localhost:4000`.
+Важно: для полной работы должен быть запущен backend на `http://localhost:4000`. CRA-прокси автоматически перенаправляет все `/api/*` запросы к backend, что необходимо для корректной работы httpOnly-cookies.
 
 ### Полезные команды
 
@@ -55,16 +56,28 @@ frontend/
 ├── src/
 │   ├── App.tsx                     # Router и верхнеуровневые провайдеры
 │   ├── index.tsx                   # Точка входа, ConfigProvider (antd)
-│   ├── pages/                      # Страницы (EventsPage, BookmarksPage, ...)
+│   ├── pages/                      # Страницы
+│   │   ├── LoginPage.tsx           # Форма входа (публичная)
+│   │   ├── RegisterPage.tsx        # Форма регистрации (публичная)
+│   │   ├── HomePage.tsx
+│   │   ├── EventsPage.tsx
+│   │   ├── BookmarksPage.tsx
+│   │   └── NotFoundPage.tsx
 │   ├── components/                 # UI и доменные компоненты
+│   │   ├── ProtectedRoute/         # Guard для защищённых маршрутов
 │   │   ├── Events/
 │   │   ├── Bookmarks/
 │   │   ├── Header/
 │   │   └── UI/
 │   ├── hooks/                      # Данные и бизнес-логика уровня UI
+│   │   └── useAuth.ts              # Доступ к AuthContext
 │   ├── contexts/                   # Actions-контексты (CRUD + notify + refresh)
+│   │   └── AuthContext.tsx         # Контекст аутентификации
 │   ├── services/                   # API-клиент и инстансы сервисов
-│   ├── providers/                  # Глобальные провайдеры (уведомления)
+│   │   ├── authService.ts          # Вызовы auth API (login, register, refreshTokens, logoutServer, me)
+│   │   └── csrf.ts                 # readCsrfToken() — чтение csrf_token из cookie
+│   ├── providers/                  # Глобальные провайдеры
+│   │   └── AuthProvider.tsx        # Провайдер состояния аутентификации
 │   ├── constants/                  # API и доменные константы
 │   ├── types/                      # Типы доменов и ошибок
 │   ├── enums/                      # Перечисления (EventType, Recurrence и др.)
@@ -75,35 +88,74 @@ frontend/
 
 ## 🧭 Роутинг (кратко)
 
-Роутинг описан в `src/App.tsx`.
+Роутинг описан в `src/App.tsx`. Маршруты делятся на **публичные** и **защищённые**.
 
-- `/` -> `HomePage`
-- `/events` -> `EventsPage`
-- `/bookmarks` -> `BookmarksPage`
+**Публичные маршруты** (доступны без авторизации):
+- `/login` → `LoginPage`
+- `/register` → `RegisterPage`
+
+**Защищённые маршруты** (требуют авторизацию; при её отсутствии — редирект на `/login`):
+- `/` → `HomePage`
+- `/events` → `EventsPage`
+- `/bookmarks` → `BookmarksPage`
 - `/bookmarks/favorites`, `/bookmarks/unsorted`, `/bookmarks/trash`
 - `/bookmarks/category/:categoryId`
 - `/bookmarks/tag/:tagId`
 - edit-маршруты для bookmark-элементов (например, `:bookmarkId/edit`)
+
+Все защищённые маршруты обёрнуты в `ProtectedRoute` — компонент-guard, который проверяет наличие авторизации.
 
 Все неизвестные пути уходят в `NotFoundPage`.
 
 ## 🔌 Интеграция с backend
 
 Текущие API-константы заданы в `src/constants/api.ts`:
-- `API_STATIC_BASE_URL = http://localhost:4000`
-- `API_BOOKMARKS_BASE_URL = http://localhost:4000/api/bookmarks`
-- `API_EVENTS_BASE_URL = http://localhost:4000/api/events`
+- `API_BASE_URL = '/api'` — относительный URL (same-origin)
+- `API_STATIC_BASE_URL = ''` — пустая строка (тот же origin)
+- `API_BOOKMARKS_BASE_URL = '/api/bookmarks'`
+- `API_EVENTS_BASE_URL = '/api/events'`
+
+Все URL относительные — это обеспечивает одинаковое поведение в dev (через CRA-прокси) и production (backend на том же origin).
+
+**CRA-прокси в dev:**  
+В `package.json` задано `"proxy": "http://localhost:4000"`. CRA автоматически проксирует все запросы на `/api/*` к backend. Это необходимо для корректной работы `SameSite=Lax` httpOnly-cookies — браузер не отправляет cross-origin cookies в dev без прокси.
 
 HTTP-слой:
-- `src/services/ApiClient.ts` — общий клиент (`get/post/put/patch/delete`, timeout, нормализация ошибок).
+- `src/services/ApiClient.ts` — общий клиент (`get/post/put/patch/delete`, timeout, нормализация ошибок). Автоматически добавляет заголовок `Authorization: Bearer <accessToken>`. При получении `401` вызывает `onAuthRefreshNeeded()` callback и повторяет запрос с новым токеном (защита от бесконечного цикла через флаг `isRetry`).
 - `src/services/apiClients.ts` — готовые клиенты `eventsApiClient` и `bookmarksApiClient`.
+- `src/services/authService.ts` — методы `login`, `register`, `refreshTokens`, `logoutServer`, `fetchCurrentUser` для Auth API. Все запросы к `/api/auth/*` используют `credentials: 'include'` для передачи cookies.
+- `src/services/csrf.ts` — утилита `readCsrfToken()`: читает значение cookie `csrf_token` (защита от SSR через проверку `typeof document`).
 
 Ожидаемый формат успешного ответа backend (основной контракт):  
 `{ data: ... }`
 
+**Схема хранения токенов:**
+- Access-токен хранится **только в памяти** (`useRef` в `AuthProvider`) — недоступен из localStorage и не отдаётся наружу через контекст
+- Refresh-токен хранится в httpOnly-cookie — JS-код к нему не имеет доступа, передаётся браузером автоматически
+- CSRF-токен хранится в читаемой (не httpOnly) cookie `csrf_token`; при вызове `/refresh` и `/logout` передаётся в заголовке `X-CSRF-Token`
+
 ## 🧠 Архитектура в 1 минуту
 
-Два самостоятельных потока:
+**Аутентификация:**
+```
+AuthProvider (state: user, isLoading; accessTokenRef — только в памяти)
+  └── AuthContext / useAuth()        # доступ к состоянию из любого компонента
+       └── authService               # login/register/refreshTokens/logoutServer → API
+ProtectedRoute                       # guard: нет авторизации → redirect /login
+ApiClient                            # Bearer access-токен в каждом запросе
+                                     # 401 → refresh() → повтор запроса → logout при неудаче
+```
+
+**Token refresh flow:**
+```
+Запрос к API → 401 → ApiClient вызывает onAuthRefreshNeeded()
+  → AuthProvider.refresh() → POST /auth/refresh + X-CSRF-Token
+  → новый accessToken в памяти, новые cookies от сервера
+  → повторный запрос с новым токеном
+  (N параллельных 401 → 1 реальный запрос refresh через refreshPromiseRef)
+```
+
+Два самостоятельных потока данных:
 
 **Read (чтение):**
 `page -> components -> useEvents/useBookmarks -> services(ApiClient) -> backend`
@@ -153,6 +205,13 @@ HTTP-слой:
 - Изменение UI страницы:
   - `src/pages/*`
   - `src/components/<Domain>/*`
+- Аутентификация и авторизация:
+  - `src/providers/AuthProvider.tsx` — state: user, isLoading; accessTokenRef (только в памяти); refresh/login/logout/register
+  - `src/contexts/AuthContext.tsx` — React-контекст для AuthProvider
+  - `src/hooks/useAuth.ts` — хук для доступа к AuthContext
+  - `src/services/authService.ts` — API-вызовы (login, register, refreshTokens, logoutServer, fetchCurrentUser)
+  - `src/services/csrf.ts` — readCsrfToken() для чтения csrf_token из cookie
+  - `src/components/ProtectedRoute/ProtectedRoute.tsx` — guard для защищённых маршрутов
 - Загрузка данных (read-only):
   - `src/hooks/useEvents.ts`
   - `src/hooks/useBookmarks.ts`
@@ -162,9 +221,9 @@ HTTP-слой:
   - `src/contexts/EventsActionsContext.tsx`
   - `src/contexts/BookmarksActionsContext.tsx`
 - HTTP-клиент и базовые API-настройки:
-  - `src/services/ApiClient.ts`
+  - `src/services/ApiClient.ts` — `setOnAuthRefreshNeeded(cb)` для интеграции с AuthProvider
   - `src/services/apiClients.ts`
-  - `src/constants/api.ts`
+  - `src/constants/api.ts` — относительные URL (`/api/...`)
 - Типы:
   - `src/types/events.ts`
   - `src/types/bookmarks.ts`
@@ -173,11 +232,14 @@ HTTP-слой:
 ### 2) Контракты и инварианты
 
 - Backend отвечает в форме `{ data: ... }`. Исключение: `DELETE` возвращает `204 No Content` с пустым телом — `ApiClient` обрабатывает это явно.
+- Auth endpoints отвечают: `/login`, `/register` → `{ accessToken, user }`; `/refresh` → `{ accessToken }`; `/logout` → `204`. Не в форме `{ data }`.
 - Ошибки API нормализуются через `ApiError` и `getApiErrorMessage`.
 - После успешной мутации ожидается:
   - success notification;
   - `refresh...` для актуализации списков.
 - Actions hooks не должны зависеть от UI; UI-эффекты лучше держать в contexts.
+- Access-токен хранится **только в памяти** (`accessTokenRef` в `AuthProvider`). `ApiClient` получает токен через установленный заголовок, а не читает из localStorage. `token` и `refreshToken` **не отдаются наружу через `AuthContext`**.
+- Получение `401` → `ApiClient` вызывает `onAuthRefreshNeeded()` → `AuthProvider.refresh()` → повтор запроса. При неудаче refresh → logout (чистка accessToken + `setUser(null)`).
 
 ### 3) Правила безопасных изменений
 
@@ -198,6 +260,13 @@ HTTP-слой:
 - Обновлена документация, если изменены архитектурные договоренности.
 
 ### 5) Что читать в первую очередь (экономия токенов)
+
+Для задач по `Auth`:
+1. `src/providers/AuthProvider.tsx`
+2. `src/contexts/AuthContext.tsx`
+3. `src/services/authService.ts`
+4. `src/components/ProtectedRoute/ProtectedRoute.tsx`
+5. `src/pages/LoginPage.tsx`, `src/pages/RegisterPage.tsx`
 
 Для задач по `Events`:
 1. `src/pages/EventsPage.tsx`
@@ -221,4 +290,4 @@ HTTP-слой:
 
 ---
 
-Последнее обновление: Апрель 2026
+Последнее обновление: Май 2026

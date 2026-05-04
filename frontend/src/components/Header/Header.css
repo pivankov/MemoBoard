@@ -12,3 +12,19 @@
   color: var(--color-text-secondary);
   border-color: #dcdfe6;
 }
+
+.header__user {
+  display: flex;
+  align-items: center;
+  margin-left: 16px;
+  gap: 8px;
+}
+
+.header__user-name {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.header__user-logout {
+  color: var(--color-text-secondary);
+}

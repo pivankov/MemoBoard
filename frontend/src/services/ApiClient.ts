@@ -21,6 +21,13 @@ class ApiClient {
   private config: ApiClientConfig;
 
   /**
+   * Callback для обновления авторизации.
+   * Возвращает true → повторить запрос с обновлёнными заголовками.
+   * Возвращает false → пробросить 401 клиентскому коду.
+   */
+  private onAuthRefreshNeeded: (() => Promise<boolean>) | null = null;
+
+  /**
    * @param config - конфигурация клиента (baseURL обязателен)
    */
   constructor(config: ApiClientConfig) {
@@ -38,11 +45,13 @@ class ApiClient {
    * 
    * @param endpoint - путь к ресурсу (относительно baseURL)
    * @param options - опции fetch
+   * @param isRetry - защита от бесконечной рекурсии: true если запрос уже повторяется после refresh
    * @returns распарсенный JSON ответ
    */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry: boolean = false,
   ): Promise<T> {
     const url = `${this.config.baseURL}${endpoint}`;
     const controller = new AbortController();
@@ -61,6 +70,17 @@ class ApiClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        // 🔴 SECURITY-CRITICAL: 401 + возможность обновить токен
+        if (response.status === 401 && !isRetry && this.onAuthRefreshNeeded) {
+          const refreshed = await this.onAuthRefreshNeeded();
+          if (refreshed) {
+            // Повторяем запрос с обновлёнными заголовками.
+            // isRetry=true исключает бесконечную рекурсию при очередном 401.
+            return this.request<T>(endpoint, options, true);
+          }
+          // Если refresh не получился — продолжаем штатную обработку ошибки (пробросим наверх)
+        }
+
         // Пытаемся получить детальное сообщение ошибки от бэкенда
         const defaultMessage = `HTTP ${response.status}: ${response.statusText}`;
         
@@ -208,6 +228,25 @@ class ApiClient {
       const { [key]: _, ...rest } = this.config.headers;
       this.config.headers = rest;
     }
+  }
+
+  /**
+   * Устанавливает callback для обновления авторизации при 401.
+   *
+   * Callback должен:
+   * 1. Попытаться обновить access-токен (например, через POST /auth/refresh).
+   * 2. Если успешно — обновить заголовки ApiClient через setHeader('Authorization', ...) и вернуть true.
+   * 3. Если нет — вернуть false (клиент пробросит 401 наверх, AuthProvider разлогинит пользователя).
+   *
+   * ВАЖНО: если колбэк вызывается одновременно несколькими запросами,
+   * он должен внутри себя обеспечить, что РЕАЛЬНЫЙ запрос /refresh
+   * выполнится ОДИН РАЗ (дедупликация через общий promise).
+   * ApiClient не делает этого сам — это ответственность AuthProvider.
+   *
+   * @param callback - async-функция обновления авторизации, или null для сброса
+   */
+  public setOnAuthRefreshNeeded(callback: (() => Promise<boolean>) | null): void {
+    this.onAuthRefreshNeeded = callback;
   }
 }
 

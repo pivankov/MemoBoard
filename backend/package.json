@@ -5,15 +5,18 @@
   "scripts": {
     "start": "node app.js",
     "db:init": "node ./db/cli-init.js",
-    "db:init:noseed": "node ./db/cli-init.js --no-seed",
     "db:reset": "rm -f ./db/data.db && node ./db/cli-init.js",
-    "db:reset:noseed": "rm -f ./db/data.db && node ./db/cli-init.js --no-seed"
+    "db:reset:demo": "node ./db/cli-reset-demo.js"
   },
   "dependencies": {
     "argon2": "^0.44.0",
     "better-sqlite3": "^12.2.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.3.2",
+    "jsonwebtoken": "^9.0.3",
     "nanoid": "^5.1.6",
     "sharp": "^0.34.5",
     "url-metadata": "^5.3.0"

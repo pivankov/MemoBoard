@@ -2,16 +2,42 @@ import { Router } from 'express';
 import { db } from '../../db/initdb.js';
 import { generateTagUid } from '../../utils/uid.js';
 
+/**
+ * @fileoverview Роутер тегов закладок.
+ *
+ * Все маршруты этого роутера монтируются как подроутер `bookmarks` в
+ * `backend/routes/index.js` под префиксом `/api/bookmarks/tags` и ЗАЩИЩЕНЫ
+ * middleware `requireAuth`:
+ *
+ *     router.use('/bookmarks', requireAuth, bookmarks)
+ *
+ * Поэтому в каждом обработчике гарантированно доступен `req.user`
+ * (typedef `AuthenticatedUser` определён в `backend/middleware/auth.js`),
+ * а все SQL-запросы фильтруют данные по `req.user.userId`, обеспечивая
+ * изоляцию данных между пользователями.
+ *
+ * Любой из роутов может вернуть 401 Unauthorized, если токен отсутствует,
+ * невалиден, истёк или пользователь удалён из БД. Это указано в JSDoc
+ * каждого роута через `@returns 401`.
+ */
+
 const router = Router();
 
 /**
- * Получает список всех тегов с подсчетом количества закладок
- * 
+ * Получает список тегов текущего пользователя с подсчетом количества закладок
+ *
  * Теги возвращаются отсортированными по названию (ASC).
  * Для каждого тега подсчитывается количество связанных закладок (amount).
- * 
+ * Выборка ограничена данными текущего пользователя (`req.user.userId`).
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/tags
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @returns {Object} 200 - JSON объект с массивом тегов в поле data
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -32,11 +58,12 @@ router.get('/', async (req, res) => {
       SELECT bt.uid, bt.title, COUNT(b.id) AS amount
       FROM bookmark_tags bt
       LEFT JOIN bookmark_tag_relations btr ON bt.id = btr.tag_id
-      LEFT JOIN bookmarks b ON btr.bookmark_id = b.id AND b.in_trash = 0
+      LEFT JOIN bookmarks b ON btr.bookmark_id = b.id AND b.in_trash = 0 AND b.user_id = ?
+      WHERE bt.user_id = ?
       GROUP BY bt.id, bt.uid, bt.title
       ORDER BY bt.title ASC
     `);
-    const rows = tagsQuery.all();
+    const rows = tagsQuery.all(req.user.userId, req.user.userId);
 
     const data = rows.map((row) => ({
       id: String(row.uid),
@@ -53,16 +80,24 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Получает все закладки с указанным тегом
- * 
+ * Получает все закладки текущего пользователя с указанным тегом
+ *
  * Возвращает список закладок, связанных с указанным тегом.
  * Для каждой закладки также возвращаются все её теги (не только указанный).
- * 
+ * Тег и связанные закладки должны принадлежать текущему пользователю
+ * (`req.user.userId`), иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/tags/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID тега
  * @returns {Object} 200 - JSON объект с массивом закладок в поле data
  * @returns {Object} 400 - Некорректный идентификатор тега
- * @returns {Object} 404 - Тег не найден
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Тег не найден (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -93,25 +128,25 @@ router.get('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный идентификатор тега' });
     }
 
-    // Проверяем существование тега
+    // Проверяем существование тега (только тег текущего пользователя)
     const tagQuery = db.prepare(`
-      SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1
+      SELECT id FROM bookmark_tags WHERE uid = ? AND user_id = ? LIMIT 1
     `);
-    const tagRow = tagQuery.get(id);
+    const tagRow = tagQuery.get(id, req.user.userId);
 
     if (!tagRow) {
       return res.status(404).json({ error: 'Тег не найден' });
     }
 
-    // Получаем закладки, связанные с этим тегом
+    // Получаем закладки, связанные с этим тегом (только закладки текущего пользователя)
     const bookmarksQuery = db.prepare(`
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       INNER JOIN bookmark_tag_relations btr ON b.id = btr.bookmark_id
       LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
-      WHERE btr.tag_id = ? AND b.in_trash = 0
+      WHERE btr.tag_id = ? AND b.in_trash = 0 AND b.user_id = ?
     `);
-    const rows = bookmarksQuery.all(tagRow.id);
+    const rows = bookmarksQuery.all(tagRow.id, req.user.userId);
 
     // Получаем все теги для найденных закладок
     const bookmarkIds = rows.map((row) => row.id);
@@ -163,15 +198,22 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * Создает новый тег
- * 
- * Принимает название тега и создает новую запись в базе данных.
+ * Создает новый тег у текущего пользователя
+ *
+ * Принимает название тега и создает новую запись в базе данных, привязывая
+ * её к текущему пользователю (`req.user.userId`).
  * Автоматически генерирует уникальный UID и устанавливает временные метки.
- * 
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route POST /api/bookmarks/tags
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.body.title - Название тега (обязательное поле)
  * @returns {Object} 201 - JSON объект с полем success
  * @returns {Object} 400 - Некорректное или отсутствующее название тега
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -201,15 +243,16 @@ router.post('/', async (req, res) => {
     // Создание тега
     const insertTag = db.prepare(`
       INSERT INTO bookmark_tags (
-        uid, title, created_at, updated_at
+        uid, user_id, title, created_at, updated_at
       )
       VALUES (
-        @uid, @title, datetime('now'), datetime('now')
+        @uid, @user_id, @title, datetime('now'), datetime('now')
       )
     `);
 
     insertTag.run({
       uid,
+      user_id: req.user.userId,
       title: title.trim(),
     });
 
@@ -222,14 +265,23 @@ router.post('/', async (req, res) => {
 });
 
 /**
- * Обновляет название тега по идентификатору
- * 
+ * Обновляет название тега текущего пользователя по идентификатору
+ *
+ * Тег должен принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route PATCH /api/bookmarks/tags/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID тега
  * @param {string} req.body.title - Новое название тега (обязательное поле)
  * @returns {Object} 200 - JSON объект с полем success
  * @returns {Object} 400 - Некорректный идентификатор или название тега
- * @returns {Object} 404 - Тег не найден
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Тег не найден (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -257,11 +309,11 @@ router.patch('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Название обязательно для заполнения' });
     }
 
-    // Проверяем существование тега
+    // Проверяем существование тега (только тег текущего пользователя)
     const tagQuery = db.prepare(`
-      SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1
+      SELECT id FROM bookmark_tags WHERE uid = ? AND user_id = ? LIMIT 1
     `);
-    const tagRow = tagQuery.get(id);
+    const tagRow = tagQuery.get(id, req.user.userId);
 
     if (!tagRow) {
       return res.status(404).json({ error: 'Тег не найден' });
@@ -282,16 +334,24 @@ router.patch('/:id', async (req, res) => {
 });
 
 /**
- * Удаляет тег по идентификатору
- * 
+ * Удаляет тег текущего пользователя по идентификатору
+ *
  * При удалении тега автоматически удаляются все связи с закладками (CASCADE).
  * Сами закладки остаются нетронутыми, удаляется только тег и его связи.
- * 
+ * Тег должен принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route DELETE /api/bookmarks/tags/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID тега
  * @returns {Object} 200 - JSON объект с полем success
  * @returns {Object} 400 - Некорректный идентификатор тега
- * @returns {Object} 404 - Тег не найден
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Тег не найден (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -308,11 +368,11 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный идентификатор тега' });
     }
 
-    // Проверяем существование тега
+    // Проверяем существование тега (только тег текущего пользователя)
     const tagQuery = db.prepare(`
-      SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1
+      SELECT id FROM bookmark_tags WHERE uid = ? AND user_id = ? LIMIT 1
     `);
-    const tagRow = tagQuery.get(id);
+    const tagRow = tagQuery.get(id, req.user.userId);
 
     if (!tagRow) {
       return res.status(404).json({ error: 'Тег не найден' });

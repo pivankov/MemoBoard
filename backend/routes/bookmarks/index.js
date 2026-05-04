@@ -6,16 +6,47 @@ import urlMetadata from 'url-metadata';
 import { generateBookmarkUid, generateTagUid } from '../../utils/uid.js';
 import { extractPreviewUrl, downloadPreview, getFaviconUrl, deletePreview } from '../../utils/preview.js';
 
+/**
+ * @fileoverview Роутер закладок (корневой для `/api/bookmarks`).
+ *
+ * Монтируется в `backend/routes/index.js` под префиксом `/api/bookmarks` и
+ * ЗАЩИЩЁН middleware `requireAuth`:
+ *
+ *     router.use('/bookmarks', requireAuth, bookmarks)
+ *
+ * Здесь же подключаются под-роутеры `./tags` и `./categories`, поэтому
+ * middleware `requireAuth` применяется и к ним транзитивно.
+ *
+ * Во всех обработчиках гарантированно доступен `req.user` (typedef
+ * `AuthenticatedUser` определён в `backend/middleware/auth.js`), а все
+ * SQL-запросы фильтруют данные по `req.user.userId`, обеспечивая изоляцию
+ * данных между пользователями.
+ *
+ * Любой из роутов может вернуть 401 Unauthorized, если токен отсутствует,
+ * невалиден, истёк или пользователь удалён из БД. Это указано в JSDoc
+ * каждого роута через `@returns 401`.
+ */
+
 const router = Router();
 
 router.use('/tags', tagsRouter);
 router.use('/categories', categoriesRouter);
 
 /**
- * Получает список всех закладок с тегами
- * 
+ * Получает список закладок текущего пользователя с тегами
+ *
+ * Возвращает все закладки пользователя, не находящиеся в корзине
+ * (`in_trash = 0`), отсортированные по дате обновления (DESC). Для каждой
+ * закладки также возвращаются связанные теги.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -44,17 +75,24 @@ router.get('/', async (req, res) => {
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
-      WHERE b.in_trash = 0
+      WHERE b.in_trash = 0 AND b.user_id = ?
       ORDER BY b.updated_at DESC
     `);
-    const rows = bookmarksQuery.all();
+    const rows = bookmarksQuery.all(req.user.userId);
 
-    const tagsQuery = db.prepare(`
-      SELECT btr.bookmark_id, bt.uid AS tag_uid
-      FROM bookmark_tag_relations btr
-      JOIN bookmark_tags bt ON btr.tag_id = bt.id
-    `);
-    const tagRows = tagsQuery.all();
+    const bookmarkIds = rows.map((row) => row.id);
+    const tagRows = [];
+
+    if (bookmarkIds.length > 0) {
+      const placeholders = bookmarkIds.map(() => '?').join(',');
+      const tagsQuery = db.prepare(`
+        SELECT btr.bookmark_id, bt.uid AS tag_uid
+        FROM bookmark_tag_relations btr
+        JOIN bookmark_tags bt ON btr.tag_id = bt.id
+        WHERE btr.bookmark_id IN (${placeholders})
+      `);
+      tagRows.push(...tagsQuery.all(...bookmarkIds));
+    }
 
     const tagsMap = new Map();
     tagRows.forEach((tagRow) => {
@@ -92,10 +130,19 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Получает все несортированные закладки (без категории)
- * 
+ * Получает все несортированные закладки текущего пользователя (без категории)
+ *
+ * Выборка ограничена закладками текущего пользователя (`req.user.userId`),
+ * у которых `category_id IS NULL` и `in_trash = 0`.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/unsorted
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  */
 router.get('/unsorted', async (req, res) => {
@@ -103,10 +150,10 @@ router.get('/unsorted', async (req, res) => {
     const bookmarksQuery = db.prepare(`
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter
       FROM bookmarks b
-      WHERE b.category_id IS NULL AND b.in_trash = 0
+      WHERE b.category_id IS NULL AND b.in_trash = 0 AND b.user_id = ?
       ORDER BY b.updated_at DESC
     `);
-    const rows = bookmarksQuery.all();
+    const rows = bookmarksQuery.all(req.user.userId);
 
     const bookmarkIds = rows.map((row) => row.id);
     const tagsMap = new Map();
@@ -147,10 +194,19 @@ router.get('/unsorted', async (req, res) => {
 });
 
 /**
- * Получает все избранные закладки
- * 
+ * Получает все избранные закладки текущего пользователя
+ *
+ * Выборка ограничена закладками текущего пользователя (`req.user.userId`),
+ * у которых `favorite = 1` и `in_trash = 0`.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/favorites
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  */
 router.get('/favorites', async (req, res) => {
@@ -159,10 +215,10 @@ router.get('/favorites', async (req, res) => {
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
-      WHERE b.favorite = 1 AND b.in_trash = 0
+      WHERE b.favorite = 1 AND b.in_trash = 0 AND b.user_id = ?
       ORDER BY b.updated_at DESC
     `);
-    const rows = bookmarksQuery.all();
+    const rows = bookmarksQuery.all(req.user.userId);
 
     const bookmarkIds = rows.map((row) => row.id);
     const tagsMap = new Map();
@@ -203,10 +259,19 @@ router.get('/favorites', async (req, res) => {
 });
 
 /**
- * Получает все закладки в корзине
- * 
+ * Получает все закладки в корзине текущего пользователя
+ *
+ * Выборка ограничена закладками текущего пользователя (`req.user.userId`),
+ * у которых `in_trash = 1`.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/trash
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @returns {Object} 200 - JSON объект с массивом закладок в поле data
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  */
 router.get('/trash', async (req, res) => {
@@ -215,10 +280,10 @@ router.get('/trash', async (req, res) => {
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       LEFT JOIN bookmark_categories AS bc ON b.category_id = bc.id
-      WHERE b.in_trash = 1
+      WHERE b.in_trash = 1 AND b.user_id = ?
       ORDER BY b.updated_at DESC
     `);
-    const rows = bookmarksQuery.all();
+    const rows = bookmarksQuery.all(req.user.userId);
 
     const bookmarkIds = rows.map((row) => row.id);
     const tagsMap = new Map();
@@ -260,10 +325,19 @@ router.get('/trash', async (req, res) => {
 });
 
 /**
- * Возвращает количество закладок для каждой системной категории
- * 
+ * Возвращает количество закладок текущего пользователя для каждой системной категории
+ *
+ * Все счётчики считаются в пределах текущего пользователя
+ * (`req.user.userId`): `all`, `favorites`, `unsorted`, `trash`.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/counts
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @returns {Object} 200 - JSON объект с количествами в поле data
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -281,11 +355,11 @@ router.get('/counts', (req, res) => {
   try {
     const row = db.prepare(`
       SELECT
-        (SELECT COUNT(*) FROM bookmarks WHERE in_trash = 0) AS "all",
-        (SELECT COUNT(*) FROM bookmarks WHERE favorite = 1 AND in_trash = 0) AS favorites,
-        (SELECT COUNT(*) FROM bookmarks WHERE category_id IS NULL AND in_trash = 0) AS unsorted,
-        (SELECT COUNT(*) FROM bookmarks WHERE in_trash = 1) AS trash
-    `).get();
+        (SELECT COUNT(*) FROM bookmarks WHERE in_trash = 0 AND user_id = ?) AS "all",
+        (SELECT COUNT(*) FROM bookmarks WHERE favorite = 1 AND in_trash = 0 AND user_id = ?) AS favorites,
+        (SELECT COUNT(*) FROM bookmarks WHERE category_id IS NULL AND in_trash = 0 AND user_id = ?) AS unsorted,
+        (SELECT COUNT(*) FROM bookmarks WHERE in_trash = 1 AND user_id = ?) AS trash
+    `).get(req.user.userId, req.user.userId, req.user.userId, req.user.userId);
 
     return res.status(200).json({
       data: {
@@ -302,13 +376,22 @@ router.get('/counts', (req, res) => {
 });
 
 /**
- * Получает закладку по уникальному идентификатору
- * 
+ * Получает закладку текущего пользователя по уникальному идентификатору
+ *
+ * Закладка должна принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route GET /api/bookmarks/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID закладки
  * @returns {Object} 200 - JSON объект с закладкой в поле data
  * @returns {Object} 400 - Некорректный идентификатор закладки
- * @returns {Object} 404 - Закладка не найдена
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Закладка не найдена (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -341,11 +424,11 @@ router.get('/:id', async (req, res) => {
       SELECT b.id, b.uid, b.title, b.url, b.created_at, b.updated_at, b.description, b.preview, b.favorite, b.transition_counter, bc.uid AS category_uid
       FROM bookmarks b
       LEFT JOIN bookmark_categories bc ON b.category_id = bc.id
-      WHERE b.uid = ?
+      WHERE b.uid = ? AND b.user_id = ?
       LIMIT 1
     `);
 
-    const row = bookmarkQuery.get(id);
+    const row = bookmarkQuery.get(id, req.user.userId);
 
     if (!row) {
       return res.status(404).json({ error: 'Закладка не найдена' });
@@ -383,18 +466,26 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * Создает новую закладку с автоматическим парсингом метаданных URL
- * 
+ * Создает новую закладку у текущего пользователя с автоматическим парсингом метаданных URL
+ *
  * При создании закладки сервер автоматически пытается получить метаданные страницы
  * (title, description) через парсинг Open Graph, Twitter Cards и стандартных meta-тегов.
  * Если парсинг не удается, используется URL в качестве заголовка.
- * 
+ * Закладка привязывается к текущему пользователю (`req.user.userId`);
+ * указанная категория должна принадлежать ему же.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route POST /api/bookmarks
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {Object} req.body - Данные новой закладки
  * @param {string} req.body.url - URL закладки
  * @param {string} req.body.categoryId - UID категории
  * @returns {Object} 201 - JSON объект с результатом создания
- * @returns {Object} 400 - URL или категория не указаны / категория не найдена
+ * @returns {Object} 400 - URL или категория не указаны / категория не найдена (или принадлежит другому пользователю)
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -418,12 +509,6 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'URL обязателен для заполнения' });
     }
     
-    const userRow = db.prepare('SELECT id FROM users ORDER BY id ASC LIMIT 1').get();
-
-    if (!userRow?.id) {
-      return res.status(500).json({ error: 'Не найден пользователь по умолчанию для привязки события' });
-    }
-
     let categoryIdInternal = null;
 
     if (categoryId) {
@@ -431,7 +516,7 @@ router.post('/', async (req, res) => {
         return res.status(400).json({ error: 'Некорректный идентификатор категории' });
       }
 
-      const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(categoryId);
+      const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? AND user_id = ? LIMIT 1').get(categoryId, req.user.userId);
 
       if (!categoryRow) {
         return res.status(400).json({ error: 'Категория не найдена' });
@@ -506,7 +591,7 @@ router.post('/', async (req, res) => {
     
     insertBookmark.run({
       uid,
-      user_id: Number(userRow.id),
+      user_id: req.user.userId,
       category_id: categoryIdInternal,
       url: url.trim(),
       title: title.trim(),
@@ -525,14 +610,23 @@ router.post('/', async (req, res) => {
 });
 
 /**
- * Перемещает закладку в корзину или восстанавливает из неё
- * 
+ * Перемещает закладку текущего пользователя в корзину или восстанавливает из неё
+ *
+ * Закладка должна принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route PATCH /api/bookmarks/:id/trash
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID закладки
  * @param {boolean} req.body.inTrash - true = в корзину, false = восстановить
  * @returns {Object} 200 - JSON объект с результатом операции
  * @returns {Object} 400 - Некорректные данные
- * @returns {Object} 404 - Закладка не найдена
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Закладка не найдена (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  */
 router.patch('/:id/trash', async (req, res) => {
@@ -548,7 +642,7 @@ router.patch('/:id/trash', async (req, res) => {
       return res.status(400).json({ error: 'Поле inTrash обязательно и должно быть boolean' });
     }
 
-    const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
+    const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? AND user_id = ? LIMIT 1').get(id, req.user.userId);
 
     if (!bookmarkRow) {
       return res.status(404).json({ error: 'Закладка не найдена' });
@@ -564,13 +658,21 @@ router.patch('/:id/trash', async (req, res) => {
 });
 
 /**
- * Обновляет существующую закладку
- * 
+ * Обновляет существующую закладку текущего пользователя
+ *
  * Теги обновляются через два раздельных массива: existingTagIds — UID существующих тегов,
  * newTagTitles — названия новых тегов, которые создаются и привязываются автоматически.
  * Все старые связи с тегами удаляются и пересоздаются. Вся операция выполняется в единой транзакции.
- * 
+ * Закладка, указанная категория и все упомянутые теги в `existingTagIds`
+ * должны принадлежать текущему пользователю (`req.user.userId`);
+ * создаваемые через `newTagTitles` теги привязываются к нему же.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route PUT /api/bookmarks/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID закладки
  * @param {Object} req.body - Данные для обновления закладки
  * @param {string} req.body.url - URL закладки
@@ -583,8 +685,9 @@ router.patch('/:id/trash', async (req, res) => {
  * @param {boolean} [req.body.favorite] - Избранное
  * @param {boolean} [req.body.inTrash] - В корзине
  * @returns {Object} 200 - JSON объект с результатом обновления
- * @returns {Object} 400 - Некорректные данные / теги не массивы / категория не найдена
- * @returns {Object} 404 - Закладка не найдена
+ * @returns {Object} 400 - Некорректные данные / теги не массивы / категория не найдена (или принадлежит другому пользователю)
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Закладка не найдена (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -636,13 +739,13 @@ router.put('/:id', async (req, res) => {
       return res.status(400).json({ error: 'newTagTitles должен быть массивом' });
     }
 
-    const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
+    const bookmarkRow = db.prepare('SELECT id FROM bookmarks WHERE uid = ? AND user_id = ? LIMIT 1').get(id, req.user.userId);
     
     if (!bookmarkRow) {
       return res.status(404).json({ error: 'Закладка не найдена' });
     }
 
-    const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? LIMIT 1').get(categoryId);
+    const categoryRow = db.prepare('SELECT id FROM bookmark_categories WHERE uid = ? AND user_id = ? LIMIT 1').get(categoryId, req.user.userId);
     
     if (!categoryRow) {
       return res.status(400).json({ error: 'Категория не найдена' });
@@ -681,12 +784,12 @@ router.put('/:id', async (req, res) => {
           VALUES (@bookmark_id, @tag_id)
         `);
 
-        // Привязываем существующие теги по UID
+        // Привязываем существующие теги по UID (только теги текущего пользователя)
         if (Array.isArray(existingTagIds)) {
-          const findTagByUid = db.prepare('SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1');
+          const findTagByUid = db.prepare('SELECT id FROM bookmark_tags WHERE uid = ? AND user_id = ? LIMIT 1');
 
           for (const tagUid of existingTagIds) {
-            const tagRow = findTagByUid.get(tagUid);
+            const tagRow = findTagByUid.get(tagUid, req.user.userId);
 
             if (tagRow) {
               insertTagRelation.run({ bookmark_id: bookmarkRow.id, tag_id: tagRow.id });
@@ -696,16 +799,16 @@ router.put('/:id', async (req, res) => {
           }
         }
 
-        // Создаём новые теги и привязываем
+        // Создаём новые теги и привязываем (с привязкой к текущему пользователю)
         if (Array.isArray(newTagTitles)) {
           const insertNewTag = db.prepare(`
-            INSERT INTO bookmark_tags (uid, title, created_at, updated_at)
-            VALUES (@uid, @title, datetime('now'), datetime('now'))
+            INSERT INTO bookmark_tags (uid, user_id, title, created_at, updated_at)
+            VALUES (@uid, @user_id, @title, datetime('now'), datetime('now'))
           `);
 
           for (const tagTitle of newTagTitles) {
             const uid = generateTagUid();
-            insertNewTag.run({ uid, title: tagTitle.trim() });
+            insertNewTag.run({ uid, user_id: req.user.userId, title: tagTitle.trim() });
             const newTagRow = db.prepare('SELECT id FROM bookmark_tags WHERE uid = ? LIMIT 1').get(uid);
             insertTagRelation.run({ bookmark_id: bookmarkRow.id, tag_id: newTagRow.id });
           }
@@ -724,15 +827,23 @@ router.put('/:id', async (req, res) => {
 });
 
 /**
- * Удаляет закладку по идентификатору
- * 
+ * Удаляет закладку текущего пользователя по идентификатору
+ *
  * При удалении закладки автоматически удаляются все связи с тегами (CASCADE).
- * 
+ * Закладка должна принадлежать текущему пользователю (`req.user.userId`),
+ * иначе будет возвращено 404.
+ *
+ * **Требуется авторизация** (Bearer token). См. `requireAuth` и typedef
+ * `AuthenticatedUser` в `backend/middleware/auth.js`.
+ *
  * @route DELETE /api/bookmarks/:id
+ * @security BearerAuth
+ * @param {import('../../middleware/auth.js').AuthenticatedUser} req.user - Данные текущего пользователя (добавляются middleware `requireAuth`)
  * @param {string} req.params.id - UID закладки
  * @returns {Object} 200 - JSON объект с результатом удаления
  * @returns {Object} 400 - Некорректный идентификатор закладки
- * @returns {Object} 404 - Закладка не найдена
+ * @returns {Object} 401 - Токен авторизации отсутствует / невалиден / истёк
+ * @returns {Object} 404 - Закладка не найдена (или принадлежит другому пользователю)
  * @returns {Object} 500 - JSON объект с описанием ошибки
  * 
  * @example
@@ -749,7 +860,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(400).json({ error: 'Некорректный идентификатор закладки' });
     }
     
-    const bookmarkRow = db.prepare('SELECT id, preview FROM bookmarks WHERE uid = ? LIMIT 1').get(id);
+    const bookmarkRow = db.prepare('SELECT id, preview FROM bookmarks WHERE uid = ? AND user_id = ? LIMIT 1').get(id, req.user.userId);
     
     if (!bookmarkRow) {
       return res.status(404).json({ error: 'Закладка не найдена' });

@@ -1,10 +1,13 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import routes from './routes/index.js';
 
 const app = express();
+app.set('trust proxy', 1); // доверяем одному реверс-прокси (nginx/CF); в dev безвредно
 const PORT = process.env.PORT || 4000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +15,7 @@ const __dirname = path.dirname(__filename);
 // Middleware для парсинга JSON и URL-encoded данных
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // CORS для всех источников
 app.use(cors());

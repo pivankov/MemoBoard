@@ -1,25 +1,18 @@
 /**
- * Константы для работы с API
+ * Константы для работы с API.
+ *
+ * Все URL относительные: в dev их проксирует CRA (см. proxy в package.json),
+ * в prod фронт отдаётся тем же Express-процессом, что и API → same-origin.
  */
 
-const API_PORT = 4000;
-const API_BASE_URL = `http://localhost:${API_PORT}/api`;
-
-/**
- * Базовый URL для статических файлов бэкенда (превью, изображения и т.д.)
- * @example 'http://localhost:4000'
- */
-export const API_STATIC_BASE_URL = `http://localhost:${API_PORT}`;
+const API_BASE_URL = '/api';
 
 /**
- * Базовый URL для работы с API закладок
- * @example 'http://localhost:4000/api/bookmarks'
+ * Базовый URL для статических файлов бэкенда (превью и т.д.).
+ * Пустая строка = тот же origin, что и страница.
  */
+export const API_STATIC_BASE_URL = '';
+
 export const API_BOOKMARKS_BASE_URL = `${API_BASE_URL}/bookmarks`;
-
-/**
- * Базовый URL для работы с API событий
- * @example 'http://localhost:4000/api/events'
- */
 export const API_EVENTS_BASE_URL = `${API_BASE_URL}/events`;
-
+export const API_AUTH_BASE_URL = `${API_BASE_URL}/auth`;
