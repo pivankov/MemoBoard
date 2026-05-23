@@ -16,3 +16,4 @@ export const API_STATIC_BASE_URL = '';
 export const API_BOOKMARKS_BASE_URL = `${API_BASE_URL}/bookmarks`;
 export const API_EVENTS_BASE_URL = `${API_BASE_URL}/events`;
 export const API_AUTH_BASE_URL = `${API_BASE_URL}/auth`;
+export const API_ADMIN_BASE_URL = `${API_BASE_URL}/admin`;

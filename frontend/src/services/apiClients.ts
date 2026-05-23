@@ -1,5 +1,5 @@
 import ApiClient from './ApiClient';
-import { API_BOOKMARKS_BASE_URL, API_EVENTS_BASE_URL } from 'constants/api';
+import { API_ADMIN_BASE_URL, API_BOOKMARKS_BASE_URL, API_EVENTS_BASE_URL } from 'constants/api';
 
 /**
  * API-клиент для сервиса событий
@@ -12,3 +12,9 @@ export const eventsApiClient = new ApiClient({ baseURL: API_EVENTS_BASE_URL });
  * Базовый URL: /api/bookmarks
  */
 export const bookmarksApiClient = new ApiClient({ baseURL: API_BOOKMARKS_BASE_URL });
+
+/**
+ * API-клиент для административного раздела
+ * Базовый URL: /api/admin
+ */
+export const adminApiClient = new ApiClient({ baseURL: API_ADMIN_BASE_URL });
