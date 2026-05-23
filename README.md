@@ -141,6 +141,7 @@ cd backend && npm start
 | [`backend/docs/api-auth.md`](backend/docs/api-auth.md) | API аутентификации: register, login, refresh, logout, me |
 | [`backend/docs/api-events.md`](backend/docs/api-events.md) | API событий: CRUD для `/api/events` |
 | [`backend/docs/api-bookmarks.md`](backend/docs/api-bookmarks.md) | API закладок, категорий и тегов |
+| [`backend/docs/api-admin.md`](backend/docs/api-admin.md) | API административного раздела: список пользователей, удаление |
 | [`backend/docs/architecture.md`](backend/docs/architecture.md) | Структура проекта, система аутентификации, middleware |
 | [`backend/docs/env.md`](backend/docs/env.md) | Переменные окружения и пример `.env` |
 | [`backend/docs/utilities.md`](backend/docs/utilities.md) | Утилиты: preview, jwt, refreshToken, cookieOptions, sessionService, csrf, date, uid |

@@ -16,6 +16,7 @@ backend/
 │       └── bookmarks.js
 ├── middleware/         # Express middleware
 │   ├── auth.js         # requireAuth — проверка access-токена (JWT)
+│   ├── admin.js        # requireAdmin — проверка роли admin (после requireAuth)
 │   ├── csrf.js         # requireCsrf — double-submit cookie CSRF-защита
 │   └── rateLimit.js    # authLimiter, refreshLimiter — rate-limiting
 ├── routes/             # API маршруты
@@ -24,10 +25,12 @@ backend/
 │   │   └── index.js
 │   ├── events/         # События
 │   │   └── index.js
-│   └── bookmarks/      # Закладки
-│       ├── index.js
-│       ├── categories.js
-│       └── tags.js
+│   ├── bookmarks/      # Закладки
+│   │   ├── index.js
+│   │   ├── categories.js
+│   │   └── tags.js
+│   └── admin/          # Административный раздел (requireAuth + requireAdmin)
+│       └── index.js
 ├── services/           # Бизнес-логика
 │   └── sessionService.js  # Управление refresh-сессиями
 ├── uploads/            # Пользовательские данные (не входят в сборку фронтенда)
@@ -128,7 +131,8 @@ Logout
 - `cors()` - Включение CORS для всех источников
 - `express.static('/previews')` - Раздача превью закладок из папки `uploads/previews/`
 - `express.static()` - Раздача статических файлов сборки фронтенда из папки `public`
-- `requireAuth` (`middleware/auth.js`) - Проверка access-токена из заголовка `Authorization: Bearer <token>`. При успехе добавляет `req.user` со следующими полями: `userId` (internal DB id), `uid`, `email`, `name`. Применяется ко всем маршрутам `/api/events/*` и `/api/bookmarks/*`.
+- `requireAuth` (`middleware/auth.js`) - Проверка access-токена из заголовка `Authorization: Bearer <token>`. При успехе добавляет `req.user` со следующими полями: `userId` (internal DB id), `uid`, `email`, `name`, `role` (`'user'|'admin'`), `status` (`'active'|'blocked'`). Поля `role` и `status` берутся из БД на **каждый** запрос (не из JWT-payload) — это гарантирует актуальность прав без ожидания истечения токена. Применяется ко всем маршрутам `/api/events/*`, `/api/bookmarks/*` и `/api/admin/*`.
+- `requireAdmin` (`middleware/admin.js`) - Проверка роли администратора. Должно стоять после `requireAuth`. Возвращает `403 Доступ запрещён`, если `req.user.role !== 'admin'`. Дополнительный SQL не выполняется — опирается на `req.user.role`, уже подтянутый из БД в `requireAuth`. Применяется ко всем маршрутам `/api/admin/*`.
 - `requireCsrf` (`middleware/csrf.js`) - CSRF-защита через double-submit cookie. Сравнивает `cookies.csrf_token` с заголовком `X-CSRF-Token`. Применяется к `POST /auth/refresh` и `POST /auth/logout`.
 - `authLimiter` (`middleware/rateLimit.js`) - Rate-limiting для `/api/auth/login` и `/api/auth/register`. По умолчанию 10 запросов с одного IP за 15 минут. Параметры: `AUTH_RATE_LIMIT_WINDOW_MS`, `AUTH_RATE_LIMIT_MAX`.
 - `refreshLimiter` (`middleware/rateLimit.js`) - Rate-limiting для `/api/auth/refresh`. По умолчанию 120 запросов с одного IP за 1 минуту. Параметры: `REFRESH_RATE_LIMIT_WINDOW_MS`, `REFRESH_RATE_LIMIT_MAX`.

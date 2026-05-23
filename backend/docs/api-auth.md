@@ -41,7 +41,9 @@
   "user": {
     "uid": "550e8400-e29b-41d4-a716-446655440000",
     "email": "user@example.com",
-    "name": "Иван"
+    "name": "Иван",
+    "role": "user",
+    "status": "active"
   }
 }
 ```
@@ -80,7 +82,9 @@
   "user": {
     "uid": "550e8400-e29b-41d4-a716-446655440000",
     "email": "user@example.com",
-    "name": "Иван"
+    "name": "Иван",
+    "role": "user",
+    "status": "active"
   }
 }
 ```
@@ -159,7 +163,9 @@ Authorization: Bearer <accessToken>
   "user": {
     "uid": "550e8400-e29b-41d4-a716-446655440000",
     "email": "user@example.com",
-    "name": "Иван"
+    "name": "Иван",
+    "role": "user",
+    "status": "active"
   }
 }
 ```

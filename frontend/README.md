@@ -62,9 +62,13 @@ frontend/
 │   │   ├── HomePage.tsx
 │   │   ├── EventsPage.tsx
 │   │   ├── BookmarksPage.tsx
+│   │   ├── AdminUsersPage/         # Страница администратора: список и удаление пользователей
+│   │   │   └── AdminUsersPage.tsx
 │   │   └── NotFoundPage.tsx
 │   ├── components/                 # UI и доменные компоненты
 │   │   ├── ProtectedRoute/         # Guard для защищённых маршрутов
+│   │   ├── AdminRoute/             # Guard для административных маршрутов (role === 'admin')
+│   │   │   └── AdminRoute.tsx
 │   │   ├── Events/
 │   │   ├── Bookmarks/
 │   │   ├── Header/
@@ -75,6 +79,7 @@ frontend/
 │   │   └── AuthContext.tsx         # Контекст аутентификации
 │   ├── services/                   # API-клиент и инстансы сервисов
 │   │   ├── authService.ts          # Вызовы auth API (login, register, refreshTokens, logoutServer, me)
+│   │   ├── adminService.ts         # fetchUsers(), deleteUser(uid) — административные API
 │   │   └── csrf.ts                 # readCsrfToken() — чтение csrf_token из cookie
 │   ├── providers/                  # Глобальные провайдеры
 │   │   └── AuthProvider.tsx        # Провайдер состояния аутентификации
@@ -105,6 +110,11 @@ frontend/
 
 Все защищённые маршруты обёрнуты в `ProtectedRoute` — компонент-guard, который проверяет наличие авторизации.
 
+**Административные маршруты** (требуют авторизацию + роль `admin`; иначе — редирект на `/`):
+- `/admin/users` → `AdminUsersPage` (список пользователей, удаление)
+
+Административные маршруты дополнительно обёрнуты в `AdminRoute` — guard внутри `ProtectedRoute`, который проверяет `user.role === 'admin'`.
+
 Все неизвестные пути уходят в `NotFoundPage`.
 
 ## 🔌 Интеграция с backend
@@ -114,6 +124,7 @@ frontend/
 - `API_STATIC_BASE_URL = ''` — пустая строка (тот же origin)
 - `API_BOOKMARKS_BASE_URL = '/api/bookmarks'`
 - `API_EVENTS_BASE_URL = '/api/events'`
+- `API_ADMIN_BASE_URL = '/api/admin'`
 
 Все URL относительные — это обеспечивает одинаковое поведение в dev (через CRA-прокси) и production (backend на том же origin).
 
@@ -122,8 +133,9 @@ frontend/
 
 HTTP-слой:
 - `src/services/ApiClient.ts` — общий клиент (`get/post/put/patch/delete`, timeout, нормализация ошибок). Автоматически добавляет заголовок `Authorization: Bearer <accessToken>`. При получении `401` вызывает `onAuthRefreshNeeded()` callback и повторяет запрос с новым токеном (защита от бесконечного цикла через флаг `isRetry`).
-- `src/services/apiClients.ts` — готовые клиенты `eventsApiClient` и `bookmarksApiClient`.
+- `src/services/apiClients.ts` — готовые клиенты `eventsApiClient`, `bookmarksApiClient` и `adminApiClient`.
 - `src/services/authService.ts` — методы `login`, `register`, `refreshTokens`, `logoutServer`, `fetchCurrentUser` для Auth API. Все запросы к `/api/auth/*` используют `credentials: 'include'` для передачи cookies.
+- `src/services/adminService.ts` — методы `fetchUsers()` и `deleteUser(uid)` для Admin API. Использует `adminApiClient`.
 - `src/services/csrf.ts` — утилита `readCsrfToken()`: читает значение cookie `csrf_token` (защита от SSR через проверку `typeof document`).
 
 Ожидаемый формат успешного ответа backend (основной контракт):  
@@ -136,15 +148,21 @@ HTTP-слой:
 
 ## 🧠 Архитектура в 1 минуту
 
-**Аутентификация:**
+**Аутентификация и авторизация:**
 ```
 AuthProvider (state: user, isLoading; accessTokenRef — только в памяти)
   └── AuthContext / useAuth()        # доступ к состоянию из любого компонента
        └── authService               # login/register/refreshTokens/logoutServer → API
 ProtectedRoute                       # guard: нет авторизации → redirect /login
+  └── AdminRoute                     # guard: role !== 'admin' → redirect /
 ApiClient                            # Bearer access-токен в каждом запросе
                                      # 401 → refresh() → повтор запроса → logout при неудаче
 ```
+
+Тип `User` содержит поля `role` (`'user' | 'admin'`) и `status` (`'active' | 'blocked'`). Эти поля
+приходят с бэкенда при логине, регистрации и `/auth/me`. Роль никогда не хранится в JWT-payload —
+`AuthProvider` получает её из ответа API и кладёт в `user` контекста. `adminApiClient` подключён к
+тому же refresh-флоу, что и `eventsApiClient` / `bookmarksApiClient`.
 
 **Token refresh flow:**
 ```
@@ -191,8 +209,10 @@ ApiClient                            # Bearer access-токен в каждом 
 ## 📚 Дополнительная документация
 
 - `../backend/README.md` — API reference и backend-контракты.
+- `../backend/docs/api-admin.md` — описание административных API-эндпоинтов (`GET /api/admin/users`, `DELETE /api/admin/users/:uid`).
 - `docs/useGroupedEvents.md` — детальная документация по алгоритму группировки событий.
 - `src/hooks/__tests__/README.md` — детали тестового покрытия `useGroupedEvents`.
+- `docs/admin-section.md` — детальное описание административного раздела фронтенда.
 
 ---
 
@@ -212,6 +232,11 @@ ApiClient                            # Bearer access-токен в каждом 
   - `src/services/authService.ts` — API-вызовы (login, register, refreshTokens, logoutServer, fetchCurrentUser)
   - `src/services/csrf.ts` — readCsrfToken() для чтения csrf_token из cookie
   - `src/components/ProtectedRoute/ProtectedRoute.tsx` — guard для защищённых маршрутов
+  - `src/components/AdminRoute/AdminRoute.tsx` — guard для административных маршрутов (role === 'admin')
+- Административный раздел:
+  - `src/pages/AdminUsersPage/AdminUsersPage.tsx` — таблица пользователей + удаление через Popconfirm
+  - `src/services/adminService.ts` — fetchUsers(), deleteUser(uid)
+  - `src/services/apiClients.ts` — adminApiClient (базовый URL: /api/admin)
 - Загрузка данных (read-only):
   - `src/hooks/useEvents.ts`
   - `src/hooks/useBookmarks.ts`
@@ -222,9 +247,10 @@ ApiClient                            # Bearer access-токен в каждом 
   - `src/contexts/BookmarksActionsContext.tsx`
 - HTTP-клиент и базовые API-настройки:
   - `src/services/ApiClient.ts` — `setOnAuthRefreshNeeded(cb)` для интеграции с AuthProvider
-  - `src/services/apiClients.ts`
-  - `src/constants/api.ts` — относительные URL (`/api/...`)
+  - `src/services/apiClients.ts` — `eventsApiClient`, `bookmarksApiClient`, `adminApiClient`
+  - `src/constants/api.ts` — относительные URL (`/api/...`), включая `API_ADMIN_BASE_URL`
 - Типы:
+  - `src/types/auth.ts` — `User` (с `role`/`status`), `UserRole`, `UserStatus`, `AdminUserListItem`, `AuthState`, `AuthResponse`
   - `src/types/events.ts`
   - `src/types/bookmarks.ts`
   - `src/types/errors.ts`
@@ -233,6 +259,8 @@ ApiClient                            # Bearer access-токен в каждом 
 
 - Backend отвечает в форме `{ data: ... }`. Исключение: `DELETE` возвращает `204 No Content` с пустым телом — `ApiClient` обрабатывает это явно.
 - Auth endpoints отвечают: `/login`, `/register` → `{ accessToken, user }`; `/refresh` → `{ accessToken }`; `/logout` → `204`. Не в форме `{ data }`.
+- Admin endpoints: `GET /api/admin/users` → `{ data: { users: AdminUserListItem[] } }`; `DELETE /api/admin/users/:uid` → `204 No Content`. Требуют роль `admin` — при нехватке прав `403`.
+- Тип `User` содержит `role` (`'user' | 'admin'`) и `status` (`'active' | 'blocked'`). Роль не хранится в JWT — всегда читается из БД на бэкенде.
 - Ошибки API нормализуются через `ApiError` и `getApiErrorMessage`.
 - После успешной мутации ожидается:
   - success notification;
@@ -283,6 +311,13 @@ ApiClient                            # Bearer access-токен в каждом 
 4. `src/hooks/useBookmarksActions.ts`
 5. `src/contexts/BookmarksActionsContext.tsx`
 
+Для задач по `Admin`:
+1. `src/components/AdminRoute/AdminRoute.tsx`
+2. `src/pages/AdminUsersPage/AdminUsersPage.tsx`
+3. `src/services/adminService.ts`
+4. `src/providers/AuthProvider.tsx` (раздел `adminApiClient`)
+5. `../backend/docs/api-admin.md`
+
 Для задач по API-контрактам:
 1. `../backend/README.md`
 2. `src/services/ApiClient.ts`
@@ -290,4 +325,4 @@ ApiClient                            # Bearer access-токен в каждом 
 
 ---
 
-Последнее обновление: Май 2026
+Последнее обновление: Май 2026 (этап 6: документация административного раздела)

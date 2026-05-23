@@ -97,6 +97,7 @@ node scripts/set-role.js <email> <field> <value>
 | [`docs/api-auth.md`](./docs/api-auth.md) | API аутентификации: register, login, refresh, logout, me |
 | [`docs/api-events.md`](./docs/api-events.md) | API событий: CRUD для `/api/events` |
 | [`docs/api-bookmarks.md`](./docs/api-bookmarks.md) | API закладок, категорий и тегов |
+| [`docs/api-admin.md`](./docs/api-admin.md) | API административного раздела: список пользователей, удаление |
 | [`docs/architecture.md`](./docs/architecture.md) | Структура проекта, система аутентификации, middleware |
 | [`docs/env.md`](./docs/env.md) | Переменные окружения и пример `.env` |
 | [`docs/utilities.md`](./docs/utilities.md) | Утилиты: preview, jwt, refreshToken, cookieOptions, sessionService, csrf, date, uid |
