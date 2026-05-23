@@ -132,6 +132,9 @@ router.post('/register', authLimiter, async (req, res) => {
       ipAddress: req.ip,
     });
 
+    // Читаем role/status из БД — единый источник правды, защищён от рассинхрона с дефолтами в initdb.js
+    const newUser = db.prepare('SELECT role, status FROM users WHERE id = ? LIMIT 1').get(result.lastInsertRowid);
+
     issueAuthCookies(res, refreshToken);
 
     return res.status(201).json({
@@ -140,6 +143,8 @@ router.post('/register', authLimiter, async (req, res) => {
         uid,
         email: email.trim().toLowerCase(),
         name: name ? name.trim() : null,
+        role: newUser.role,
+        status: newUser.status,
       },
     });
   } catch (error) {
@@ -178,7 +183,7 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     // Поиск пользователя
-    const user = db.prepare('SELECT id, uid, email, name, password_hash FROM users WHERE email = ? LIMIT 1')
+    const user = db.prepare('SELECT id, uid, email, name, role, status, password_hash FROM users WHERE email = ? LIMIT 1')
       .get(email.trim().toLowerCase());
 
     if (!user) {
@@ -209,6 +214,8 @@ router.post('/login', authLimiter, async (req, res) => {
         uid: user.uid,
         email: user.email,
         name: user.name,
+        role: user.role,
+        status: user.status,
       },
     });
   } catch (error) {
@@ -324,6 +331,8 @@ router.get('/me', requireAuth, (req, res) => {
       uid: req.user.uid,
       email: req.user.email,
       name: req.user.name,
+      role: req.user.role,
+      status: req.user.status,
     },
   });
 });

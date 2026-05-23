@@ -12,6 +12,8 @@
  * - req.user.uid — публичный UID пользователя
  * - req.user.email — email пользователя
  * - req.user.name — имя пользователя
+ * - req.user.role — роль пользователя ('user' | 'admin'), из БД
+ * - req.user.status — статус учётной записи ('active' | 'blocked'), из БД
  */
 
 import { verifyAccessToken } from '../utils/jwt.js';
@@ -31,6 +33,8 @@ import { db } from '../db/initdb.js';
  * @property {string} uid - Публичный UID пользователя.
  * @property {string} email - Email пользователя.
  * @property {string} name - Имя пользователя.
+ * @property {'user'|'admin'} role - Роль пользователя. Источник правды — БД (НЕ JWT-payload), подтягивается на каждый запрос.
+ * @property {'active'|'blocked'} status - Статус учётной записи.
  */
 
 /**
@@ -53,7 +57,7 @@ export function requireAuth(req, res, next) {
     const decoded = verifyAccessToken(token);
 
     // Проверяем, что пользователь всё ещё существует в БД
-    const user = db.prepare('SELECT id, uid, email, name FROM users WHERE id = ? LIMIT 1').get(decoded.userId);
+    const user = db.prepare('SELECT id, uid, email, name, role, status FROM users WHERE id = ? LIMIT 1').get(decoded.userId);
 
     if (!user) {
       return res.status(401).json({ error: 'Пользователь не найден' });
@@ -65,6 +69,8 @@ export function requireAuth(req, res, next) {
       uid: user.uid,
       email: user.email,
       name: user.name,
+      role: user.role,
+      status: user.status,
     };
 
     next();
