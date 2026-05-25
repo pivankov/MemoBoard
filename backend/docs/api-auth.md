@@ -1,192 +1,91 @@
-# API: Аутентификация (Auth)
+# API: Аутентификация
 
-Базовый URL: `/api` (относительный, same-origin через CRA-прокси в dev и прямой backend в prod)
+Базовый URL: `/api/auth`. Эндпоинты `/refresh` и `/logout` дополнительно требуют заголовок `X-CSRF-Token` со значением cookie `csrf_token` (double-submit pattern, сверка через `timingSafeEqual`).
 
-> **Аутентификация:** все маршруты `/api/events/*` и `/api/bookmarks/*` требуют передачи access-токена в заголовке:
-> ```
-> Authorization: Bearer <accessToken>
-> ```
-> При отсутствии или невалидности токена возвращается `401 Unauthorized`.
+Все защищённые эндпоинты других разделов (`/api/events/*`, `/api/bookmarks/*`, `/api/admin/*`) требуют `Authorization: Bearer <accessToken>`. При отсутствии или невалидности токена — `401`.
 
-> **CSRF-защита:** эндпоинты `/refresh` и `/logout` требуют заголовок `X-CSRF-Token`.
-> Значение — содержимое JS-читаемой cookie `csrf_token` (выставляется сервером при логине/регистрации).
-> Сервер сверяет cookie и заголовок через `timingSafeEqual`. При несовпадении или отсутствии — `403 Forbidden`.
+Архитектура auth-схемы (lifecycle, family, reuse detection): см. [`./architecture.md`](./architecture.md).
 
 ---
 
-### Аутентификация (Auth)
+## Контракты
 
-#### POST /api/auth/register
+`User`:
+- `uid: string` — публичный UUID
+- `email: string`
+- `name: string | null`
+- `role: 'user' | 'admin'`
+- `status: 'active' | 'blocked'`
 
-Регистрирует нового пользователя. Возвращает access-токен и данные пользователя. Refresh-токен выставляется в httpOnly-cookie.
-
-**Тело запроса:**
-```json
-{
-  "email": "user@example.com",
-  "password": "secret123",
-  "name": "Иван"
-}
-```
-
-**Поля:**
-- `email` (string, required) - Email пользователя (уникальный)
-- `password` (string, required) - Пароль (минимум 6 символов)
-- `name` (string, optional) - Имя пользователя
-
-**Ответ (201):**
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "uid": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "user@example.com",
-    "name": "Иван",
-    "role": "user",
-    "status": "active"
-  }
-}
-```
-
-**Cookies, выставляемые сервером:**
-- `refresh_token` — httpOnly, SameSite=Lax, path=/api/auth, срок 30 дней (хеш хранится в БД)
-- `csrf_token` — читаемая JS cookie, SameSite=Lax, path=/api/auth
-
-**Ошибки:**
-- `400` - Email или пароль не переданы / некорректный формат email / пароль менее 6 символов
-- `409` - Пользователь с таким email уже зарегистрирован
-- `500` - Не удалось зарегистрировать пользователя
+Cookies, выставляемые при login/register/refresh:
+- `refresh_token` — httpOnly, SameSite=Lax, path=/api/auth, 30 дней. Хеш SHA-256 хранится в `sessions`, raw-токен — нет.
+- `csrf_token` — JS-readable, SameSite=Lax, path=/api/auth.
 
 ---
 
-#### POST /api/auth/login
+## Эндпоинты
 
-Выполняет вход по email и паролю. Возвращает access-токен и данные пользователя. Refresh-токен выставляется в httpOnly-cookie.
+#### POST /api/auth/register → 201
 
-**Тело запроса:**
-```json
-{
-  "email": "user@example.com",
-  "password": "secret123"
-}
-```
+Регистрирует пользователя.
 
-**Поля:**
-- `email` (string, required) - Email пользователя
-- `password` (string, required) - Пароль пользователя
-
-**Ответ (200):**
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "uid": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "user@example.com",
-    "name": "Иван",
-    "role": "user",
-    "status": "active"
-  }
-}
-```
-
-**Cookies, выставляемые сервером:**
-- `refresh_token` — httpOnly, SameSite=Lax, path=/api/auth, срок 30 дней
-- `csrf_token` — читаемая JS cookie, SameSite=Lax, path=/api/auth
-
-**Ошибки:**
-- `400` - Email или пароль не переданы
-- `401` - Неверный email или пароль
-- `500` - Не удалось выполнить вход
+**Body:** `{ email: string, password: string (min 6), name?: string }`
+**Response:** `{ accessToken: string, user: User }`
+**Sets cookies:** `refresh_token`, `csrf_token`
+**Errors:** `400` валидация · `409` email занят · `500`
+**Rate limit:** `authLimiter` (по умолчанию 10/15 мин)
 
 ---
 
-#### POST /api/auth/refresh
+#### POST /api/auth/login → 200
 
-Обновляет пару токенов: выдаёт новый access-токен и ротирует refresh-токен (старый становится недействительным).
+Вход по email и паролю.
 
-**Требует:**
-- Cookie `refresh_token` (httpOnly, передаётся автоматически браузером)
-- Заголовок `X-CSRF-Token: <значение csrf_token cookie>`
-
-**Rate limit:** 120 запросов в минуту с одного IP (защита от DoS).
-
-**Ответ (200):**
-```json
-{
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-**Cookies, обновляемые сервером:**
-- `refresh_token` — новый refresh-токен (старый аннулирован в БД)
-- `csrf_token` — новый CSRF-токен
-
-**Ошибки:**
-- `401` - Refresh-токен отсутствует / истёк / был отозван / **reuse detected** (токен уже использован — вся сессионная цепочка аннулируется, cookies очищаются)
-- `403` - Неверный или отсутствующий `X-CSRF-Token`
-
-> **Reuse detection:** если отозванный refresh-токен предъявлен повторно, сервер аннулирует всю цепочку сессий данного логина (`family_id`) и возвращает 401. Это защита от кражи токена.
+**Body:** `{ email: string, password: string }`
+**Response:** `{ accessToken: string, user: User }`
+**Sets cookies:** `refresh_token`, `csrf_token`
+**Errors:** `400` валидация · `401` неверный email/пароль · `500`
+**Rate limit:** `authLimiter`
 
 ---
 
-#### POST /api/auth/logout
+#### POST /api/auth/refresh → 200
 
-Завершает сессию: отзывает текущий refresh-токен в БД и очищает auth-cookies.
+Ротирует refresh-токен и выдаёт новый access-токен.
 
-**Требует:**
-- Cookie `refresh_token`
-- Заголовок `X-CSRF-Token: <значение csrf_token cookie>`
-
-**Ответ (204):** нет тела
-
-**Особенности:**
-- Всегда возвращает `204` — даже если refresh-токен не найден в БД (best-effort)
-- Cookies `refresh_token` и `csrf_token` всегда очищаются
-
-**Ошибки:**
-- `403` - Неверный или отсутствующий `X-CSRF-Token`
+**Auth:** cookie `refresh_token` + `X-CSRF-Token`
+**Response:** `{ accessToken: string }`
+**Sets cookies:** `refresh_token` (новый), `csrf_token` (новый)
+**Errors:** `401` нет/истёк/отозван/reuse detected · `403` CSRF · `500`
+**Rate limit:** `refreshLimiter` (по умолчанию 120/мин)
+**Notes:** при reuse detection (повторное использование уже отозванного токена) сервер аннулирует все сессии этой `family_id` и возвращает 401.
 
 ---
 
-#### GET /api/auth/me
+#### POST /api/auth/logout → 204
 
-Возвращает данные текущего авторизованного пользователя. Требует access-токен.
+Отзывает текущий refresh-токен в БД, очищает auth-cookies.
 
-**Заголовки:**
-```
-Authorization: Bearer <accessToken>
-```
-
-**Ответ (200):**
-```json
-{
-  "user": {
-    "uid": "550e8400-e29b-41d4-a716-446655440000",
-    "email": "user@example.com",
-    "name": "Иван",
-    "role": "user",
-    "status": "active"
-  }
-}
-```
-
-**Ошибки:**
-- `401` - Токен не передан / невалидный / истёк
+**Auth:** cookie `refresh_token` + `X-CSRF-Token`
+**Errors:** `403` CSRF
+**Notes:** возвращает 204 даже если refresh-токен не найден в БД (best-effort). Cookies очищаются всегда.
 
 ---
 
-### Запланировано (не реализовано)
+#### GET /api/auth/me → 200
 
-Следующие эндпоинты запланированы к реализации. База данных (таблица `sessions`) уже поддерживает необходимую структуру.
+Данные текущего пользователя.
 
-| Эндпоинт | Описание |
-|---|---|
-| `GET /api/auth/sessions` | Список активных сессий текущего пользователя (UI «Мои устройства») |
-| `POST /api/auth/logout-all` | Выход со всех устройств — аннулирование всех сессий пользователя |
-
-**Прочие запланированные улучшения:**
-- Очистка устаревших revoked/expired сессий (cron-задача или при старте сервера)
-- Принудительный logout при смене пароля
-- Token binding: `user_agent` и `ip_address` уже хранятся в `sessions`, но при ротации не проверяются
+**Auth:** Bearer
+**Response:** `{ user: User }`
+**Errors:** `401`
 
 ---
+
+## Запланировано
+
+- `GET /api/auth/sessions` — список активных сессий пользователя.
+- `POST /api/auth/logout-all` — выход со всех устройств.
+- Cron-очистка устаревших revoked/expired сессий.
+- Принудительный logout при смене пароля.
+- Token binding по `user_agent` / `ip_address` (поля уже хранятся в `sessions`).

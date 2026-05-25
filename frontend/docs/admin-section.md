@@ -1,153 +1,60 @@
-# Административный раздел фронтенда
+# Административный раздел
 
-Описание архитектуры и контрактов административного раздела MemoBoard.
-
----
-
-## Обзор
-
-Административный раздел позволяет пользователю с ролью `admin` просматривать список всех
-зарегистрированных пользователей и удалять их (вместе со всеми связанными данными).
-
-Пользователи с ролью `user` не видят раздел в навигации и при прямом переходе на `/admin/users`
-получают редирект на `/`.
-
----
+Пользователь с `role === 'admin'` видит пункт «Администратор» в шапке (`HeaderNavigation.tsx`) и имеет доступ к `/admin/users` — список и удаление пользователей. У роли `user` пункт скрыт; при прямом переходе срабатывает редирект на `/`.
 
 ## Роутинг
 
 ```
-ProtectedRoute                 # нет auth → /login
-  └── /admin  (AdminRoute)     # role !== 'admin' → /
-        └── /admin/users       # AdminUsersPage
+ProtectedRoute                # нет auth → /login
+  └── AdminRoute              # role !== 'admin' → /
+        └── /admin/users      # AdminUsersPage
 ```
 
-`AdminRoute` — компонент-guard, расположенный в `src/components/AdminRoute/AdminRoute.tsx`.
-Использует `useAuth()` из `AuthContext`. Пока идёт начальная загрузка (`isLoading === true`) —
-отображает спиннер `<Spin size="large" />` по центру экрана.
+`AdminRoute` (`src/components/AdminRoute/AdminRoute.tsx`) использует `useAuth()`. Пока `isLoading === true` — отображает центрированный `<Spin size="large" />`.
 
----
+## Типы
 
-## Тип `User` и связанные типы
+`src/types/auth.ts`:
 
-Файл: `src/types/auth.ts`
+- `UserRole = 'user' | 'admin'`, `UserStatus = 'active' | 'blocked'`.
+- `User: { uid, email, name: string | null, role: UserRole, status: UserStatus }` — приходит с бэкенда на `/login`, `/register`, `/auth/me`. Роль никогда не хранится в JWT-payload (бэкенд читает из БД, см. [architecture.md](../../backend/docs/architecture.md#система-аутентификации)).
+- `AdminUserListItem extends User { created_at: string }`.
 
-```ts
-export type UserRole   = 'user' | 'admin';
-export type UserStatus = 'active' | 'blocked';
+## HTTP-слой
 
-export interface User {
-  uid:    string;
-  email:  string;
-  name:   string | null;
-  role:   UserRole;
-  status: UserStatus;
-}
-
-/** Расширение User для административного списка */
-export interface AdminUserListItem extends User {
-  created_at: string;
-}
-```
-
-Поля `role` и `status` присутствуют в `User` всегда — они возвращаются бэкендом при `/login`,
-`/register` и `/auth/me`. Роль **никогда не хранится в JWT-payload**: бэкенд читает её из БД на
-каждый запрос (в `requireAuth`).
-
----
-
-## HTTP-клиент
-
-Файл: `src/services/apiClients.ts`
+`src/services/apiClients.ts`:
 
 ```ts
 export const adminApiClient = new ApiClient({ baseURL: API_ADMIN_BASE_URL });
-// API_ADMIN_BASE_URL = '/api/admin'  (src/constants/api.ts)
+// API_ADMIN_BASE_URL = '/api/admin'
 ```
 
-`adminApiClient` зарегистрирован в `AuthProvider` наравне с `eventsApiClient` и `bookmarksApiClient`:
-
-- `setAccessTokenOnClients(token)` — устанавливает `Authorization: Bearer <token>` на все три клиента.
-- `clearAccessTokenOnClients()` — убирает заголовок при logout.
-- `useEffect` с `setOnAuthRefreshNeeded(refresh)` — при `401` запускает единый refresh-флоу и
-  повторяет исходный запрос с новым токеном.
-
----
+`AuthProvider` регистрирует клиент через `setAccessTokenOnClients` / `clearAccessTokenOnClients` и подключает к общему refresh-флоу через `setOnAuthRefreshNeeded(refresh)` — тот же, что используется для `eventsApiClient` и `bookmarksApiClient`.
 
 ## Сервис
 
-Файл: `src/services/adminService.ts`
+`src/services/adminService.ts`:
 
 | Функция | Метод | URL | Возвращает |
 |---|---|---|---|
 | `fetchUsers()` | GET | `/api/admin/users` | `AdminUserListItem[]` |
 | `deleteUser(uid)` | DELETE | `/api/admin/users/:uid` | `void` (204) |
 
-Бэкенд отдаёт список в обёртке `{ data: { users: [...] } }`. `ApiClient` разворачивает `data`
-автоматически, поэтому `adminApiClient.get<{ users: ... }>('/users')` возвращает `{ users: [...] }`.
+Бэкенд отдаёт `{ data: { users: [...] } }`; `ApiClient` разворачивает `data`, поэтому `adminApiClient.get<{ users: ... }>('/users')` возвращает `{ users: [...] }`.
 
----
+API-контракты: [`../../backend/docs/api-admin.md`](../../backend/docs/api-admin.md).
 
-## Страница `AdminUsersPage`
+## AdminUsersPage
 
-Файл: `src/pages/AdminUsersPage/AdminUsersPage.tsx`
+`src/pages/AdminUsersPage/AdminUsersPage.tsx`:
 
-- Загружает список при монтировании через `adminService.fetchUsers()`.
-- Отображает таблицу Ant Design со столбцами: Email, Имя, Роль, Статус, Создан, Действия.
-- Столбец «Действия» содержит кнопку «Удалить» внутри `Popconfirm` с предупреждением о
-  необратимости операции.
-- После подтверждения вызывает `adminService.deleteUser(uid)`, затем перезагружает список.
-- Ошибки загрузки и удаления показываются через `message.error`.
+- Загружает список при монтировании через `fetchUsers()`.
+- Ant Design таблица: Email, Имя, Роль, Статус, Создан, Действия.
+- В «Действия» — кнопка «Удалить» внутри `Popconfirm`. После подтверждения вызывает `deleteUser(uid)` и перезагружает список.
+- Ошибки — `message.error`.
 
----
+## Ограничения
 
-## Навигация в шапке
-
-Файл: `src/components/Header/HeaderNavigation.tsx`
-
-Массив пунктов навигации формируется через `useMemo`. Пункт «Администратор» (иконка
-`SettingOutlined`, путь `admin/users`) добавляется только если `user?.role === 'admin'`.
-
----
-
-## API-контракты (краткая сводка)
-
-Подробнее: `backend/docs/api-admin.md`.
-
-**`GET /api/admin/users`**
-
-Требования: `Authorization: Bearer <adminToken>`.
-
-```json
-{
-  "data": {
-    "users": [
-      {
-        "uid": "abc123",
-        "email": "user@example.com",
-        "name": "Иван",
-        "role": "user",
-        "status": "active",
-        "created_at": "2025-01-15T10:00:00.000Z"
-      }
-    ]
-  }
-}
-```
-
-**`DELETE /api/admin/users/:uid`**
-
-Требования: `Authorization: Bearer <adminToken>`.
-
-- `204 No Content` — пользователь удалён (каскад БД + файлы превью на диске).
-- `404` — пользователь не найден.
-- `403` — вызывающий не является администратором.
-
----
-
-## Безопасность и ограничения
-
-- Смена роли/статуса доступна только через CLI-скрипт `backend/scripts/set-role.js`.
-- Нет ограничений «нельзя удалить себя» или «нельзя удалить последнего админа» — это сделано
-  намеренно (`allow_all` в требованиях).
-- `status === 'blocked'` отображается в таблице, но не блокирует вход в приложение (отдельная задача).
+- Смена роли/статуса — только через CLI: `node backend/scripts/set-role.js <email> <field> <value>`.
+- Нет ограничений «нельзя удалить себя» или «нельзя удалить последнего админа» (намеренно, `allow_all` в требованиях).
+- `status === 'blocked'` отображается, но вход в приложение не блокирует — отдельная задача.

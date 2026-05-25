@@ -1,104 +1,41 @@
 # MemoBoard Backend
 
-Backend-часть приложения MemoBoard - система для управления событиями и закладками.
+Node.js/Express API — управление событиями и закладками.
 
-## 🚀 Технологии
+## Стек
 
-- **Node.js** 18+
-- **Express** 5.x - веб-фреймворк
-- **SQLite** 3.x - база данных
-- **better-sqlite3** - синхронный драйвер для SQLite
-- **nanoid** - генерация уникальных идентификаторов
-- **url-metadata** - парсинг метаданных URL
-- **sharp** - обработка и оптимизация изображений (превью закладок)
-- **argon2** - хеширование паролей (Argon2id)
-- **jsonwebtoken** - генерация и верификация JWT access-токенов
-- **cookie-parser** - парсинг cookies (refresh-токен, CSRF)
-- **express-rate-limit** - ограничение частоты запросов на чувствительных auth-маршрутах
-- **dotenv** - загрузка переменных окружения из `.env`
+- Node.js 18+, Express 5.x
+- SQLite 3.x + better-sqlite3
+- argon2 (пароли), jsonwebtoken (JWT), cookie-parser, express-rate-limit
+- nanoid, url-metadata, sharp, dotenv
 
-## 📦 Установка и запуск
-
-### Требования
-
-- Node.js версии 18 или выше
-- npm
-
-### Установка зависимостей
+## Установка и запуск
 
 ```bash
 npm install
+npm run db:init   # инициализация БД с demo-данными
+npm start         # порт 4000 (по умолчанию)
 ```
 
-### Инициализация базы данных
+Полный список команд БД (`db:reset`, `db:reset:demo`, `db:init:noseed` и др.) — в [db/README.md](./db/README.md).
 
-```bash
-# С тестовыми данными (рекомендуется для разработки)
-npm run db:init
+Health check: `GET /health` → `{ status, timestamp, uptime, version, environment }`.
 
-# Без тестовых данных
-npm run db:init:noseed
-
-# Полный сброс БД с тестовыми данными
-npm run db:reset
-```
-
-### Запуск сервера
-
-```bash
-npm start
-```
-
-Сервер запустится на порту `4000` (по умолчанию).
-
-### Health Check
-
-Проверка работоспособности сервера:
-
-```bash
-curl http://localhost:4000/health
-```
-
-Ответ:
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-12-05T10:30:00.000Z",
-  "uptime": 123.456,
-  "version": "1.0.0",
-  "environment": "development"
-}
-```
-
-## 💾 База данных
-
-Подробная документация по структуре базы данных, таблицам, миграциям и командам находится в [`/backend/db/README.md`](./db/README.md).
-
-**Основные команды:**
-- `npm run db:init` - Инициализация БД с тестовыми данными
-- `npm run db:init:noseed` - Инициализация БД без тестовых данных
-- `npm run db:reset` - Полный сброс БД с тестовыми данными
-- `npm run db:reset:noseed` - Полный сброс БД без тестовых данных
-
-### Изменение роли и статуса пользователя
+## Управление пользователями
 
 ```bash
 node scripts/set-role.js <email> <field> <value>
 ```
 
-[`/scripts/set-role.js`](./scripts/set-role.js)
-
----
-
-## 📚 Документация
+## Документация
 
 | Документ | Описание |
 |---|---|
 | [`docs/api-auth.md`](./docs/api-auth.md) | API аутентификации: register, login, refresh, logout, me |
 | [`docs/api-events.md`](./docs/api-events.md) | API событий: CRUD для `/api/events` |
 | [`docs/api-bookmarks.md`](./docs/api-bookmarks.md) | API закладок, категорий и тегов |
-| [`docs/api-admin.md`](./docs/api-admin.md) | API административного раздела: список пользователей, удаление |
-| [`docs/architecture.md`](./docs/architecture.md) | Структура проекта, система аутентификации, middleware |
+| [`docs/api-admin.md`](./docs/api-admin.md) | API административного раздела |
+| [`docs/architecture.md`](./docs/architecture.md) | Структура проекта, аутентификация, middleware |
 | [`docs/env.md`](./docs/env.md) | Переменные окружения и пример `.env` |
-| [`docs/utilities.md`](./docs/utilities.md) | Утилиты: preview, jwt, refreshToken, cookieOptions, sessionService, csrf, date, uid |
+| [`docs/utilities.md`](./docs/utilities.md) | Утилиты: preview, jwt, refreshToken, cookieOptions, sessionService, date, uid |
 | [`db/README.md`](./db/README.md) | Схема БД, таблицы, миграции |
