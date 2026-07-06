@@ -4,6 +4,7 @@ import { ConfigProvider } from 'antd';
 import '@ant-design/v5-patch-for-react-19';
 import ruRU from 'antd/locale/ru_RU';
 import App from 'App';
+import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import './index.css';
@@ -25,13 +26,11 @@ const theme = {
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
 root.render(
-  <ConfigProvider locale={ruRU} theme={theme}>
-    <App />
-  </ConfigProvider>
+  <StrictMode>
+    <ConfigProvider locale={ruRU} theme={theme}>
+      <App />
+    </ConfigProvider>
+  </StrictMode>
 );
-// root.render(
-//   <React.StrictMode>
-//     <App />
-//   </React.StrictMode>
-// );
