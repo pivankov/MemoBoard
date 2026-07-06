@@ -1,10 +1,10 @@
 // Фикс для работы ant-v5 с React 19. Можно будет убрать в будущем.. Так же, вырезать из package.json
+import { StrictMode } from 'react';
 import { ConfigProvider } from 'antd';
 
 import '@ant-design/v5-patch-for-react-19';
 import ruRU from 'antd/locale/ru_RU';
 import App from 'App';
-import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import './index.css';
