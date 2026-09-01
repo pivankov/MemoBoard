@@ -4,7 +4,7 @@ import type { User } from 'types/auth';
 import { ApiError } from 'types/errors';
 
 import { AuthContext, type AuthContextValue } from 'contexts/AuthContext';
-import { adminApiClient, bookmarksApiClient, eventsApiClient } from 'services/apiClients';
+import { adminApiClient, authApiClient, bookmarksApiClient, eventsApiClient } from 'services/apiClients';
 import * as authService from 'services/authService';
 
 /**
@@ -17,12 +17,14 @@ function setAccessTokenOnClients(accessToken: string) {
   eventsApiClient.setHeader('Authorization', `Bearer ${accessToken}`);
   bookmarksApiClient.setHeader('Authorization', `Bearer ${accessToken}`);
   adminApiClient.setHeader('Authorization', `Bearer ${accessToken}`);
+  authApiClient.setHeader('Authorization', `Bearer ${accessToken}`);
 }
 
 function clearAccessTokenOnClients() {
   eventsApiClient.removeHeader('Authorization');
   bookmarksApiClient.removeHeader('Authorization');
   adminApiClient.removeHeader('Authorization');
+  authApiClient.removeHeader('Authorization');
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -78,10 +80,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     eventsApiClient.setOnAuthRefreshNeeded(refresh);
     bookmarksApiClient.setOnAuthRefreshNeeded(refresh);
     adminApiClient.setOnAuthRefreshNeeded(refresh);
+    authApiClient.setOnAuthRefreshNeeded(refresh);
     return () => {
       eventsApiClient.setOnAuthRefreshNeeded(null);
       bookmarksApiClient.setOnAuthRefreshNeeded(null);
       adminApiClient.setOnAuthRefreshNeeded(null);
+      authApiClient.setOnAuthRefreshNeeded(null);
     };
   }, [refresh]);
 
