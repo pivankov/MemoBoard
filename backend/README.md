@@ -24,7 +24,11 @@ Health check: `GET /health` → `{ status, timestamp, uptime, version, environme
 ## Управление пользователями
 
 ```bash
+# Установка роли и статуса
 node scripts/set-role.js <email> <field> <value>
+
+# Установка нового пароля
+node scripts/set-password.js <email> <new-password>
 ```
 
 ## Документация
