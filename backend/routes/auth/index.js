@@ -26,6 +26,7 @@ import {
   generateCsrfToken,
 } from '../../utils/cookieOptions.js';
 import { requireCsrf } from '../../middleware/csrf.js';
+import { generatePat, hashPat } from '../../utils/pat.js';
 
 /**
  * Ставит на response обе auth-cookie: refresh_token (httpOnly) и csrf_token.
@@ -336,5 +337,122 @@ router.get('/me', requireAuth, (req, res) => {
     },
   });
 });
+
+/**
+ * Guard: разрешает доступ ТОЛЬКО по JWT.
+ * 🔴 SECURITY-CRITICAL: endpoints управления PAT недоступны по самому PAT —
+ * иначе утёкший токен сможет плодить/отзывать ключи и самоувековечиваться.
+ * Ставится ПОСЛЕ requireAuth (тот проставляет req.authMethod).
+ */
+function requireJwtAuth(req, res, next) {
+  if (req.authMethod === 'pat') {
+    return res.status(403).json({ error: 'Это действие недоступно по токену расширения' });
+  }
+  next();
+}
+
+/**
+ * Создаёт новый PAT для текущего пользователя.
+ * Raw-токен возвращается ОДИН раз (в БД хранится только SHA-256-хеш).
+ * Имя генерируется автоматически.
+ *
+ * @route POST /api/auth/tokens
+ * @access requireAuth + requireJwtAuth (JWT-only)
+ * @returns {201} { token: "mb_pat_...", apiToken: { uid, name, createdAt } }
+ * @returns {403} Запрос сделан по PAT
+ * @returns {500}
+ */
+router.post('/tokens', requireAuth, requireJwtAuth, (req, res) => {
+  try {
+    const rawToken = generatePat();
+    const tokenHash = hashPat(rawToken);
+    const uid = randomUUID();
+    const createdAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const name = `Расширение · ${createdAt.slice(0, 10)}`;
+
+    db.prepare(`
+      INSERT INTO api_tokens (uid, user_id, token_hash, name, created_at)
+      VALUES (@uid, @user_id, @token_hash, @name, @created_at)
+    `).run({ uid, user_id: req.user.userId, token_hash: tokenHash, name, created_at: createdAt });
+
+    return res.status(201).json({
+      token: rawToken,
+      apiToken: { uid, name, createdAt },
+    });
+  } catch (error) {
+    console.error('[auth/tokens] Ошибка создания токена:', error);
+    return res.status(500).json({ error: 'Не удалось создать токен' });
+  }
+});
+
+/**
+ * Возвращает активные (не отозванные) PAT текущего пользователя. БЕЗ raw-токена.
+ *
+ * @route GET /api/auth/tokens
+ * @access requireAuth + requireJwtAuth (JWT-only)
+ * @returns {200} { tokens: [{ uid, name, createdAt, lastUsedAt }] }
+ * @returns {403} Запрос сделан по PAT
+ * @returns {500}
+ */
+router.get('/tokens', requireAuth, requireJwtAuth, (req, res) => {
+  try {
+    const rows = db.prepare(`
+      SELECT uid, name, created_at, last_used_at
+      FROM api_tokens
+      WHERE user_id = ? AND revoked_at IS NULL
+      ORDER BY created_at DESC
+    `).all(req.user.userId);
+
+    const tokens = rows.map((r) => ({
+      uid: r.uid,
+      name: r.name,
+      createdAt: r.created_at,
+      lastUsedAt: r.last_used_at ?? null,
+    }));
+
+    return res.status(200).json({ tokens });
+  } catch (error) {
+    console.error('[auth/tokens] Ошибка получения токенов:', error);
+    return res.status(500).json({ error: 'Не удалось получить список токенов' });
+  }
+});
+
+/**
+ * Отзывает PAT по его публичному uid (revoked_at = now).
+ *
+ * @route DELETE /api/auth/tokens/:uid
+ * @access requireAuth + requireJwtAuth (JWT-only)
+ * @returns {200} { success: true }
+ * @returns {400} Некорректный uid
+ * @returns {403} Запрос сделан по PAT
+ * @returns {404} Токен не найден (или чужой / уже отозван)
+ * @returns {500}
+ */
+router.delete('/tokens/:uid', requireAuth, requireJwtAuth, (req, res) => {
+  const { uid } = req.params;
+  try {
+    if (!uid || typeof uid !== 'string' || uid.trim().length === 0) {
+      return res.status(400).json({ error: 'Некорректный идентификатор токена' });
+    }
+
+    const result = db.prepare(`
+      UPDATE api_tokens SET revoked_at = datetime('now')
+      WHERE uid = ? AND user_id = ? AND revoked_at IS NULL
+    `).run(uid, req.user.userId);
+
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Токен не найден' });
+    }
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('[auth/tokens] Ошибка отзыва токена:', error);
+    return res.status(500).json({ error: 'Не удалось отозвать токен' });
+  }
+});
+
+// Примечание: CSRF на этих роутах НЕ нужен — они авторизуются через
+// Authorization: Bearer (не cookie), как /api/bookmarks. requireCsrf
+// применяется только к cookie-based /refresh и /logout.
 
 export default router;

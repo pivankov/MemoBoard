@@ -13,6 +13,10 @@
  * @param {import('express').NextFunction} next
  */
 export function requireAdmin(req, res, next) {
+  // PAT (токен расширения) не имеет доступа к админским роутам, независимо от роли.
+  if (req.authMethod === 'pat') {
+    return res.status(403).json({ error: 'Доступ запрещён' });
+  }
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Доступ запрещён' });
   }
