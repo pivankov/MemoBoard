@@ -1,7 +1,7 @@
 # База данных
 
 - Файл БД: `db/data.db`
-- Версия схемы: `PRAGMA user_version` (текущая — **3**)
+- Версия схемы: `PRAGMA user_version` (текущая — **4**)
 - Дата/время: TEXT в ISO‑8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
 - Булево: INTEGER 0/1, с `CHECK (field IN (0,1))`
 
@@ -139,6 +139,23 @@
 
 Поля `user_agent` и `ip_address` хранятся в сессиях, но при ротации не проверяются (token binding запланирован).
 
+#### api_tokens
+
+Хранит Personal Access Token (PAT) для аутентификации браузерного расширения. Как и `sessions`, хранит только хеш токена — raw-значение в БД не сохраняется.
+
+- `id` INTEGER PRIMARY KEY — внутренний ID
+- `uid` TEXT UNIQUE NOT NULL — публичный UUID токена (используется в API управления ключами, например при отзыве)
+- `user_id` INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE — владелец токена
+- `token_hash` TEXT UNIQUE NOT NULL — SHA-256(PAT) в hex (64 символа); сам токен в БД не хранится
+- `name` TEXT — название ключа (генерируется автоматически при создании)
+- `created_at` TEXT NOT NULL DEFAULT datetime('now')
+- `last_used_at` TEXT — NULL пока токен не использован; обновляется best-effort при каждой успешной аутентификации по PAT
+- `revoked_at` TEXT — NULL = токен активен; иначе — момент отзыва
+
+Индексы:
+- `idx_api_tokens_user_id` на `api_tokens(user_id)`
+- `idx_api_tokens_token_hash` на `api_tokens(token_hash)`
+
 ### Данные для посева (seeds)
 
 Данные для инициализации базы данных находятся в директории `db/seeds/`:
@@ -180,7 +197,7 @@ CREATE TABLE IF NOT EXISTS child (
 
 ### Экспорты initdb.js
 
-`initdb.js` экспортирует константу `SESSIONS_FIELDS` — массив имён столбцов таблицы `sessions`. Используется в `services/sessionService.js` для безопасного формирования SELECT-запросов.
+`initdb.js` экспортирует константу `SESSIONS_FIELDS` — массив имён столбцов таблицы `sessions`. Используется в `services/sessionService.js` для безопасного формирования SELECT-запросов. Аналогично экспортируется `API_TOKENS_FIELDS` — описание полей таблицы `api_tokens`.
 
 ### Миграции
 
@@ -188,6 +205,7 @@ CREATE TABLE IF NOT EXISTS child (
 - `migrateFrom0To1`: создание всех таблиц (`users`, `event_types`, `events`, `bookmark_categories`, `bookmark_tags`, `bookmarks`, `bookmark_tag_relations`), индексов и триггеров; посев демо-данных для пользователя `demo@example.com` (при включённых сидах).
 - `migrateFrom1To2`: создание таблицы `sessions` и её индексов.
 - `migrateFrom2To3`: добавление полей `role` и `status` в таблицу `users`; пересоздание триггера `users_set_updated_at` с учётом новых полей.
+- `migrateFrom3To4`: создание таблицы `api_tokens` и её индексов.
 
 Все миграции идемпотентны и безопасны для повторного запуска: схема создаётся через `CREATE TABLE IF NOT EXISTS`, сиды проверяют наличие записей по `uid` перед вставкой.
 
