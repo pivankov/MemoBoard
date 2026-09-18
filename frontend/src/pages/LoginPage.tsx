@@ -46,41 +46,81 @@ function LoginPage() {
 
   return (
     <div className="login-page">
-      <Card className="login-page__card">
-        <Title level={3} className="login-page__title">Вход в MemoBoard</Title>
+      <div className="login-page__left">
+        <Card className="login-page__card">
+          <div className="login-page__title">Вход</div>
+          <div className="login-page__title-sub">Нет аккаунта? <Link to="/register">Зарегистрироваться</Link></div>
 
-        {error && <Text type="danger" className="login-page__error">{error}</Text>}
+          {error && <Text type="danger" className="login-page__error">{error}</Text>}
 
-        <Form layout="vertical" onFinish={handleSubmit} autoComplete="off">
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: 'Введите email' },
-              { type: 'email', message: 'Некорректный формат email' },
-            ]}
-          >
-            <Input placeholder="email@example.com" size="large" />
-          </Form.Item>
+          <Form layout="vertical" onFinish={handleSubmit} autoComplete="off">
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                { required: true, message: 'Введите email' },
+                { type: 'email', message: 'Некорректный формат email' },
+              ]}
+            >
+              <Input placeholder="demo@example.com" size="large" />
+            </Form.Item>
 
-          <Form.Item
-            label="Пароль"
-            name="password"
-            rules={[{ required: true, message: 'Введите пароль' }]}
-          >
-            <Input.Password placeholder="Пароль" size="large" />
-          </Form.Item>
+            <Form.Item
+              label="Пароль"
+              name="password"
+              rules={[{ required: true, message: 'Введите пароль' }]}
+            >
+              <Input.Password placeholder="demo" size="large" />
+            </Form.Item>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block size="large">
-              Войти
-            </Button>
-          </Form.Item>
-        </Form>
-
-        <Text>Нет аккаунта? <Link to="/register">Зарегистрироваться</Link></Text>
-      </Card>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" loading={loading} block size="large">
+                Войти
+              </Button>
+            </Form.Item>
+          </Form>
+        </Card>
+      </div>
+      <div className="login-page__right">
+        <h2>Welcome to our community</h2>
+      </div>
     </div>
+    // <div className="login-page">
+    //   <Card className="login-page__card">
+    //     <Title level={3} className="login-page__title">Вход в MemoBoard</Title>
+
+    //     {error && <Text type="danger" className="login-page__error">{error}</Text>}
+
+    //     <Form layout="vertical" onFinish={handleSubmit} autoComplete="off">
+    //       <Form.Item
+    //         label="Email"
+    //         name="email"
+    //         rules={[
+    //           { required: true, message: 'Введите email' },
+    //           { type: 'email', message: 'Некорректный формат email' },
+    //         ]}
+    //       >
+    //         <Input placeholder="demo@example.com" size="large" />
+    //       </Form.Item>
+
+    //       <Form.Item
+    //         label="Пароль"
+    //         name="password"
+    //         rules={[{ required: true, message: 'Введите пароль' }]}
+    //       >
+    //         <Input.Password placeholder="demo" size="large" />
+    //       </Form.Item>
+
+    //       <Form.Item>
+    //         <Button type="primary" htmlType="submit" loading={loading} block size="large">
+    //           Войти
+    //         </Button>
+    //       </Form.Item>
+    //     </Form>
+
+    //     <Text>Нет аккаунта? <Link to="/register">Зарегистрироваться</Link></Text>
+    //   </Card>
+    // </div>
   );
 }
 
