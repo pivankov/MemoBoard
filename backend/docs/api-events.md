@@ -1,163 +1,53 @@
-# API: События (Events)
+# API: События
 
-### События (Events)
+Базовый URL: `/api/events`. Все запросы требуют `Authorization: Bearer <accessToken>`.
 
-#### GET /api/events
+## Контракты
 
-Получает список всех событий.
+`Event`:
+- `id: string`
+- `title: string`
+- `originalDate: string` — ISO datetime
+- `nextDate: string` — ISO datetime или `""` если не вычислен
+- `type: 'birthday' | 'holiday' | 'anniversary' | 'other'`
+- `description: string | null`
+- `recurrence: 'none' | 'monthly' | 'yearly'`
 
-**Ответ (200):**
-```json
-{
-  "data": [
-    {
-      "id": "550e8400-e29b",
-      "title": "День рождения",
-      "originalDate": "2024-06-13T00:00:00Z",
-      "nextDate": "",
-      "type": "birthday",
-      "description": "Важное событие",
-      "recurrence": "yearly"
-    }
-  ]
-}
-```
+## Эндпоинты
 
-**Ошибки:**
-- `500` - Не удалось получить список событий
+#### GET /api/events → 200
+
+**Response:** `{ data: Event[] }`
+**Errors:** `500`
 
 ---
 
-#### GET /api/events/:id
+#### GET /api/events/:id → 200
 
-Получает событие по уникальному идентификатору.
-
-**Параметры:**
-- `id` (string, required) - UID события
-
-**Ответ (200):**
-```json
-{
-  "data": {
-    "id": "550e8400-e29b",
-    "title": "День рождения",
-    "originalDate": "2024-06-13T00:00:00Z",
-    "nextDate": "",
-    "type": "birthday",
-    "description": "Важное событие",
-    "recurrence": "yearly"
-  }
-}
-```
-
-**Ошибки:**
-- `400` - Некорректный идентификатор события
-- `404` - Событие не найдено
-- `500` - Не удалось получить событие
+**Response:** `{ data: Event }`
+**Errors:** `400` некорректный id · `404` · `500`
 
 ---
 
-#### POST /api/events
+#### POST /api/events → 201
 
-Создает новое событие.
-
-**Тело запроса:**
-```json
-{
-  "title": "День рождения",
-  "originalDate": "2024-06-13",
-  "type": "birthday",
-  "description": "Важное событие",
-  "recurrence": "yearly"
-}
-```
-
-**Поля:**
-- `title` (string, required) - Название события
-- `originalDate` (string, required) - Дата в формате ISO или `YYYY-MM-DD`
-- `type` (string, required) - Тип события (birthday, holiday, anniversary, other)
-- `description` (string, optional) - Описание события
-- `recurrence` (string, optional) - Повторение: `none`, `monthly`, `yearly` (по умолчанию `none`)
-
-**Ответ (201):**
-```json
-{
-  "data": {
-    "id": "550e8400-e29b",
-    "title": "День рождения",
-    "originalDate": "2024-06-13T00:00:00Z",
-    "type": "birthday",
-    "description": "Важное событие",
-    "recurrence": "yearly"
-  }
-}
-```
-
-**Ошибки:**
-- `400` - Некорректные данные (заголовок, дата, тип или recurrence)
-- `500` - Не удалось создать событие
+**Body:** `{ title: string, originalDate: string (ISO или YYYY-MM-DD), type: 'birthday' | 'holiday' | 'anniversary' | 'other', description?: string, recurrence?: 'none' | 'monthly' | 'yearly' (default: 'none') }`
+**Response:** `{ data: Event }`
+**Errors:** `400` некорректные данные · `500`
 
 ---
 
-#### PUT /api/events/:id
+#### PUT /api/events/:id → 200
 
-Обновляет существующее событие.
+Полная замена события — все поля обязательны.
 
-**Параметры:**
-- `id` (string, required) - UID события
-
-**Тело запроса:**
-```json
-{
-  "title": "День рождения (обновлено)",
-  "originalDate": "2024-06-13",
-  "type": "birthday",
-  "description": "Обновленное описание",
-  "recurrence": "yearly"
-}
-```
-
-**Поля:** (все обязательны)
-- `title` (string) - Название события
-- `originalDate` (string) - Дата в формате ISO или `YYYY-MM-DD`
-- `type` (string) - Тип события
-- `description` (string) - Описание события (может быть пустой строкой)
-- `recurrence` (string) - Повторение: `none`, `monthly`, `yearly`
-
-**Ответ (200):**
-```json
-{
-  "data": {
-    "id": "550e8400-e29b",
-    "title": "День рождения (обновлено)",
-    "originalDate": "2024-06-13T00:00:00Z",
-    "type": "birthday",
-    "description": "Обновленное описание",
-    "recurrence": "yearly"
-  }
-}
-```
-
-**Ошибки:**
-- `400` - Некорректные данные
-- `404` - Событие не найдено
-- `500` - Не удалось обновить событие
+**Body:** `{ title: string, originalDate: string, type: string, description: string, recurrence: string }`
+**Response:** `{ data: Event }`
+**Errors:** `400` · `404` · `500`
 
 ---
 
-#### DELETE /api/events/:id
+#### DELETE /api/events/:id → 204
 
-Удаляет событие по идентификатору.
-
-**Параметры:**
-- `id` (string, required) - UID события
-
-**Ответ (204):**
-Пустой ответ (успешное удаление)
-
-**Ошибки:**
-- `400` - Некорректный идентификатор
-- `404` - Событие не найдено
-- `500` - Не удалось удалить событие
-
----
+**Response:** 204 No Content
+**Errors:** `400` некорректный id · `404` · `500`

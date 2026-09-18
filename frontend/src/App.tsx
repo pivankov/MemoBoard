@@ -1,7 +1,9 @@
 import { createBrowserRouter, RouterProvider } from "react-router";
 
+import AdminRoute from 'components/AdminRoute/AdminRoute';
 import ProtectedRoute from 'components/ProtectedRoute/ProtectedRoute';
 import RootLayout from "layouts/RootLayout";
+import AdminUsersPage from "pages/AdminUsersPage/AdminUsersPage";
 import BookmarksPage from "pages/BookmarksPage";
 import EventsPage from "pages/EventsPage";
 import HomePage from "pages/HomePage";
@@ -99,6 +101,13 @@ const router = createBrowserRouter([
                 path: 'tag/:tagId/:bookmarkId/edit',
                 element: <BookmarksPage />,
               }
+            ],
+          },
+          {
+            path: "admin",
+            element: <AdminRoute />,
+            children: [
+              { path: "users", element: <AdminUsersPage /> },
             ],
           },
           {

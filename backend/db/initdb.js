@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const db = new Database(path.join(__dirname, 'data.db'));
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 4;
 const ARGON2_TIME_COST = 3;
 const ARGON2_MEMORY_COST = 65536; // 2^16
 const ARGON2_PARALLELISM = 1;
@@ -26,6 +26,8 @@ const USERS_FIELDS = {
    password_hash: 'TEXT NOT NULL',
    password_algo: "TEXT NOT NULL DEFAULT 'argon2id'",
    password_updated_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
+   role: "TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin'))",
+   status: "TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'blocked'))",
    created_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
    updated_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
 };
@@ -105,6 +107,17 @@ const SESSIONS_FIELDS = {
   ip_address: 'TEXT',
   created_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
   last_used_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
+};
+
+const API_TOKENS_FIELDS = {
+  id: 'INTEGER PRIMARY KEY',
+  uid: 'TEXT UNIQUE NOT NULL',
+  user_id: 'INTEGER NOT NULL',
+  token_hash: 'TEXT UNIQUE NOT NULL',
+  name: 'TEXT',
+  created_at: "TEXT NOT NULL DEFAULT (datetime('now'))",
+  last_used_at: 'TEXT',
+  revoked_at: 'TEXT',
 };
 
 function getUserVersion() {
@@ -392,6 +405,8 @@ async function initDb(options = {}) {
       password_hash ${USERS_FIELDS.password_hash},
       password_algo ${USERS_FIELDS.password_algo},
       password_updated_at ${USERS_FIELDS.password_updated_at},
+      role ${USERS_FIELDS.role},
+      status ${USERS_FIELDS.status},
       created_at ${USERS_FIELDS.created_at},
       updated_at ${USERS_FIELDS.updated_at}
     );
@@ -407,7 +422,7 @@ async function initDb(options = {}) {
 
   const createUsersUpdatedAtTrigger = `
     CREATE TRIGGER IF NOT EXISTS users_set_updated_at
-    AFTER UPDATE OF uid, email, name, password_hash, password_algo, password_updated_at, created_at ON users
+    AFTER UPDATE OF uid, email, name, password_hash, password_algo, password_updated_at, role, status, created_at ON users
     FOR EACH ROW BEGIN
       UPDATE users SET updated_at = datetime('now') WHERE id = OLD.id;
     END;
@@ -552,6 +567,24 @@ async function initDb(options = {}) {
     CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
   `;
 
+  const createApiTokensSql = `
+    CREATE TABLE IF NOT EXISTS api_tokens (
+      id ${API_TOKENS_FIELDS.id},
+      uid ${API_TOKENS_FIELDS.uid},
+      user_id ${API_TOKENS_FIELDS.user_id} REFERENCES users(id) ON DELETE CASCADE,
+      token_hash ${API_TOKENS_FIELDS.token_hash},
+      name ${API_TOKENS_FIELDS.name},
+      created_at ${API_TOKENS_FIELDS.created_at},
+      last_used_at ${API_TOKENS_FIELDS.last_used_at},
+      revoked_at ${API_TOKENS_FIELDS.revoked_at}
+    );
+  `;
+
+  const createApiTokensIndexesSql = `
+    CREATE INDEX IF NOT EXISTS idx_api_tokens_user_id ON api_tokens(user_id);
+    CREATE INDEX IF NOT EXISTS idx_api_tokens_token_hash ON api_tokens(token_hash);
+  `;
+
   const createSchema = db.transaction(() => {
     db.exec(createUsersSql);
     db.exec(createEventTypesSql);
@@ -561,9 +594,11 @@ async function initDb(options = {}) {
     db.exec(createBookmarksSql);
     db.exec(createBookmarkTagRelationsSql);
     db.exec(createSessionsSql);              // ← НОВОЕ
+    db.exec(createApiTokensSql);
     db.exec(createEventsIndexesSql);
     db.exec(createBookmarkIndexesSql);
     db.exec(createSessionsIndexesSql);       // ← НОВОЕ
+    db.exec(createApiTokensIndexesSql);
     db.exec(createUsersUpdatedAtTrigger);
     db.exec(createEventsUpdatedAtTrigger);
     db.exec(createBookmarkCategoriesUpdatedAtTrigger);
@@ -607,6 +642,27 @@ async function initDb(options = {}) {
     })();
   };
 
+  const migrateFrom2To3 = () => {
+    const existingColumns = db.pragma('table_info(users)').map(c => c.name);
+    db.transaction(() => {
+      if (!existingColumns.includes('role')) {
+        db.exec(`ALTER TABLE users ADD COLUMN role ${USERS_FIELDS.role};`);
+      }
+      if (!existingColumns.includes('status')) {
+        db.exec(`ALTER TABLE users ADD COLUMN status ${USERS_FIELDS.status};`);
+      }
+      db.exec('DROP TRIGGER IF EXISTS users_set_updated_at;');
+      db.exec(createUsersUpdatedAtTrigger);
+    })();
+  };
+
+  const migrateFrom3To4 = () => {
+    db.transaction(() => {
+      db.exec(createApiTokensSql);
+      db.exec(createApiTokensIndexesSql);
+    })();
+  };
+
   let currentVersion = getUserVersion();
   while (currentVersion < SCHEMA_VERSION) {
     if (currentVersion === 0) {
@@ -621,6 +677,18 @@ async function initDb(options = {}) {
       currentVersion = 2;
       continue;
     }
+    if (currentVersion === 2) {
+      migrateFrom2To3();
+      setUserVersion(3);
+      currentVersion = 3;
+      continue;
+    }
+    if (currentVersion === 3) {
+      migrateFrom3To4();
+      setUserVersion(4);
+      currentVersion = 4;
+      continue;
+    }
     break;
   }
 }
@@ -633,6 +701,7 @@ export {
   BOOKMARK_TAGS_FIELDS,
   BOOKMARKS_FIELDS,
   SESSIONS_FIELDS,
+  API_TOKENS_FIELDS,
   DEMO_EMAIL,
   initDb,
   resetDemoData,

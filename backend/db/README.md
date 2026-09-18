@@ -1,7 +1,7 @@
-## База данных (SQLite + better-sqlite3)
+# База данных
 
 - Файл БД: `db/data.db`
-- Версия схемы: `PRAGMA user_version` (текущая — **2**)
+- Версия схемы: `PRAGMA user_version` (текущая — **4**)
 - Дата/время: TEXT в ISO‑8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`)
 - Булево: INTEGER 0/1, с `CHECK (field IN (0,1))`
 
@@ -23,6 +23,8 @@
 - `password_hash` TEXT NOT NULL
 - `password_algo` TEXT NOT NULL DEFAULT 'argon2id'
 - `password_updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
+- `role` TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')) — роль пользователя
+- `status` TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'blocked')) — состояние аккаунта
 - `created_at` TEXT NOT NULL DEFAULT (datetime('now'))
 - `updated_at` TEXT NOT NULL DEFAULT (datetime('now'))
 
@@ -133,11 +135,26 @@
 - `idx_sessions_token_hash` на `sessions(token_hash)`
 - `idx_sessions_expires_at` на `sessions(expires_at)`
 
-**Концепция Session Family и Reuse Detection:**
-
-Каждый новый логин создаёт уникальный `family_id`. При каждом вызове `/auth/refresh` старая сессия помечается как использованная (`replaced_by_id`), создаётся новая с тем же `family_id`. Если отозванный (уже заменённый) токен предъявляется повторно — это признак кражи токена. Сервер аннулирует все сессии с данным `family_id`, пользователь разлогинивается.
+Логика session family и reuse detection — в [docs/architecture.md](../docs/architecture.md).
 
 Поля `user_agent` и `ip_address` хранятся в сессиях, но при ротации не проверяются (token binding запланирован).
+
+#### api_tokens
+
+Хранит Personal Access Token (PAT) для аутентификации браузерного расширения. Как и `sessions`, хранит только хеш токена — raw-значение в БД не сохраняется.
+
+- `id` INTEGER PRIMARY KEY — внутренний ID
+- `uid` TEXT UNIQUE NOT NULL — публичный UUID токена (используется в API управления ключами, например при отзыве)
+- `user_id` INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE — владелец токена
+- `token_hash` TEXT UNIQUE NOT NULL — SHA-256(PAT) в hex (64 символа); сам токен в БД не хранится
+- `name` TEXT — название ключа (генерируется автоматически при создании)
+- `created_at` TEXT NOT NULL DEFAULT datetime('now')
+- `last_used_at` TEXT — NULL пока токен не использован; обновляется best-effort при каждой успешной аутентификации по PAT
+- `revoked_at` TEXT — NULL = токен активен; иначе — момент отзыва
+
+Индексы:
+- `idx_api_tokens_user_id` на `api_tokens(user_id)`
+- `idx_api_tokens_token_hash` на `api_tokens(token_hash)`
 
 ### Данные для посева (seeds)
 
@@ -145,7 +162,7 @@
 - `events.js` — события
 - `bookmarks.js` — категории, теги и закладки
 
-Скрипт инициализации является идемпотентным: повторный запуск с сидами не создаёт дубликаты благодаря использованию `INSERT OR IGNORE` и проверкам существования записей.
+При первом запуске создаётся демо-пользователь `demo@example.com` / пароль `demo` с demo-данными. Новые пользователи стартуют с пустым набором данных. Скрипт идемпотентен: повторный запуск не создаёт дубликаты (`INSERT OR IGNORE`).
 
 **Важно:** Файл `bookmarks.js` содержит только пользовательские категории и теги. Системные категории ("Несортированные", "Корзина") в базе данных **не хранятся** — они реализованы через отдельные API endpoints и флаг `in_trash` в таблице `bookmarks`. Закладки без категории (несортированные) имеют `category_id = NULL`.
 
@@ -180,18 +197,15 @@ CREATE TABLE IF NOT EXISTS child (
 
 ### Экспорты initdb.js
 
-`initdb.js` экспортирует константу `SESSIONS_FIELDS` — массив имён столбцов таблицы `sessions`. Используется в `services/sessionService.js` для безопасного формирования SELECT-запросов.
+`initdb.js` экспортирует константу `SESSIONS_FIELDS` — массив имён столбцов таблицы `sessions`. Используется в `services/sessionService.js` для безопасного формирования SELECT-запросов. Аналогично экспортируется `API_TOKENS_FIELDS` — описание полей таблицы `api_tokens`.
 
 ### Миграции
 
 Миграции выполняются автоматически при инициализации БД. Текущие миграции:
 - `migrateFrom0To1`: создание всех таблиц (`users`, `event_types`, `events`, `bookmark_categories`, `bookmark_tags`, `bookmarks`, `bookmark_tag_relations`), индексов и триггеров; посев демо-данных для пользователя `demo@example.com` (при включённых сидах).
 - `migrateFrom1To2`: создание таблицы `sessions` и её индексов.
+- `migrateFrom2To3`: добавление полей `role` и `status` в таблицу `users`; пересоздание триггера `users_set_updated_at` с учётом новых полей.
+- `migrateFrom3To4`: создание таблицы `api_tokens` и её индексов.
 
 Все миграции идемпотентны и безопасны для повторного запуска: схема создаётся через `CREATE TABLE IF NOT EXISTS`, сиды проверяют наличие записей по `uid` перед вставкой.
-
-### Посев данных
-
-При первом запуске `initDb()` с включёнными сидами создаётся один демо-пользователь (`demo@example.com` / пароль `demo`), к которому прикрепляются все dummy-данные из `db/seeds/`. Регистрация новых пользователей — через стандартный API-роут, новые пользователи стартуют с пустым набором данных.
-
 

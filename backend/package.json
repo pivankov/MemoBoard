@@ -6,7 +6,8 @@
     "start": "node app.js",
     "db:init": "node ./db/cli-init.js",
     "db:reset": "rm -f ./db/data.db && node ./db/cli-init.js",
-    "db:reset:demo": "node ./db/cli-reset-demo.js"
+    "db:reset:demo": "node ./db/cli-reset-demo.js",
+    "user:set-role": "node ./scripts/set-role.js"
   },
   "dependencies": {
     "argon2": "^0.44.0",

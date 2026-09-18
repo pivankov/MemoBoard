@@ -1,4 +1,5 @@
 // Фикс для работы ant-v5 с React 19. Можно будет убрать в будущем.. Так же, вырезать из package.json
+import { StrictMode } from 'react';
 import { ConfigProvider } from 'antd';
 
 import '@ant-design/v5-patch-for-react-19';
@@ -25,13 +26,11 @@ const theme = {
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
+
 root.render(
-  <ConfigProvider locale={ruRU} theme={theme}>
-    <App />
-  </ConfigProvider>
+  <StrictMode>
+    <ConfigProvider locale={ruRU} theme={theme}>
+      <App />
+    </ConfigProvider>
+  </StrictMode>
 );
-// root.render(
-//   <React.StrictMode>
-//     <App />
-//   </React.StrictMode>
-// );

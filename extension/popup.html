@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Экран A: ключ не сохранён -->
+    <section id="key-screen" hidden>
+      <h1>MemoBoard</h1>
+      <p class="hint">Вставьте ключ расширения (из веб-интерфейса MemoBoard).</p>
+      <input id="key-input" type="password" placeholder="mb_pat_..." />
+      <button id="save-key" class="primary">Сохранить</button>
+    </section>
+
+    <!-- Экран B: ключ сохранён -->
+    <section id="main-screen" hidden>
+      <h1>Новая закладка</h1>
+      <input id="url-input" type="text" placeholder="https://..." />
+      <button id="paste-clipboard" class="secondary">Вставить из буфера</button>
+      <button id="send" class="primary">Отправить</button>
+      <br/><br/>
+      <button id="reset-key" class="link">Сменить ключ</button>
+    </section>
+
+    <p id="status" class="status"></p>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

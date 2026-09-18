@@ -12,10 +12,14 @@
  * - req.user.uid — публичный UID пользователя
  * - req.user.email — email пользователя
  * - req.user.name — имя пользователя
+ * - req.user.role — роль пользователя ('user' | 'admin'), из БД
+ * - req.user.status — статус учётной записи ('active' | 'blocked'), из БД
+ * - req.authMethod — 'jwt' | 'pat', способ аутентификации текущего запроса
  */
 
 import { verifyAccessToken } from '../utils/jwt.js';
 import { db } from '../db/initdb.js';
+import { isPatToken, hashPat } from '../utils/pat.js';
 
 /**
  * Данные аутентифицированного пользователя, которые middleware `requireAuth`
@@ -31,6 +35,8 @@ import { db } from '../db/initdb.js';
  * @property {string} uid - Публичный UID пользователя.
  * @property {string} email - Email пользователя.
  * @property {string} name - Имя пользователя.
+ * @property {'user'|'admin'} role - Роль пользователя. Источник правды — БД (НЕ JWT-payload), подтягивается на каждый запрос.
+ * @property {'active'|'blocked'} status - Статус учётной записи.
  */
 
 /**
@@ -49,11 +55,47 @@ export function requireAuth(req, res, next) {
 
   const token = authHeader.split(' ')[1];
 
+  // Ветка PAT: значение начинается с mb_pat_
+  if (isPatToken(token)) {
+    const tokenRow = db
+      .prepare('SELECT id, user_id FROM api_tokens WHERE token_hash = ? AND revoked_at IS NULL LIMIT 1')
+      .get(hashPat(token));
+
+    if (!tokenRow) {
+      return res.status(401).json({ error: 'Невалидный токен авторизации' });
+    }
+
+    const user = db.prepare('SELECT id, uid, email, name, role, status FROM users WHERE id = ? LIMIT 1').get(tokenRow.user_id);
+    if (!user) {
+      return res.status(401).json({ error: 'Пользователь не найден' });
+    }
+
+    req.user = {
+      userId: user.id,
+      uid: user.uid,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      status: user.status,
+    };
+    req.authMethod = 'pat';
+
+    // best-effort: сбой апдейта last_used_at НЕ должен ронять запрос
+    try {
+      db.prepare("UPDATE api_tokens SET last_used_at = datetime('now') WHERE id = ?").run(tokenRow.id);
+    } catch (updateError) {
+      console.error('[auth] Не удалось обновить last_used_at PAT:', updateError.message);
+    }
+
+    return next();
+  }
+
+  // Ветка JWT (без изменений по логике)
   try {
     const decoded = verifyAccessToken(token);
 
     // Проверяем, что пользователь всё ещё существует в БД
-    const user = db.prepare('SELECT id, uid, email, name FROM users WHERE id = ? LIMIT 1').get(decoded.userId);
+    const user = db.prepare('SELECT id, uid, email, name, role, status FROM users WHERE id = ? LIMIT 1').get(decoded.userId);
 
     if (!user) {
       return res.status(401).json({ error: 'Пользователь не найден' });
@@ -65,7 +107,10 @@ export function requireAuth(req, res, next) {
       uid: user.uid,
       email: user.email,
       name: user.name,
+      role: user.role,
+      status: user.status,
     };
+    req.authMethod = 'jwt';
 
     next();
   } catch (error) {
