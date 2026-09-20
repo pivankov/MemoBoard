@@ -113,11 +113,15 @@ function RegisterPage() {
       </div>
       <div className="login-page__right">
         <div className="login-page__text">
-        <h1>MemoBoard</h1>
-        <p>Добро пожаловать в MemoBoard — это проект для управления событиями и закладками.</p>
-        <p>Календарь с умной группировкой дат, напоминания о праздниках и днях рождения, удобное хранение ссылок с тегами.</p>
-        <p>GitHub: <a href="https://github.com/pivankov/MemoBoard" target="blank">https://github.com/pivankov/MemoBoard</a></p>
-        <p className="login-page__text-note"><WarningFilled /> Сайт не адаптирован под мобильные устройства</p>
+          <h1>MemoBoard</h1>
+          <p>Добро пожаловать в MemoBoard — это проект для управления событиями и закладками.</p>
+          <p>Календарь с умной группировкой дат, напоминания о праздниках и днях рождения, удобное хранение ссылок с тегами.</p>
+          <p>GitHub: <a href="https://github.com/pivankov/MemoBoard" target="blank">https://github.com/pivankov/MemoBoard</a></p>
+          <div className="login-page__note">
+            <div className="login-page__note-item">
+              <WarningFilled />Сайт не адаптирован под мобильные устройства
+            </div>
+          </div>
         </div>         
       </div>
     </div>
