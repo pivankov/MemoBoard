@@ -91,7 +91,7 @@ const EventsContent: React.FC<{ events: Event[]; loading: boolean }> = ({ events
   };
 
   return (
-    <div className={isPanelOpened ? 'events events--narrow' : 'events'}>
+    <div className="events">
       <div className="events__wrapper">
         <div className="events__body">
           <div className="events__header">

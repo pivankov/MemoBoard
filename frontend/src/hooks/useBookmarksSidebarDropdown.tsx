@@ -22,13 +22,13 @@ const MENU_ITEMS: Record<BookmarksSidebarListType, MenuItem[]> = {
     { key: '0', label: "Создать категорию", icon: <PlusOutlined /> },
     { type: 'divider' },
     RENAME_ITEM,
-    MOVE_ITEM,
+    // MOVE_ITEM,
     DELETE_ITEM,
   ],
   'category': [
     RENAME_ITEM,
     CHANGE_ITEM_ICON,
-    MOVE_ITEM,
+    // MOVE_ITEM,
     DELETE_ITEM,
   ],
   'tag': [

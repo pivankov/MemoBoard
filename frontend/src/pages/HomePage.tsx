@@ -1,103 +1,110 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Button, message, Modal, Popconfirm, Table, Typography } from 'antd';
+import { Timeline } from 'antd';
 
-import type { ColumnsType } from 'antd/es/table';
-import type { ApiToken } from 'services/apiTokensService';
-import * as apiTokensService from 'services/apiTokensService';
+import SingleColumnLayout from "layouts/SingleColumnLayout";
+
+import './HomePage.css';
 
 function HomePage() {
-  const [tokens, setTokens] = useState<ApiToken[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [newToken, setNewToken] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setTokens(await apiTokensService.fetchApiTokens());
-    } catch {
-      message.error('Не удалось загрузить ключи');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const handleCreate = async () => {
-    setCreating(true);
-    try {
-      const created = await apiTokensService.createApiToken();
-      setNewToken(created.token);
-      await load();
-    } catch {
-      message.error('Не удалось создать ключ');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleRevoke = async (uid: string) => {
-    try {
-      await apiTokensService.revokeApiToken(uid);
-      message.success('Ключ отозван');
-      await load();
-    } catch {
-      message.error('Не удалось отозвать ключ');
-    }
-  };
-
-  const columns: ColumnsType<ApiToken> = [
-    { title: 'Название', dataIndex: 'name', key: 'name' },
-    { title: 'Создан', dataIndex: 'createdAt', key: 'createdAt' },
-    {
-      title: 'Последнее использование',
-      dataIndex: 'lastUsedAt',
-      key: 'lastUsedAt',
-      render: (v: string | null) => v ?? '—',
-    },
-    {
-      title: 'Действия',
-      key: 'actions',
-      render: (_, row) => (
-        <Popconfirm
-          title="Отозвать ключ?"
-          description="Расширение с этим ключом перестанет работать. Действие необратимо."
-          okText="Отозвать"
-          cancelText="Отмена"
-          okButtonProps={{ danger: true }}
-          onConfirm={() => handleRevoke(row.uid)}
-        >
-          <Button danger size="small">Отозвать</Button>
-        </Popconfirm>
-      ),
-    },
-  ];
-
   return (
-    <>
-      <h1>Ключи для расширения</h1>
-      <Button type="primary" loading={creating} onClick={handleCreate} style={{ marginBottom: 16 }}>
-        Сгенерировать ключ для расширения
-      </Button>
-      <Table rowKey="uid" loading={loading} dataSource={tokens} columns={columns} pagination={false} />
+    <SingleColumnLayout>
+      <div className="home-page">
+        <div className="home-page__header">
+          <h1>Добро пожаловать в MemoBoard</h1>
+          <p>MemoBoard — ваш личный помощник для важных дат и полезных ссылок в одном месте.</p>
+        </div>
 
-      <Modal
-        title="Новый ключ создан"
-        open={newToken !== null}
-        onOk={() => setNewToken(null)}
-        onCancel={() => setNewToken(null)}
-        okText="Я скопировал ключ"
-        cancelButtonProps={{ style: { display: 'none' } }}
-      >
-        <p>Скопируйте ключ сейчас — он больше не будет показан.</p>
-        <Typography.Paragraph copyable={{ text: newToken ?? '' }} code>
-          {newToken}
-        </Typography.Paragraph>
-      </Modal>
-    </>
+        <h3>📅 Календарь событий</h3>
+        <ul>
+          <li>Дни рождения, праздники и другие важные даты</li>
+          <li>Разовые, ежемесячные и ежегодные напоминания</li>
+          <li>Удобная группировка по месяцам</li>
+          <li>Обзор недавних и просроченных событий</li>
+        </ul>
+
+        <h3>🔖 Закладки</h3>
+        <ul>
+          <li>Сохраняйте полезные ссылки с описанием</li>
+          <li>Организуйте по категориям и тегам</li>
+          <li>Восстанавливайте удалённое из корзины</li>
+          <li>Смотрите превью страниц</li>
+        </ul>
+
+        <h3 className="mt-10">🆕 Что нового</h3>
+
+        <div className="changelog">
+          <div className="changelog__item">
+            <div className="changelog__date">Сентябрь 2026</div>
+            <ul>
+              <li>Запуск проекта MemoBoard</li>
+              <li>Расширение для браузера — сохраняйте закладки прямо со страниц</li>
+              <li>Обновлённый дизайн страниц входа и регистрации</li>
+            </ul>
+          </div>
+
+          <div className="changelog__item">
+            <div className="changelog__date">Май — Июль 2026</div>
+            <ul>
+              <li>Административный раздел для управления пользователями</li>
+              <li>Повышение стабильности интерфейса</li>
+            </ul>
+          </div>
+
+          <div className="changelog__item">
+            <div className="changelog__date">Апрель 2026</div>
+            <ul>
+              <li>Регистрация и вход по email и паролю</li>
+              <li>Доступ к разделам только для авторизованных пользователей</li>
+              <li>Безопасная сессия с автоматическим продлением</li>
+              <li>Защита от подделки запросов (CSRF)</li>
+              <li>Роли пользователей: обычный и администратор</li>
+            </ul>
+          </div>
+
+          <div className="changelog__item">
+            <div className="changelog__date">Февраль — Март 2026</div>
+            <ul>
+              <li>Корзина для закладок с возможностью восстановления</li>
+              <li>Превью изображений для сохранённых ссылок</li>
+              <li>Перемещение закладок между категориями</li>
+              <li>Изменение порядка категорий</li>
+            </ul>
+          </div>
+
+          <div className="changelog__item">
+            <div className="changelog__date">Декабрь 2025</div>
+            <ul>
+              <li>Редактирование закладок</li>
+              <li>Избранное — закрепляйте важные ссылки</li>
+              <li>Управление категориями и тегами</li>
+              <li>Диалоговые окна создания и удаления</li>
+              <li>Страница «404 — не найдено»</li>
+            </ul>
+          </div>
+
+          <div className="changelog__item">
+            <div className="changelog__date">Октябрь — Ноябрь 2025</div>
+            <ul>
+              <li>Новый раздел «Закладки»</li>
+              <li>Категории и теги для организации ссылок</li>
+              <li>Фильтрация закладок по тегам</li>
+              <li>Набор иконок для интерфейса</li>
+            </ul>
+          </div>
+
+          <div className="changelog__item">
+            <div className="changelog__date">Сентябрь 2025</div>
+            <ul>
+              <li>Старт проекта MemoBoard</li>
+              <li>Раздел «События»: добавление, редактирование, удаление</li>
+              <li>Группировка событий по месяцам</li>
+              <li>Типы событий: праздники, дни рождения, повторяющиеся</li>
+              <li>Отслеживание просроченных событий и счётчик</li>
+              <li>Уведомления о действиях</li>
+            </ul>
+          </div>
+        </div>
+      </div>      
+    </SingleColumnLayout>
   );
 }
 

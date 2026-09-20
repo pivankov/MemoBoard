@@ -10,6 +10,7 @@ import HomePage from "pages/HomePage";
 import LoginPage from "pages/LoginPage";
 import NotFoundPage from "pages/NotFoundPage";
 import RegisterPage from "pages/RegisterPage";
+import SettingsPage from "pages/SettingsPage";
 
 import { AuthProvider } from 'providers/AuthProvider';
 import { NotificationsProvider } from 'providers/NotificationsProvider';
@@ -103,6 +104,15 @@ const router = createBrowserRouter([
               }
             ],
           },
+          {
+            path: "settings",
+            children: [
+              {
+                index: true,
+                element: <SettingsPage />,
+              }
+            ],
+          },          
           {
             path: "admin",
             element: <AdminRoute />,

@@ -7,10 +7,6 @@
   transition-property: margin-right;
 }
 
-.events--narrow {
-  margin-right: 540px;
-}
-
 .events__wrapper {
   position: absolute;
   top: 0;
