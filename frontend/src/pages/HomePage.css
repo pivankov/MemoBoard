@@ -1,0 +1,36 @@
+.home-page {
+  flex: 1 1;
+  padding: 72px 64px 80px 64px;
+
+  ul {
+    margin: 0;
+  }
+
+  li {
+    margin-bottom: 4px;
+  }
+
+  .changelog__date {
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  .changelog__item {
+    margin-bottom: 20px;
+  }
+}
+
+.home-page__header {
+  margin-bottom: 60px;  
+
+  h1 {
+    margin: 0;
+  }
+  
+  p {
+    margin: 6px 0 0 0;
+    font-size: 16px;
+    line-height: 24px;
+    color: var(--color-text-secondary);
+  }  
+}
