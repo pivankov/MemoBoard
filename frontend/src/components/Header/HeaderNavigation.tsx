@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router";
-import { BookOutlined, CalendarOutlined, HomeOutlined, SettingOutlined } from "@ant-design/icons";
+import { BookOutlined, CalendarOutlined, HomeOutlined, RobotOutlined,SettingOutlined } from "@ant-design/icons";
 
 import { useAuth } from "hooks/useAuth";
 
@@ -22,6 +22,11 @@ const BASE_NAVIGATION = [
     title: "События",
     path: "events",
   },
+  {
+    icon: SettingOutlined,
+    title: "Настройки",
+    path: "settings",
+  },
 ];
 
 const MainNavigation: React.FC = () => {
@@ -31,7 +36,7 @@ const MainNavigation: React.FC = () => {
     if (user?.role === 'admin') {
       return [
         ...BASE_NAVIGATION,
-        { icon: SettingOutlined, title: 'Администратор', path: 'admin/users' },
+        { icon: RobotOutlined, title: 'Администратор', path: 'admin/users' },
       ];
     }
     return BASE_NAVIGATION;
