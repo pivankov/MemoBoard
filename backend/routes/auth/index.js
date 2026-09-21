@@ -16,6 +16,7 @@ import { generateAccessToken } from '../../utils/jwt.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { authLimiter, refreshLimiter } from '../../middleware/rateLimit.js';
 import { createSession, rotateSession, revokeSessionByToken } from '../../services/sessionService.js';
+import { createDefaultBookmarkStructure } from '../../services/bookmarkDefaultsService.js';
 import {
   REFRESH_COOKIE_NAME,
   CSRF_COOKIE_NAME,
@@ -65,6 +66,7 @@ const ARGON2_OPTIONS = {
  * Регистрация нового пользователя
  *
  * Создаёт нового пользователя в БД с хешированным паролем (Argon2id).
+ * Атомарно (в одной транзакции) создаёт для пользователя дефолтную структуру закладок — коллекцию с категорией.
  * Создаёт серверную сессию и возвращает пару токенов для немедленного входа после регистрации.
  *
  * @route POST /api/auth/register
@@ -112,13 +114,21 @@ router.post('/register', authLimiter, async (req, res) => {
       VALUES (@uid, @email, @name, @password_hash, @password_algo)
     `);
 
-    const result = insertUser.run({
-      uid,
-      email: email.trim().toLowerCase(),
-      name: name ? name.trim() : null,
-      password_hash: passwordHash,
-      password_algo: 'argon2id',
+    const registerUser = db.transaction(() => {
+      const insertResult = insertUser.run({
+        uid,
+        email: email.trim().toLowerCase(),
+        name: name ? name.trim() : null,
+        password_hash: passwordHash,
+        password_algo: 'argon2id',
+      });
+
+      createDefaultBookmarkStructure(insertResult.lastInsertRowid);
+
+      return insertResult;
     });
+
+    const result = registerUser();
 
     // Генерация пары токенов и создание серверной сессии
     const accessToken = generateAccessToken({
