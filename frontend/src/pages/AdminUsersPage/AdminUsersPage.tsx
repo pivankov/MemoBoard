@@ -14,6 +14,7 @@ import { Button, message,Popconfirm, Table } from 'antd';
 import type { AdminUserListItem } from 'types/auth';
 
 import type { ColumnsType } from 'antd/es/table';
+import { PAGE_TITLE_SUFFIX } from 'constants/strings';
 import * as adminService from 'services/adminService';
 
 function AdminUsersPage() {
@@ -91,13 +92,17 @@ function AdminUsersPage() {
   ];
 
   return (
-    <Table
-      rowKey="uid"
-      loading={loading}
-      dataSource={users}
-      columns={columns}
-      pagination={false}
-    />
+    <>
+      <title>{`Администратор — Список пользователей ${PAGE_TITLE_SUFFIX}`}</title>
+
+      <Table
+        rowKey="uid"
+        loading={loading}
+        dataSource={users}
+        columns={columns}
+        pagination={false}
+      />      
+    </>
   );
 }
 
